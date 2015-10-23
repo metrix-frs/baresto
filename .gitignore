@@ -1,0 +1,11 @@
+/node_modules/
+/bower_components/
+/tmp/
+/dist/
+/output/
+/coverage/
+public/js/*.js
+public/css/*.css
+.psci_modules
+.psci
+*.tix
