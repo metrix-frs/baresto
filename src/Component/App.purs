@@ -5,50 +5,69 @@ import Prelude
 import Control.Plus (Plus)
 
 import Data.Array
+import Data.Either
 import Data.Tuple
 import Data.Functor.Coproduct (Coproduct())
 import Data.Generic (Generic, gEq, gCompare)
 
-import Halogen
+import           Halogen
+import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR)
 import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
-import Component.Ticker (TickState(..), TickQuery(..), ticker)
+import qualified Component.Spinner as Spinner
+import qualified Component.Auth as Auth
+
+import Types
+
+--
+
+data SpinnerSlot = SpinnerSlot
+
+derive instance genericSpinnerSlot :: Generic SpinnerSlot
+instance eqSpinnerSlot :: Eq SpinnerSlot where eq = gEq
+instance ordSpinnerSlot :: Ord SpinnerSlot where compare = gCompare
+
+data AuthSlot = AuthSlot String
+
+derive instance genericAuthSlot :: Generic AuthSlot
+instance eqAuthSlot :: Eq AuthSlot where eq = gEq
+instance ordAuthSlot :: Ord AuthSlot where compare = gCompare
+
+type ChildState = Either Auth.State Spinner.State
+type ChildQuery = Coproduct Auth.Query Spinner.Query
+type ChildSlot = Either AuthSlot SpinnerSlot
+
+cpAuth :: ChildPath Auth.State ChildState Auth.Query ChildQuery AuthSlot ChildSlot
+cpAuth = cpL
+
+cpSpinner :: ChildPath Spinner.State ChildState Spinner.Query ChildQuery SpinnerSlot ChildSlot
+cpSpinner = cpR
+
+--
 
 data Query a
-  = IncSize a
+  = Foo a
 
-type State = { width :: Int, height :: Int }
+type State = Unit
 
 initialState :: State
-initialState = { width: 10, height: 10 }
+initialState = unit
 
-data TickSlot = TickSlot Int Int
+type StateP g = InstalledState State ChildState Query ChildQuery g ChildSlot
+type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
-derive instance genericTickP :: Generic TickSlot
-instance eqTickP :: Eq TickSlot where eq = gEq
-instance ordTickP :: Ord TickSlot where compare = gCompare
-
-type StateP g = InstalledState State TickState Query TickQuery g TickSlot
-type QueryP = Coproduct Query (ChildF TickSlot TickQuery)
-
-app :: forall g. (Plus g) => Component (StateP g) QueryP g
-app = parentComponent' render eval (const (pure unit))
-
-render :: forall g. (Plus g) => RenderParent State TickState Query TickQuery g TickSlot
-render st = H.div_
-    [ H.button
-      [ E.onClick (E.input_ IncSize) ]
-      [ H.text "Increase size" ]
-    , H.table_ $ row <$> range 0 st.height
-    ]
+app :: forall eff. Component (StateP (Metrix eff)) QueryP (Metrix eff)
+app = parentComponent render eval
   where
-    row y = H.tr_ $ cell y <$> range 0 st.width
-    cell y x = H.td_
-      [ H.slot (TickSlot x y) \_ -> { component: ticker, initialState: TickState (x + y) } ]
+    render :: RenderParent State ChildState Query ChildQuery (Metrix eff) ChildSlot
+    render st = H.div_
+        [ H.slot' cpSpinner SpinnerSlot \_ -> { component: Spinner.spinner, initialState: Spinner.initialState }
+        , H.slot' cpAuth (AuthSlot "A") \_ -> { component: Auth.auth, initialState: Auth.initialState }
+        , H.slot' cpAuth (AuthSlot "B") \_ -> { component: Auth.auth, initialState: Auth.initialState }
+        ]
 
-eval :: forall g. (Plus g) => EvalParent Query State TickState Query TickQuery g TickSlot
-eval (IncSize next) = do
-  modify (\r -> { width: r.width+10, height: r.height+10 })
-  pure next
+    eval :: EvalParent Query State ChildState Query ChildQuery (Metrix eff) ChildSlot
+    eval (Foo next) = do
+      pure next
