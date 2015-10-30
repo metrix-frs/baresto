@@ -50,10 +50,10 @@ cpSpinner = cpR
 data Query a
   = Foo a
 
-type State = Unit
+data State = State String
 
 initialState :: State
-initialState = unit
+initialState = State "A"
 
 type StateP g = InstalledState State ChildState Query ChildQuery g ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
@@ -62,12 +62,15 @@ app :: forall eff. Component (StateP (Metrix eff)) QueryP (Metrix eff)
 app = parentComponent render eval
   where
     render :: RenderParent State ChildState Query ChildQuery (Metrix eff) ChildSlot
-    render st = H.div_
-        [ H.slot' cpSpinner SpinnerSlot \_ -> { component: Spinner.spinner, initialState: Spinner.initialState }
-        , H.slot' cpAuth (AuthSlot "A") \_ -> { component: Auth.auth, initialState: Auth.initialState }
-        , H.slot' cpAuth (AuthSlot "B") \_ -> { component: Auth.auth, initialState: Auth.initialState }
-        ]
+    render (State msg) = H.div_
+      [ H.slot' cpSpinner SpinnerSlot \_ -> { component: Spinner.spinner, initialState: Spinner.initialState }
+      , H.slot' cpAuth (AuthSlot "A") \_ -> { component: Auth.auth, initialState: Auth.initialState msg }
+      , H.slot' cpAuth (AuthSlot "B") \_ -> { component: Auth.auth, initialState: Auth.initialState msg }
+      , H.button [ E.onClick (E.input_ Foo) ] [ H.text "Foo" ]
+      , H.text msg
+      ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery (Metrix eff) ChildSlot
     eval (Foo next) = do
+      modify \(State msg) -> State (msg <> "+" <> msg)
       pure next

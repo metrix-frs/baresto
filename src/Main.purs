@@ -11,7 +11,9 @@ import Halogen.Util (appendToBody)
 
 import Component.App (app, initialState)
 
-main :: Eff (HalogenEffects ()) Unit
+import Types
+
+main :: Eff (Effects ()) Unit
 main = runAff throwException (const (pure unit)) $ do
   app <- runUI app (installedState initialState)
   appendToBody app.node

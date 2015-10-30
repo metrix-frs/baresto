@@ -1,0 +1,20 @@
+@import "modules/colors";
+
+$font: Calibri, Candara, Segoe, 'Segoe UI', Optima, Arial, sans-serif;
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  font-family: $font;
+  font-size: 14px;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  line-height: 23px;
+  margin: 0px;
+  color: $metrix-darkgray;
+}
+
+@import "partials/spinner";

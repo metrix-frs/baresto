@@ -32,6 +32,7 @@ import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
 import Types
+import Utils
 
 spinnerName :: String
 spinnerName = "spinner"
@@ -47,12 +48,12 @@ foreign import createEventImpl :: String -> Event
 createEvent :: EventType -> Event
 createEvent (EventType typ) = createEventImpl typ
 
-dispatch :: forall eff. Boolean -> Eff (dom :: DOM | eff) Unit
+dispatch :: forall eff. Boolean -> Eff (dom :: DOM, console :: CONSOLE | eff) Unit
 dispatch on = do
   maybeBody <- toMaybe <$> (window >>= document >>= body)
   for_ maybeBody \bd -> do
     maybeElem <- toMaybe <$> querySelector ("#" <> spinnerName) (htmlElementToParentNode bd)
-    for_ maybeElem \el -> catchException (const $ pure unit) do
+    for_ maybeElem \el -> catchException print do
       dispatchEvent (createEvent $ if on then spinnerOn else spinnerOff) (elementToEventTarget el)
       pure unit
 
@@ -75,10 +76,9 @@ spinner = component render eval
     render (State count) = H.div
       [ P.initializer \el -> action (Init el)
       , P.id_ spinnerName
-      ]
-      [ H.text $ if count == 0 then "off" else "on"
-      , H.text $ show count
-      ]
+      ] $ if count > 0
+            then [ H.div [ cls "spinner" ] [] ]
+            else []
 
     eval :: Eval Query State Query (Metrix eff)
     eval (Init el next) = do
