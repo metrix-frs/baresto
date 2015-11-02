@@ -62,8 +62,8 @@ import Utils (maxInt, getIndices)
 type CustomMember = Tuple CustomMemberId String
 type SubsetMember = Tuple SubsetMemberId String
 
-type CustomMemberStore = M.Map (Tuple ModuleId AxisId) (Array CustomMember)
-type SubsetMemberStore = M.Map (Tuple ModuleId AxisId) (Array SubsetMember)
+type CustomMemberStore = M.Map AxisId (Array CustomMember)
+type SubsetMemberStore = M.Map AxisId (Array SubsetMember)
 
 newtype BusinessData = BusinessData
   { serverState       :: BDSnapshot
@@ -140,48 +140,46 @@ genBDUpdateMsg bd = diff <$> bd ^. _updateId
 generateDiff :: BusinessData -> BDUpdate
 generateDiff bd = stateDiff (bd ^. _serverState) (bd ^. _snapshot)
 
-doesSheetExist :: ModuleId -> Table -> BusinessData -> S -> Boolean
-doesSheetExist modId (Table tbl) bd (S s) =
+doesSheetExist :: Table -> BusinessData -> S -> Boolean
+doesSheetExist (Table tbl) bd (S s) =
   case tbl.tableZAxis of
-    ZAxisCustom axisId _   -> isJust $ (getCustomMembers modId axisId bd) !! s
-    ZAxisSubset axisId _ _ -> isJust $ (getSubsetMembers modId axisId bd) !! s
+    ZAxisCustom axisId _   -> isJust $ (getCustomMembers axisId bd) !! s
+    ZAxisSubset axisId _ _ -> isJust $ (getSubsetMembers axisId bd) !! s
     ZAxisClosed _ ords     -> isJust $ ords !! s
     ZAxisSingleton         -> s == 0
 
-gridHeight :: ModuleId -> Table -> BusinessData -> Int
-gridHeight modId (Table tbl) bd =
+gridHeight :: Table -> BusinessData -> Int
+gridHeight (Table tbl) bd =
   case tbl.tableYAxis of
     YAxisClosed _ ords -> length ords
-    YAxisCustom axId _ -> length $ getCustomMembers modId axId bd
+    YAxisCustom axId _ -> length $ getCustomMembers axId bd
 
-getCellTable :: ModuleId -> S -> Table -> BusinessData -> Maybe (Array (Array Cell))
-getCellTable modId s table@(Table tbl) bd =
-    if doesSheetExist modId table bd s
+getCellTable :: S -> Table -> BusinessData -> Maybe (Array (Array Cell))
+getCellTable s table@(Table tbl) bd =
+    if doesSheetExist table bd s
       then Just $ case tbl.tableYAxis of
         YAxisClosed _ ords -> row <$> getIndices ords
-        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers modId axId bd)
+        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers axId bd)
       else Nothing
   where
     row r = cell r <$> getIndices tbl.tableXOrdinates
     cell r c = fromMaybe NoCell $ cellLookup (Coord (C c) (R r) s) table
 
-getFactTable :: ModuleId -> S -> Table -> BusinessData -> Maybe (Array (Array String))
-getFactTable modId s table@(Table tbl) bd =
-    if doesSheetExist modId table bd s
+getFactTable :: S -> Table -> BusinessData -> Maybe (Array (Array String))
+getFactTable s table@(Table tbl) bd =
+    if doesSheetExist table bd s
       then Just $ case tbl.tableYAxis of
         YAxisClosed _ ords -> row <$> getIndices ords
-        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers modId axId bd)
+        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers axId bd)
       else Nothing
   where
     row r = cell r <$> getIndices tbl.tableXOrdinates
-    cell r c = fromMaybe "" $ getFact modId (Coord (C c) (R r) s) table bd
+    cell r c = fromMaybe "" $ getFact (Coord (C c) (R r) s) table bd
 
-getFact :: ModuleId -> Coord -> Table -> BusinessData -> Maybe String
-getFact modId coord table@(Table tbl) bd = do
-    (Tuple cellId factType) <- getKeyInfo modId coord table bd
-    conv <$> if tbl.tableIsHeader
-      then getBDValue (HeaderKey modId cellId) bd
-      else getBDValue (FactKey modId factType cellId) bd
+getFact :: Coord -> Table -> BusinessData -> Maybe String
+getFact coord table@(Table tbl) bd = do
+    key <- getKey coord table bd
+    conv <$> getBDValue key bd
   where
     conv k = case cellLookup coord table of
       Just (FactCell _ (CodeData pairs)) ->
@@ -190,17 +188,15 @@ getFact modId coord table@(Table tbl) bd = do
         fromMaybe k $ lookup k boolValueMap
       Just _ -> k
       Nothing -> k
+
 foreign import stripDecimals :: String -> Int -> String
 
-setFact :: ModuleId -> Coord -> Table -> String -> BusinessData -> BusinessData
-setFact modId coord table@(Table tbl) val bd =
-    case getKeyInfo modId coord table bd of
-      Just (Tuple cellId factType) -> if tbl.tableIsHeader
-        then setBDValue (HeaderKey modId cellId) (conv val) bd
-        else setBDValue (FactKey modId factType cellId) (conv val) bd
+setFact :: Coord -> Table -> String -> BusinessData -> BusinessData
+setFact coord table@(Table tbl) val bd =
+    case getKey coord table bd of
+      Just key -> setBDValue key (conv val) bd
       Nothing -> bd
   where
-    lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
     conv v = case cellLookup coord table of
       Just (FactCell _ dType) -> case dType of
         CodeData pairs ->
@@ -214,41 +210,59 @@ setFact modId coord table@(Table tbl) val bd =
         _ -> v
       Just _ -> v
       Nothing -> v
+    lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
 
-getKeyInfo :: ModuleId -> Coord -> Table -> BusinessData -> Maybe (Tuple CellId FactType)
-getKeyInfo modId coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
+getKey :: Coord -> Table -> BusinessData -> Maybe Key
+getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
     case cellLookup coord table of
-      Just (FactCell cellId _)  -> Tuple cellId <$> go false
-      Just (YMemberCell cellId) -> Tuple cellId <$> go true
+      Just (FactCell cellId _)  -> if tbl.tableIsHeader
+                                     then go cellId false
+                                     else Just $ KeyHeaderFact cellId
+      Just (YMemberCell cellId) -> go cellId true
       _                         -> Nothing
   where
-    go :: Boolean -> Maybe FactType
-    go isMemberFact = case tbl.tableZAxis of
-      ZAxisCustom axisId _ ->
-        (getCustomMembers modId axisId bd) !! s
-          <#> \(Tuple memId _) -> CustomZFact axisId memId
-      ZAxisSubset axisId _ _ ->
-        (getSubsetMembers modId axisId bd) !! s
-          <#> \(Tuple memId _) -> SubsetZFact axisId memId
-      _ -> case tbl.tableYAxis of
-        YAxisClosed _ _ -> Just PlainFact
-        YAxisCustom axId _ ->
-          (getCustomMembers modId axId bd) !! r
-            <#> \(Tuple memId _) -> if isMemberFact
-                                      then MemberYFact axId memId
-                                      else CustomYFact axId memId
+    go :: CellId -> Boolean -> Maybe Key
+    go cellId isMemberFact = case Tuple tbl.tableYAxis tbl.tableZAxis of
+        Tuple (YAxisClosed _ _) (ZAxisCustom axisId _) ->
+          (getCustomMembers axisId bd) !! s
+            <#> \(Tuple memId _) -> KeyCustomZFact cellId axisId memId
+        Tuple (YAxisClosed _ _) (ZAxisSubset axisId _ _) ->
+          (getSubsetMembers axisId bd) !! s
+            <#> \(Tuple memId _) -> KeySubsetZFact cellId axisId memId
+        Tuple (YAxisClosed _ _) (ZAxisSingleton)
+          -> Just $ KeyPlainFact cellId
+        Tuple (YAxisClosed _ _) (ZAxisClosed _ _)
+          -> Just $ KeyPlainFact cellId
+        Tuple (YAxisCustom axId _) (ZAxisSingleton) ->
+          customY axId
+        Tuple (YAxisCustom axId _) (ZAxisClosed _ _) ->
+          customY axId
+        Tuple (YAxisCustom axYId _) (ZAxisCustom axZId _) -> do
+          (Tuple memYId _) <- getCustomMembers axYId bd !! r
+          (Tuple memZId _) <- getCustomMembers axZId bd !! s
+          Just $ if isMemberFact
+            then KeyMemberYZFact cellId axYId memYId axZId memZId
+            else KeyCustomYZFact cellId axYId memYId axZId memZId
+        _ ->
+          -- unsupported combination of y and z axis
+          Nothing
+      where
+        customY axId = (getCustomMembers axId bd) !! r
+          <#> \(Tuple memId _) -> if isMemberFact
+                                    then KeyMemberYFact cellId axId memId
+                                    else KeyCustomYFact cellId axId memId
 
-getCustomMembers :: ModuleId -> AxisId -> BusinessData -> Array CustomMember
-getCustomMembers modId axId bd =
-  fromMaybe [] $ bd ^. _customMembers .. at (Tuple modId axId)
+getCustomMembers :: AxisId -> BusinessData -> Array CustomMember
+getCustomMembers axId bd =
+  fromMaybe [] $ bd ^. _customMembers .. at axId
 
-getSubsetMembers :: ModuleId -> AxisId -> BusinessData -> Array SubsetMember
-getSubsetMembers modId axId bd =
-  fromMaybe [] $ bd ^. _subsetMembers .. at (Tuple modId axId)
+getSubsetMembers :: AxisId -> BusinessData -> Array SubsetMember
+getSubsetMembers axId bd =
+  fromMaybe [] $ bd ^. _subsetMembers .. at axId
 
-isSubsetMemberSelected :: ModuleId -> AxisId -> SubsetMemberId -> BusinessData -> Boolean
-isSubsetMemberSelected modId axId memId bd =
-  isJust $ getBDValue (SubsetZMemberKey modId axId memId) bd
+isSubsetMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
+isSubsetMemberSelected axId memId bd =
+  isJust $ getBDValue (KeySubsetZSelected axId memId) bd
 
 -- Internal helper
 
