@@ -70,6 +70,7 @@ data Query a
 spinner :: forall eff. Component State Query (Metrix eff)
 spinner = component render eval
   where
+
     render :: Render State Query
     render (State count) = H.div
       [ P.initializer \el -> action (Init el)

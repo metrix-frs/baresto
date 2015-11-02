@@ -2,8 +2,6 @@ module Component.Auth where
 
 import Prelude
 
-import Control.Monad.Eff.Class (liftEff)
-
 import Halogen
 import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
@@ -25,6 +23,7 @@ data Query a
 auth :: forall eff. Component State Query (Metrix eff)
 auth = component render eval
   where
+
     render :: Render State Query
     render (State on msg) = H.div_
       [ H.text (show on)

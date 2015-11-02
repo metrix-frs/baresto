@@ -58,6 +58,7 @@ data Query a
 table :: forall eff. S -> Table -> BusinessData -> Component State Query (Metrix eff)
 table initialS initialTable initialBD = component render eval
   where
+
     render :: Render State Query
     render = const $ H.div
       [ cls "hotcontainer"
@@ -65,22 +66,17 @@ table initialS initialTable initialBD = component render eval
       ] []
 
     eval :: Eval Query State Query (Metrix eff)
-
     eval (Init el next) = do
       hot <- liftEff' $ Hot.handsontableNode el { data: [] }
       modify _{ hotInstance = Just hot }
       build initialS initialTable initialBD hot
       pure next
-
     eval (Edit changes next) = do
       pure next
-
     eval (AddRow name next) = do
       pure next
-
     eval (DeleteRow index name next) = do
       pure next
-
     eval (Rebuild s table bd next) = do
       mHot <- gets _.hotInstance
       case mHot of
@@ -99,18 +95,18 @@ build s table@(Table tbl) bd hot = do
   subscribe $ eventSource (\cb -> Hot.onAfterChange hot (\c s -> cb (Tuple c s))) \(Tuple changes source) -> do
     let procChange change = let coord = fromHotCoords table change.col change.row
                             in  Tuple (Coord (C coord.col) (R coord.row) s) change.new
-        go = do
-          pure $ action $ Edit $ procChange <$> changes
+        go = pure $ action $ Edit $ procChange <$> changes
+        no = pure $ action $ Edit []
     case source of
-      Hot.ChangeAlter             -> pure $ action $ Edit []
-      Hot.ChangeEmpty             -> pure $ action $ Edit []
+      Hot.ChangeAlter             -> no
+      Hot.ChangeEmpty             -> no
       Hot.ChangeEdit              -> go
-      Hot.ChangePopulateFromArray -> pure $ action $ Edit []
-      Hot.ChangeLoadData          -> pure $ action $ Edit []
+      Hot.ChangePopulateFromArray -> no
+      Hot.ChangeLoadData          -> no
       Hot.ChangeAutofill          -> go
       Hot.ChangePaste             -> go
-      Hot.ChangeSpliceCol         -> pure $ action $ Edit []
-      Hot.ChangeSpliceRow         -> pure $ action $ Edit []
+      Hot.ChangeSpliceCol         -> no
+      Hot.ChangeSpliceRow         -> no
 
   case tbl.tableYAxis of
     YAxisClosed _ _ -> pure unit
