@@ -20,9 +20,8 @@ import DOM.HTML.Types (HTMLElement())
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
 import DOM.Event.Types (Event(), EventType(..))
 import DOM.HTML (window)
-import DOM.HTML.Types (htmlElementToEventTarget, htmlElementToParentNode)
+import DOM.HTML.Types (htmlElementToEventTarget, htmlDocumentToParentNode)
 import DOM.HTML.Window (document)
-import DOM.HTML.Document (body)
 import DOM.Node.Types (elementToEventTarget)
 import DOM.Node.ParentNode (querySelector)
 
@@ -50,12 +49,11 @@ createEvent (EventType typ) = createEventImpl typ
 
 dispatch :: forall eff. Boolean -> Eff (dom :: DOM, console :: CONSOLE | eff) Unit
 dispatch on = do
-  maybeBody <- toMaybe <$> (window >>= document >>= body)
-  for_ maybeBody \bd -> do
-    maybeElem <- toMaybe <$> querySelector ("#" <> spinnerName) (htmlElementToParentNode bd)
-    for_ maybeElem \el -> catchException print do
-      dispatchEvent (createEvent $ if on then spinnerOn else spinnerOff) (elementToEventTarget el)
-      pure unit
+  doc <- window >>= document
+  maybeElem <- toMaybe <$> querySelector ("#" <> spinnerName) (htmlDocumentToParentNode doc)
+  for_ maybeElem \el -> catchException print do
+    dispatchEvent (createEvent $ if on then spinnerOn else spinnerOff) (elementToEventTarget el)
+    pure unit
 
 --
 
