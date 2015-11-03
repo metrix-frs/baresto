@@ -18,7 +18,7 @@ import Data.Foldable (for_)
 import DOM
 import DOM.HTML.Types (HTMLElement())
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
-import DOM.Event.Types (Event(), EventType(..))
+import DOM.Event.Types (EventType(..))
 import DOM.HTML (window)
 import DOM.HTML.Types (htmlElementToEventTarget, htmlDocumentToParentNode)
 import DOM.HTML.Window (document)
@@ -41,11 +41,6 @@ spinnerOn = EventType "spinnerOn"
 
 spinnerOff :: EventType
 spinnerOff = EventType "spinnerOff"
-
-foreign import createEventImpl :: String -> Event
-
-createEvent :: EventType -> Event
-createEvent (EventType typ) = createEventImpl typ
 
 dispatch :: forall eff. Boolean -> Eff (dom :: DOM, console :: CONSOLE | eff) Unit
 dispatch on = do
@@ -81,7 +76,8 @@ spinner = component render eval
 
     eval :: Eval Query State Query (Metrix eff)
     eval (Init el next) = do
-      let attach typ callback = addEventListener typ (eventListener \_ -> callback) true (htmlElementToEventTarget el)
+      let attach typ callback = addEventListener typ
+            (eventListener \_ -> callback) true (htmlElementToEventTarget el)
       subscribe $ eventSource_ (attach spinnerOn) do
         pure $ action Inc
       subscribe $ eventSource_ (attach spinnerOff) do

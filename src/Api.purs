@@ -3,23 +3,44 @@ module Api where
 import Prelude
 
 import Control.Apply
-import Control.Monad.Aff
+import Control.Monad.Aff (attempt, Aff())
+import Control.Monad.Aff.Class
+import Control.Monad.Eff.Class
+import Control.Monad.Eff.Exception (error, message)
+import Control.Monad.Error.Class (throwError)
+
+import Data.Either
 
 import Network.HTTP.Affjax
 
-import Control.Monad.Eff.Exception (error)
-import Control.Monad.Error.Class (throwError)
-
 import Network.HTTP.Affjax.Response
+
+import Halogen.Query (liftEff', liftAff')
+import Halogen.Component (ComponentDSL())
 
 import Types
 
 import Api.Common
 import Api.Schema.Framework
+import Api.Schema.Module
 import Api.Schema.BusinessData
 import Api.Schema.Auth
 import Api.Schema.Template
 import Api.Schema.Finding
+
+import qualified Component.Spinner as Spinner
+import qualified Component.ErrorBox as ErrorBox
+
+apiCall :: forall eff a s f g. (MonadEff (Effects eff) g, MonadAff (Effects eff) g, Functor g)
+        => Aff (Effects eff) a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit
+apiCall call onSuccess = do
+  liftEff' $ Spinner.dispatch true
+  result <- liftAff' $ attempt call
+  case result of
+    Left err -> liftEff' $ ErrorBox.raise $ message err
+    Right x -> onSuccess x
+
+--
 
 getTemplate :: forall e. ModuleId -> TemplateId -> Aff (Effects e) Template
 getTemplate modId templId = getJsonResponse "Could not fetch template." $
@@ -32,6 +53,10 @@ getHeader = getJsonResponse "Could not fetch header." $
 getFrameworks :: forall e. Aff (Effects e) (Array Framework)
 getFrameworks = getJsonResponse "Could not load frameworks." $
   get "/api/v0.1/modules"
+
+getModule :: forall eff. ModuleId -> Aff (Effects eff) Module
+getModule modId = getJsonResponse "Could not load templates of module." $
+  get $ "/api/v0.1/module/" <> show modId
 
 loadSnapshot :: forall e. Aff (Effects e) BDSnapshotMsg
 loadSnapshot = getJsonResponse "Could not load snapshot." $

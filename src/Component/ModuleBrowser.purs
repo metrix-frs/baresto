@@ -4,6 +4,7 @@ import Prelude
 
 import qualified Data.Map as M
 import           Data.Maybe
+import           Data.Foldable
 
 import Control.Monad.State (execState)
 
@@ -20,6 +21,7 @@ import qualified Halogen.HTML.Events.Indexed as E
 import Types
 import Utils
 
+import Api
 import Api.Schema.Module
 
 type State =
@@ -49,8 +51,8 @@ data Query a
   | ToggleGroupOpen TemplateGroupId a
   | ToggleOpen a
 
-moduleBrowser :: forall eff. Component State Query (Metrix eff)
-moduleBrowser = component render eval
+moduleBrowser :: forall eff. ModuleId -> Component State Query (Metrix eff)
+moduleBrowser initialModId = component render eval
   where
 
     render :: Render State Query
@@ -63,11 +65,11 @@ moduleBrowser = component render eval
 
     eval :: Eval Query State Query (Metrix eff)
     eval (Init next) = do
-      mod <- ajax getModule
-      modify $ execState do
-        _mod .= Just mod
-        for_ (mod ^. _templateGroups) \g -> do
-          _groupOpen .. at (g ^. _templateGroupId) .= Just true
+      apiCall (getModule initialModId) \mod -> do
+        modify $ execState do
+          _mod .= Just mod
+          for_ (mod ^. _templateGroups) \g -> do
+            _groupOpen .. at (g ^. _templateGroupId) .= Just true
       pure next
     eval (SelectTemplate tId next) = do
       modify _{ selectedTemplate = tId }

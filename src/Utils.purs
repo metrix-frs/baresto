@@ -1,4 +1,16 @@
-module Utils where
+module Utils
+  ( maxInt
+  , cls
+  , readId
+  , makeIndexed
+  , getIndices
+  , minOrd
+  , maxOrd
+  , getEntropy
+  , createEvent
+  , createCustomEvent
+  , customEventDetail
+  ) where
 
 import Prelude
 import Global
@@ -10,7 +22,10 @@ import Data.Maybe
 import Data.Tuple
 import Data.Array
 import Data.Map (Map())
+import Data.Nullable
 import Data.String (toCharArray, fromCharArray)
+
+import DOM.Event.Types (Event(), EventType(..))
 
 import Control.Monad.Eff.Random
 
@@ -57,3 +72,18 @@ getEntropy n = fromCharArray <$> replicateM n do
     return $ fromMaybe '0' $ alphabet !! i
   where
     alphabet = toCharArray "0123456789abcdef"
+
+foreign import createEventImpl :: String -> Event
+
+createEvent :: EventType -> Event
+createEvent (EventType typ) = createEventImpl typ
+
+foreign import createCustomEventImpl :: String -> String -> Event
+
+createCustomEvent :: EventType -> String -> Event
+createCustomEvent (EventType typ) msg = createCustomEventImpl typ msg
+
+foreign import customEventDetailImpl :: Event -> Nullable String
+
+customEventDetail :: Event -> Maybe String
+customEventDetail = toMaybe <<< customEventDetailImpl
