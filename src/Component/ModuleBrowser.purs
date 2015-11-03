@@ -51,7 +51,7 @@ data Query a
   | ToggleGroupOpen TemplateGroupId a
   | ToggleOpen a
 
-moduleBrowser :: forall eff. ModuleId -> Component State Query (Metrix eff)
+moduleBrowser :: ModuleId -> Component State Query Metrix
 moduleBrowser initialModId = component render eval
   where
 
@@ -63,7 +63,7 @@ moduleBrowser initialModId = component render eval
       [ H.text "foo"
       ]
 
-    eval :: Eval Query State Query (Metrix eff)
+    eval :: Eval Query State Query Metrix
     eval (Init next) = do
       apiCall (getModule initialModId) \mod -> do
         modify $ execState do

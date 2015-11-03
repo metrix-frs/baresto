@@ -62,7 +62,7 @@ data Query a
   | Inc a
   | Dec a
 
-spinner :: forall eff. Component State Query (Metrix eff)
+spinner :: Component State Query Metrix
 spinner = component render eval
   where
 
@@ -74,7 +74,7 @@ spinner = component render eval
             then [ H.div [ cls "spinner" ] [] ]
             else []
 
-    eval :: Eval Query State Query (Metrix eff)
+    eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       let attach typ callback = addEventListener typ
             (eventListener \_ -> callback) true (htmlElementToEventTarget el)

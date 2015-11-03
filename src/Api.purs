@@ -7,6 +7,7 @@ import Control.Monad.Aff (attempt, Aff())
 import Control.Monad.Aff.Class
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Exception (error, message)
+import Control.Monad.Eff.Console (log)
 import Control.Monad.Error.Class (throwError)
 
 import Data.Either
@@ -39,6 +40,7 @@ apiCall call onSuccess = do
   case result of
     Left err -> liftEff' $ ErrorBox.raise $ message err
     Right x -> onSuccess x
+  liftEff' $ Spinner.dispatch false
 
 --
 

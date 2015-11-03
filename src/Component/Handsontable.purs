@@ -55,7 +55,7 @@ data Query a
   | DeleteRow Int String a
   | Rebuild S Table BusinessData a
 
-table :: forall eff. S -> Table -> BusinessData -> Component State Query (Metrix eff)
+table :: forall eff. S -> Table -> BusinessData -> Component State Query Metrix
 table initialS initialTable initialBD = component render eval
   where
 
@@ -65,7 +65,7 @@ table initialS initialTable initialBD = component render eval
       , P.initializer \el -> action (Init el)
       ] []
 
-    eval :: Eval Query State Query (Metrix eff)
+    eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       hot <- liftEff' $ Hot.handsontableNode el { data: [] }
       modify _{ hotInstance = Just hot }
@@ -84,7 +84,7 @@ table initialS initialTable initialBD = component render eval
         Just hot -> build s table bd hot
       pure next
 
-build :: forall eff. S -> Table -> BusinessData -> Hot.Handsontable String -> ComponentDSL State Query (Metrix eff) Unit
+build :: forall eff. S -> Table -> BusinessData -> Hot.Handsontable String -> ComponentDSL State Query Metrix Unit
 build s table@(Table tbl) bd hot = do
   case getFactTable s table bd of
     Just vals | length vals > 0 -> do

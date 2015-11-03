@@ -60,7 +60,7 @@ data Query a
   | Open String a
   | Close a
 
-errorBox :: forall eff. Component State Query (Metrix eff)
+errorBox :: forall eff. Component State Query Metrix
 errorBox = component render eval
   where
 
@@ -69,10 +69,13 @@ errorBox = component render eval
       [ P.initializer \el -> action (Init el)
       , P.id_ errorId
       ] $ case st of
-            Just msg -> [ H.text msg ]
+            Just msg ->
+              [ H.text msg
+              , H.button [ E.onClick (E.input_ Close) ] [ H.text "Close" ]
+              ]
             Nothing -> []
 
-    eval :: Eval Query State Query (Metrix eff)
+    eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       let attach cb = addEventListener errorEvent
             (eventListener \e -> cb $ customEventDetail e) true (htmlElementToEventTarget el)

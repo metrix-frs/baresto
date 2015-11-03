@@ -25,7 +25,7 @@ type Effects eff =
   , random :: RANDOM
   | eff )
 
-type Metrix eff = Aff (Effects eff)
+type Metrix = Aff (Effects ())
 
 --
 

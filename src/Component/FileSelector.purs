@@ -1,4 +1,4 @@
-module Component.Auth where
+module Component.FileSelector where
 
 import Prelude
 
@@ -6,8 +6,6 @@ import Halogen
 import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
-
-import qualified Component.Spinner as Spinner
 
 import Types
 
@@ -19,8 +17,8 @@ initialState = State
 data Query a
   = Foo a
 
-auth :: Component State Query Metrix
-auth = component render eval
+selector :: Component State Query Metrix
+selector = component render eval
   where
 
     render :: Render State Query
