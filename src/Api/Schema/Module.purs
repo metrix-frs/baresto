@@ -38,7 +38,7 @@ instance isForeignModule :: IsForeign Module where
 newtype TemplateGroup = TemplateGroup
   { templateGroupId :: TemplateGroupId
   , templateGroupLabel :: String
-  , templates :: Array TemplateEntry
+  , templates :: Array Template
   }
 
 _TemplateGroup :: LensP TemplateGroup _
@@ -50,7 +50,7 @@ _templateGroupId = _TemplateGroup .. lens _.templateGroupId _{templateGroupId = 
 _templateGroupLabel :: LensP TemplateGroup String
 _templateGroupLabel = _TemplateGroup .. lens _.templateGroupLabel _{ templateGroupLabel = _ }
 
-_templates :: LensP TemplateGroup (Array TemplateEntry)
+_templates :: LensP TemplateGroup (Array Template)
 _templates = _TemplateGroup .. lens _.templates _{ templates = _ }
 
 instance isForeignTemplateGroup :: IsForeign TemplateGroup where
@@ -61,28 +61,60 @@ instance isForeignTemplateGroup :: IsForeign TemplateGroup where
       <*> readProp "templates" json
     pure $ TemplateGroup grp
 
-newtype TemplateEntry = TemplateEntry
-  { templateEntryId    :: TemplateId
-  , templateEntryCode  :: String
-  , templateEntryLabel :: String
+newtype Template = Template
+  { templateId     :: TemplateId
+  , templateCode   :: String
+  , templateLabel  :: String
+  , templateTables :: Array TableEntry
   }
 
-_templateEntry :: LensP TemplateEntry _
-_templateEntry = lens (\(TemplateEntry r) -> r) (\_ r -> TemplateEntry r)
+_Template :: LensP Template _
+_Template = lens (\(Template r) -> r) (\_ r -> Template r)
 
-_templateEntryId :: LensP TemplateEntry TemplateId
-_templateEntryId = _templateEntry .. lens _.templateEntryId _{templateEntryId = _ }
+_templateId :: LensP Template TemplateId
+_templateId = _Template .. lens _.templateId _{ templateId = _ }
 
-_templateEntryCode :: LensP TemplateEntry String
-_templateEntryCode = _templateEntry .. lens _.templateEntryCode _{ templateEntryCode = _ }
+_templateCode :: LensP Template String
+_templateCode = _Template .. lens _.templateCode _{ templateCode = _ }
 
-_templateEntryLabel :: LensP TemplateEntry String
-_templateEntryLabel = _templateEntry .. lens _.templateEntryLabel _{ templateEntryLabel = _ }
+_templateLabel :: LensP Template String
+_templateLabel = _Template .. lens _.templateLabel _{ templateLabel = _ }
 
-instance isForeignTemplate :: IsForeign TemplateEntry where
+_templateTables :: LensP Template (Array TableEntry)
+_templateTables = _Template .. lens _.templateTables _{ templateTables = _ }
+
+instance isForeignTemplate :: IsForeign Template where
   read json = do
-    frm <- { templateEntryId: _, templateEntryCode: _, templateEntryLabel: _ }
-      <$> readProp "id"    json
-      <*> readProp "code"  json
-      <*> readProp "label" json
-    pure $ TemplateEntry frm
+    tpl <- { templateId: _
+           , templateCode: _
+           , templateLabel: _
+           , templateTables: _
+           }
+      <$> readProp "id"     json
+      <*> readProp "code"   json
+      <*> readProp "label"  json
+      <*> readProp "tables" json
+    pure $ Template tpl
+
+newtype TableEntry = TableEntry
+  { tableEntryId :: TableId
+  , tableEntryCode :: String
+  }
+
+_TableEntry :: LensP TableEntry _
+_TableEntry = lens (\(TableEntry r) -> r) (\_ r -> TableEntry r)
+
+_tableEntryId :: LensP TableEntry TableId
+_tableEntryId = _TableEntry .. lens _.tableEntryId _{ tableEntryId = _ }
+
+_tableEntryCode :: LensP TableEntry String
+_tableEntryCode = _TableEntry .. lens _.tableEntryCode _{ tableEntryCode = _ }
+
+instance isForeignTableEntry :: IsForeign TableEntry where
+  read json = do
+    tbl <- { tableEntryId: _
+           , tableEntryCode: _
+           }
+        <$> readProp "id" json
+        <*> readProp "code" json
+    pure $ TableEntry tbl

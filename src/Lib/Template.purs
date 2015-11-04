@@ -14,7 +14,7 @@ import Optic.Core
 
 import Utils
 import Types
-import Api.Schema.Template
+import Api.Schema.Table
 
 
 mapGrid :: forall a. (Int -> Int -> Int -> Cell -> a) -> Grid -> Array (Array (Array a))

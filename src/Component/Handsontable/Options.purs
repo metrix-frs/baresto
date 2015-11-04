@@ -26,7 +26,7 @@ import qualified Handsontable       as Hot
 import qualified Handsontable.Types as Hot
 
 import Types
-import Api.Schema.Template
+import Api.Schema.Table
 import Lib.Template
 import Lib.BusinessData
 

@@ -1,4 +1,4 @@
-module Api.Schema.Framework where
+module Api.Schema.Selector where
 
 import Prelude
 
@@ -8,6 +8,8 @@ import Data.Foreign.Class
 import Optic.Core
 
 import Types
+
+type Selector = Array Framework
 
 newtype Framework = Framework
   { frameworkId :: FrameworkId

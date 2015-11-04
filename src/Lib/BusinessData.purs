@@ -52,7 +52,7 @@ import Types
 
 import Lib.Template
 
-import Api.Schema.Template
+import Api.Schema.Table
 import Api.Schema.BusinessData
 import Api.Schema.BusinessData.Key
 

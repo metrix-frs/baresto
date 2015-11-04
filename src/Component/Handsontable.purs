@@ -30,7 +30,7 @@ import qualified Handsontable.Hooks as Hot
 import Utils (getEntropy, makeIndexed, cls)
 
 import Types
-import Api.Schema.Template
+import Api.Schema.Table
 import Lib.Template
 import Lib.BusinessData
 

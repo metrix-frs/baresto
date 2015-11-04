@@ -12,6 +12,10 @@ import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
 import qualified Component.ModuleBrowser as MB
+import qualified Component.Handsontable as H
+
+import Api.Schema.Table
+import Lib.BusinessData
 
 import Types
 
@@ -21,9 +25,29 @@ derive instance genericModuleBrowserSlot :: Generic ModuleBrowserSlot
 instance eqModuleBrowserSlot :: Eq ModuleBrowserSlot where eq = gEq
 instance ordModuleBrowserSlot :: Ord ModuleBrowserSlot where compare = gCompare
 
+data HotSlot = HotSlot
+
+derive instance genericHotSlot :: Generic HotSlot
+instance eqHotSlot :: Eq HotSlot where eq = gEq
+instance ordHotSlot :: Ord HotSlot where compare = gCompare
+
+type ChildState = Either MB.State H.State
+type ChildQuery = Coproduct MB.Query H.Query
+type ChildSlot = Either ModuleBrowserSlot HotSlot
+
+cpModuleBrowser :: ChildPath MB.State ChildState MB.Query ChildQuery ModuleBrowserSlot ChildSlot
+cpModuleBrowser = cpL
+
+cpHot :: ChildPath H.State ChildState H.Query ChildQuery HotSlot ChildSlot
+cpHot = cpR
+
 --
 
-data State = State
+type State =
+  { businessData :: BusinessData
+  , selectedSheet :: S
+
+  }
 
 initialState :: State
 initialState = State

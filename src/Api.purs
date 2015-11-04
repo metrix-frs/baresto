@@ -22,11 +22,11 @@ import Halogen.Component
 import Types
 
 import Api.Common
-import Api.Schema.Framework
+import Api.Schema.Selector
 import Api.Schema.Module
 import Api.Schema.BusinessData
 import Api.Schema.Auth
-import Api.Schema.Template
+import Api.Schema.Table
 import Api.Schema.Finding
 
 import qualified Component.Spinner as Spinner

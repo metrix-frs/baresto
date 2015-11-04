@@ -10,7 +10,7 @@ import Control.Monad.Eff
 
 import Data.Array (length)
 
-import Api.Schema.Template
+import Api.Schema.Table
 
 toHotCoords :: Table -> Int -> Int -> {col :: Int, row :: Int}
 toHotCoords table c r = { col: c + 2, row: r + (headerHeight table) }

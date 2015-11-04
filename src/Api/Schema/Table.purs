@@ -1,4 +1,4 @@
-module Api.Schema.Template where
+module Api.Schema.Table where
 
 import Prelude
 
@@ -15,25 +15,6 @@ import Types
 
 type XHeader = Array (Array XHeaderCell)
 type Ordinates = Array Ordinate
-
-newtype Template = Template
-  { templateName    :: String
-  , templateCaption :: String
-  , templateTables  :: Array Table
-  , templateModule  :: ModuleId
-  }
-
-instance isForeignTemplate :: IsForeign Template where
-  read json = do
-    tpl <- { templateName: _
-           , templateCaption: _
-           , templateTables: _
-           , templateModule: 0
-           }
-      <$> readProp "name"    json
-      <*> readProp "caption" json
-      <*> readProp "tables"  json
-    pure $ Template tpl
 
 newtype Table = Table
   { tableId         :: TableId
