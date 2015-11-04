@@ -17,7 +17,7 @@ import Network.HTTP.Affjax
 import Network.HTTP.Affjax.Response
 
 import Halogen.Query (liftEff', liftAff')
-import Halogen.Component (ComponentDSL())
+import Halogen.Component
 
 import Types
 
@@ -41,6 +41,16 @@ apiCall call onSuccess = do
     Left err -> liftEff' $ ErrorBox.raise $ message err
     Right x -> onSuccess x
   liftEff' $ Spinner.dispatch false
+
+apiCallParent :: forall eff a s s' f f' g p. (MonadEff (Effects eff) g, MonadAff (Effects eff) g, Functor g)
+        => Aff (Effects eff) a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
+apiCallParent call onSuccess = do
+  liftQuery $ liftEff' $ Spinner.dispatch true
+  result <- liftQuery $ liftAff' $ attempt call
+  case result of
+    Left err -> liftQuery $ liftEff' $ ErrorBox.raise $ message err
+    Right x -> onSuccess x
+  liftQuery $ liftEff' $ Spinner.dispatch false
 
 --
 

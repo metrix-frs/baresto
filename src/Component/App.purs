@@ -4,6 +4,8 @@ import Prelude
 
 import Control.Plus (Plus)
 
+import Control.Monad.Eff.Console (log)
+
 import Data.Array
 import Data.Either
 import Data.Maybe
@@ -82,7 +84,7 @@ initialState =
   }
 
 data Query a
-  = Init a
+  = Boot a
   | Authenticate a
   | SetCustomerId String a
   | SetLicenseKey String a
@@ -115,14 +117,14 @@ app = parentComponent render eval
           Authenticated _ ->
             H.slot' cpBody BodySlot \_ -> { component: Body.body, initialState: installedState Body.initialState }
           LoggedOut ->
-            renderAuthForm st.customerId st.licenseKey
+            renderAuthForm st.customerId st.licenseKey st.authError
           CheckingLicense -> H.div_
             [ H.text "Checking license..." ]
       ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
-    eval (Init next) = do
-      apiCall loginStatus \(LoginStatus st) -> case st of
+    eval (Boot next) = do
+      apiCallParent loginStatus \(LoginStatus st) -> case st of
         Just customerId ->
           modify _{ authStatus = Authenticated customerId }
         Nothing ->
@@ -130,21 +132,27 @@ app = parentComponent render eval
       pure next
     eval (Authenticate next) = do
       st <- get
-      apiCall (login st.customerId st.licenseKey) \(LoginResponse res) ->
+      apiCallParent (login st.customerId st.licenseKey) \(LoginResponse res) ->
         if res.lrSuccess
           then modify _{ authStatus = Authenticated st.customerId
                        , authError = Nothing }
           else modify _{ authError = Just res.lrMessage }
       pure next
+    eval (SetCustomerId customerId next) = do
+      modify _{ customerId = customerId}
+      pure next
+    eval (SetLicenseKey key next) = do
+      modify _{ licenseKey = key }
+      pure next
     eval (LogOut next) = do
-      apiCall logout \_ ->
+      apiCallParent logout \_ ->
         modify _{ authStatus = LoggedOut
                 , customerId = ""
                 , licenseKey = "" }
       pure next
 
-renderAuthForm :: String -> String -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
-renderAuthForm customerId licenseKey = H.div_
+renderAuthForm :: String -> String -> Maybe String -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
+renderAuthForm customerId licenseKey authError = H.div_
   [ H.table_
     [ H.tr_
       [ H.td_
@@ -172,4 +180,7 @@ renderAuthForm customerId licenseKey = H.div_
   , H.button
     [ E.onClick (E.input_ Authenticate) ]
     [ H.text "Authenticate" ]
-    ]
+  , H.text $ case authError of
+      Just err -> "Error: " <> err
+      Nothing -> ""
+  ]
