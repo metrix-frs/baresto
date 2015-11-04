@@ -1,0 +1,45 @@
+button, .browser a {
+  border-radius: 5px;
+  border: 2px solid $metrix-darkblue;
+  background-color: $metrix-lightblue;
+  color: $metrix-darkblue;
+  font-weight: bold;
+  font-variant: small-caps;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  padding-left: 5px;
+  padding-right: 5px;
+  &:hover {
+    background-color: white;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: $metrix-blue;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+input {
+  border-radius: 5px;
+  border: 2px solid $metrix-darkblue;
+  background-color: white;
+  color: $metrix-darkblue;
+  outline: none;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+select {
+  border: 2px solid $metrix-darkblue;
+  border-radius: 5px;
+  background-color: $metrix-lightblue;
+  outline: none;
+  appearance: none;
+  &:hover {
+    background-color: white;
+  }
+}

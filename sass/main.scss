@@ -1,4 +1,5 @@
 @import "modules/colors";
+@import "modules/icons";
 
 $font: Calibri, Candara, Segoe, 'Segoe UI', Optima, Arial, sans-serif;
 
@@ -17,4 +18,10 @@ body {
   color: $metrix-darkgray;
 }
 
+@import "partials/controls";
+@import "partials/formula";
+@import "partials/handsontable";
+@import "partials/modal";
+@import "partials/scrollbar";
 @import "partials/spinner";
+@import "partials/statusbar";

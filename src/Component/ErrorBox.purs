@@ -60,7 +60,7 @@ data Query a
   | Open String a
   | Close a
 
-errorBox :: forall eff. Component State Query Metrix
+errorBox :: Component State Query Metrix
 errorBox = component render eval
   where
 
@@ -70,10 +70,21 @@ errorBox = component render eval
       , P.id_ errorId
       ] $ case st of
             Just msg ->
-              [ H.text msg
-              , H.button [ E.onClick (E.input_ Close) ] [ H.text "Close" ]
+              [ H.div [ cls "modalContainer" ]
+                [ H.div [ cls "modalFade" ] []
+                , H.div [ cls "modal" ]
+                  [ H.h1_ [ H.text "Error" ]
+                  , H.p_ [ H.text msg ]
+                  , H.div [ cls "controls" ]
+                    [ H.button
+                      [ E.onClick (E.input_ Close) ]
+                      [ H.text "Close" ]
+                    ]
+                  ]
+                ]
               ]
-            Nothing -> []
+            Nothing ->
+              []
 
     eval :: Eval Query State Query Metrix
     eval (Init el next) = do

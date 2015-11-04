@@ -1,0 +1,10 @@
+.hotContainer {
+  overflow: auto;
+}
+
+.currentRow.yOrdinate, .currentRow.yOrdinateCode, .currentRow.yAbstract, .currentRow.yAbstractCode {
+  background-color: $ordinates-selected !important;
+}
+.currentCol.xOrdinateCode {
+  background-color: $ordinates-selected !important;
+}

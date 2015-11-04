@@ -1,0 +1,39 @@
+.modalContainer {
+  z-index: 20000;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  .modalFade {
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    background-color: black;
+  }
+  .modal {
+    z-index: 25000;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 400px;
+    margin-left: -150px;
+    margin-top: -100px;
+    background-color: white;
+    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.3);
+    h1 {
+      margin: 0px 0px 10px 0px;
+      font-size: 25px;
+      font-weight: bold;
+      background-color: $metrix-blue;
+      padding: 10px;
+    }
+    p {
+      margin: 0px 10px 10px 10px;
+    }
+    .controls {
+      text-align: right;
+      margin: 0px 10px 10px 10px;
+    }
+  }
+}

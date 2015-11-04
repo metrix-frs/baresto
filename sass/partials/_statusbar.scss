@@ -1,0 +1,23 @@
+.status {
+  background-color: $metrix-blue;
+  height: 25px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 4px;
+  color: black;
+  .spinnerContainer {
+    float: left;
+    width: 25px;
+    height: 25px;
+  }
+  .license {
+    float: right;
+    color: $metrix-darkblue;
+  }
+  .menu {
+    float: right;
+    margin-right: 10px;
+    margin-left: 10px;
+    color: $metrix-darkblue;
+  }
+}

@@ -99,20 +99,22 @@ app = parentComponent render eval
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
     render st = H.div_
       [ H.slot' cpErrorBox ErrorBoxSlot \_ -> { component: ErrorBox.errorBox, initialState: ErrorBox.initialState }
-      -- about box?
-      , H.div [ cls "status" ]
+      -- TODO: about box?
+      , H.div [ cls "status" ] $
         [ H.slot' cpSpinner SpinnerSlot \_ -> { component: Spinner.spinner, initialState: Spinner.initialState }
-        , H.div [ cls "login" ] $ case st.authStatus of
-            Authenticated cId ->
-              [ H.text $ "Logged in with customer id " <> cId <> ". "
-              , H.button
-                [ E.onClick (E.input_ $ LogOut) ]
-                [ H.text "Logout" ]
-              ]
-            _ ->
-              []
-          -- about button together with logout in menu?
-        ]
+        ] <>  case st.authStatus of
+                Authenticated cId ->
+                  [ H.div [ cls "menu" ]
+                    [ H.button
+                      [ E.onClick (E.input_ $ LogOut) ]
+                      [ H.text "Logout" ]
+                    ]
+                  , H.div [ cls "license" ]
+                    [ H.text $ "Logged in with customer id " <> cId <> ". " ]
+                  ]
+                _ ->
+                  []
+          -- TODO: about button together with logout in menu?
       , case st.authStatus of
           Authenticated _ ->
             H.slot' cpBody BodySlot \_ -> { component: Body.body, initialState: installedState Body.initialState }

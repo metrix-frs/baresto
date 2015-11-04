@@ -70,6 +70,7 @@ spinner = component render eval
     render (State count) = H.div
       [ P.initializer \el -> action (Init el)
       , P.id_ spinnerName
+      , cls "spinnerContainer"
       ] $ if count > 0
             then [ H.div [ cls "spinner" ] [] ]
             else []
