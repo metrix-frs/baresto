@@ -1,23 +1,20 @@
 module Lib.BusinessData
-( BusinessData()
+( CustomMemberStore()
+, SubsetMemberStore()
+, SubsetMember()
+, CustomMember()
+, BusinessData()
 , emptyBusinessData
 , _BusinessData
-, _serverState
 , _snapshot
 , _customMembers
-, CustomMemberStore()
-, SubsetMemberStore()
 , _subsetMembers
-, _updateId
-, generateDiff
 , doesSheetExist
 , gridHeight
 , getCellTable
 , getFactTable
 , getFact
 , setFact
-, SubsetMember()
-, CustomMember()
 , getCustomMembers
 , getSubsetMembers
 , isSubsetMemberSelected
@@ -26,8 +23,7 @@ module Lib.BusinessData
 import Prelude
 
 import           Data.Int (fromNumber)
-import           Data.Array hiding ((..), filter)
-import           Data.List (fromList, toList, filter)
+import           Data.Array hiding ((..))
 import           Data.Maybe
 import           Data.Tuple
 import qualified Data.Map as M
@@ -50,7 +46,7 @@ import Data.Argonaut.Combinators ((:=), (~>))
 
 import Types
 
-import Lib.Template
+import Lib.Table
 
 import Api.Schema.Table
 import Api.Schema.BusinessData
@@ -66,20 +62,15 @@ type CustomMemberStore = M.Map AxisId (Array CustomMember)
 type SubsetMemberStore = M.Map AxisId (Array SubsetMember)
 
 newtype BusinessData = BusinessData
-  { serverState       :: BDSnapshot
-  , snapshot          :: BDSnapshot
+  { snapshot          :: M.Map Key String
   , customMembers     :: CustomMemberStore
   , subsetMembers     :: SubsetMemberStore
-  , updateId          :: Maybe (Tuple UpdateId String)
   }
 
 _BusinessData :: LensP BusinessData _
 _BusinessData = lens (\(BusinessData r) -> r) (\_ r -> BusinessData r)
 
-_serverState :: LensP BusinessData BDSnapshot
-_serverState = _BusinessData .. lens _.serverState _{ serverState = _ }
-
-_snapshot :: LensP BusinessData BDSnapshot
+_snapshot :: LensP BusinessData (M.Map Key String)
 _snapshot = _BusinessData .. lens _.snapshot _{ snapshot = _ }
 
 _customMembers :: LensP BusinessData CustomMemberStore
@@ -88,57 +79,75 @@ _customMembers = _BusinessData .. lens _.customMembers _{ customMembers = _ }
 _subsetMembers :: LensP BusinessData SubsetMemberStore
 _subsetMembers = _BusinessData .. lens _.subsetMembers _{ subsetMembers = _ }
 
-_updateId :: LensP BusinessData (Maybe (Tuple UpdateId String))
-_updateId = _BusinessData .. lens _.updateId _{ updateId = _ }
-
 emptyBusinessData :: BusinessData
 emptyBusinessData = BusinessData
-  { serverState: emptyBDSnapshot
-  , snapshot: emptyBDSnapshot
+  { snapshot:      M.empty
   , customMembers: M.empty
   , subsetMembers: M.empty
-  , updateId: Nothing
   }
 
--- Diff
+-- Update
 
-stateUpdate :: BDSnapshot -> BDUpdate -> BDSnapshot
-stateUpdate (BDSnapshot old) (BDUpdate upd) = BDSnapshot $ foldl f old $ M.toList upd
-  where f m (Tuple key mVal) = case mVal of
-          Just val -> M.insert key val m
-          Nothing  -> M.delete key m
+data Edit
+  = SetFacts              Table (Array (Tuple Coord String))
+  | NewCustomYOrdinate    AxisId CustomMemberId
+  | NewCustomZMember      AxisId CustomMemberId String
+  | RenameCustomZMember   AxisId Int            String
+  | DeleteCustomYOrdinate AxisId Int
+  | DeleteCustomZMember   AxisId Int
+  | SelectSubsetZMember   AxisId SubsetMemberId
+  | DeselectSubsetZMember AxisId SubsetMemberId
 
-stateDiff :: BDSnapshot -> BDSnapshot -> BDUpdate
-stateDiff (BDSnapshot old) (BDSnapshot new) = BDUpdate $ forOld $ forNew M.empty
+newtype Update = Update (M.Map Key (Tuple (Maybe String) (Maybe String)))
+
+invertUpdate :: Update -> Update
+invertUpdate (Update m) = Update $ foldl invert M.empty $ M.toList m
   where
-    forNew m = foldl fNew m $ M.toList new
-    fNew m (Tuple key newVal) = case M.lookup key old of
-      Nothing     -> if newVal == ""
-                       then m
-                       else M.insert key (Just newVal) m
-      Just oldVal -> if oldVal == newVal
-                       then if newVal == ""
-                              then M.insert key Nothing m
-                              else m
-                       else if newVal == ""
-                              then M.insert key Nothing m
-                              else M.insert key (Just newVal) m
-    forOld m = foldl fOld m $ M.keys old
-    fOld m key = case M.lookup key new of
-      Nothing -> M.insert key Nothing m
-      Just _ -> m
+    invert m' (Tuple key (Tuple old new)) = M.insert key (Tuple new old) m'
+
+editToUpdate :: Edit -> BusinessData -> Maybe Update
+editToUpdate bde bd = case bde of
+  SetFacts table changes ->
+    let m = foldl (go table) M.empty changes
+    in  if m == M.empty
+          then Nothing
+          else Just $ Update m
+  NewCustomYOrdinate axId cm ->
+    single (KeyCustomYOrdinate axId cm) (Just "customY")
+  NewCustomZMember axId cm name ->
+    single (KeyCustomZMember axId cm) (Just name)
+  RenameCustomZMember axId index name -> do
+    (Tuple cm _) <- getCustomMembers axId bd !! index
+    single (KeyCustomZMember axId cm) (Just name)
+  DeleteCustomYOrdinate axId index -> do
+    (Tuple cm _) <- getCustomMembers axId bd !! index
+    single (KeyCustomYOrdinate axId cm) Nothing
+  DeleteCustomZMember axId index -> do
+    (Tuple cm _) <- getCustomMembers axId bd !! index
+    single (KeyCustomZMember axId cm) Nothing
+  SelectSubsetZMember axId sm ->
+    single (KeySubsetZSelected axId sm) (Just "selected")
+  DeselectSubsetZMember axId sm ->
+    single (KeySubsetZSelected axId sm) Nothing
+  where
+    go table m (Tuple coord val) = case getKey coord table bd of
+      Just key ->
+        let old = getBDValue key bd
+            new = if val == "" then Nothing else Just val
+        in  if  old == new
+              then m
+              else M.insert key (Tuple old new) m
+      Nothing -> m
+    single key new =
+      let old = getBDValue key bd in
+      if  old == new
+        then Nothing
+        else Just $ Update $ M.singleton key (Tuple old new)
+
+update :: Update -> BusinessData -> BusinessData
+update bdu bd = emptyBusinessData
 
 -- Interface
-
-genBDUpdateMsg :: BusinessData -> Maybe BDUpdateMsg
-genBDUpdateMsg bd = diff <$> bd ^. _updateId
-  where diff (Tuple fv _) = BDUpdateMsg
-          { parentUpdateId: fv
-          , values: generateDiff bd
-          }
-
-generateDiff :: BusinessData -> BDUpdate
-generateDiff bd = stateDiff (bd ^. _serverState) (bd ^. _snapshot)
 
 doesSheetExist :: Table -> BusinessData -> S -> Boolean
 doesSheetExist (Table tbl) bd (S s) =
@@ -264,10 +273,108 @@ isSubsetMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
 isSubsetMemberSelected axId memId bd =
   isJust $ getBDValue (KeySubsetZSelected axId memId) bd
 
+-- Update custom members
+
+newCustomYMember :: AxisId -> CustomMemberId -> BusinessData -> BusinessData
+newCustomYMember axId memId bd =
+  bd # execState do
+    _snapshot .. at (KeyCustomYOrdinate axId memId) .= Just "customY"
+    let newMem = Tuple memId "customY"
+        alterArray Nothing =  Just [newMem]
+        alterArray (Just a) = Just $ snoc a newMem
+    _customMembers %= M.alter alterArray axId
+
+newCustomZMember :: AxisId -> CustomMemberId -> String -> BusinessData -> BusinessData
+newCustomZMember axId memId name bd =
+  bd # execState do
+    _snapshot .. at (KeyCustomZMember axId memId) .= Just name
+    let newMem = Tuple memId name
+        alterArray Nothing =  Just [newMem]
+        alterArray (Just a) = Just $ snoc a newMem
+    _customMembers %= M.alter alterArray axId
+
+renameCustomZMember :: AxisId -> Int -> String -> BusinessData -> BusinessData
+renameCustomZMember axId index name bd =
+  case (getCustomMembers axId bd) !! index of
+    Nothing -> bd
+    Just (Tuple i _) -> bd # execState do
+      _snapshot .. at (KeyCustomZMember axId i) .= Just name
+      let newMem = Tuple i name
+          updateArray a = case updateAt index newMem a of
+            Nothing -> Just a
+            Just new -> Just new
+      _customMembers %= M.update updateArray axId
+
+deleteCustomYMember :: AxisId -> Int -> BusinessData -> BusinessData
+deleteCustomYMember axId index bd =
+  case (getCustomMembers axId bd) !! index of
+    Nothing -> bd
+    Just (Tuple i _) -> bd # execState do
+      _snapshot .. at (KeyCustomYOrdinate axId i) .= Nothing
+      let updateArray a = case deleteAt index a of
+            Nothing -> Just a
+            Just new -> Just new
+      _customMembers %= M.update updateArray axId
+
+deleteCustomZMember :: AxisId -> Int -> BusinessData -> BusinessData
+deleteCustomZMember axId index bd =
+  case (getCustomMembers axId bd) !! index of
+    Nothing -> bd
+    Just (Tuple i _) -> bd # execState do
+      _snapshot .. at (KeyCustomZMember axId i) .= Nothing
+      let updateArray a = case deleteAt index a of
+            Nothing -> Just a
+            Just new -> Just new
+      _customMembers %= M.update updateArray axId
+
+selectSubsetZMember :: AxisId -> SubsetMemberId -> BusinessData -> BusinessData
+selectSubsetZMember axId memId bd =
+  case bd ^. _snapshot .. at (KeySubsetZSelected axId memId) of
+    Just _ -> bd
+    Nothing -> bd # execState do
+      _snapshot .. at (KeySubsetZSelected axId memId) .= Just "selected"
+      let newMem = Tuple memId "selected"
+          alterArray Nothing =  Just [newMem]
+          alterArray (Just a) = Just $ snoc a newMem
+      _subsetMembers %= M.alter alterArray axId
+
+deselectSubsetZMember :: AxisId -> SubsetMemberId -> BusinessData -> BusinessData
+deselectSubsetZMember axId memId bd =
+  case bd ^. _snapshot .. at (KeySubsetZSelected axId memId) of
+    Nothing -> bd
+    Just _ -> bd # execState do
+      _snapshot .. at (KeySubsetZSelected axId memId) .= Nothing
+      let updateArray a = Just $ filter (\(Tuple i _) -> i /= memId) a
+      _subsetMembers %= M.update updateArray axId
+
+  -- SnapshotLoaded snp@(BDSnapshot m) ->
+  --   bd # execState do
+  --     _snapshot      .= snp
+  --     _customMembers .= M.empty
+  --     _subsetMembers .= M.empty
+  --     --
+  --     for_ (M.toList m) \(Tuple k name) -> case k of
+  --       (CustomYMemberKey modId axId memId) -> do
+  --         let newMem = Tuple memId name
+  --             alterArray Nothing =  Just [newMem]
+  --             alterArray (Just a) = Just $ snoc a newMem
+  --         _customMembers %= M.alter alterArray (Tuple modId axId)
+  --       (CustomZMemberKey modId axId memId) -> do
+  --         let newMem = Tuple memId name
+  --             alterArray Nothing =  Just [newMem]
+  --             alterArray (Just a) = Just $ snoc a newMem
+  --         _customMembers %= M.alter alterArray (Tuple modId axId)
+  --       (SubsetZMemberKey modId axId memId) -> do
+  --         let newMem = Tuple memId name
+  --             alterArray Nothing =  Just [newMem]
+  --             alterArray (Just a) = Just $ snoc a newMem
+  --         _subsetMembers %= M.alter alterArray (Tuple modId axId)
+  --       _ -> pure unit
+
 -- Internal helper
 
 getBDValue :: Key -> BusinessData -> Maybe String
-getBDValue key bd = bd ^. _snapshot .. _BDSnapshot .. at key
+getBDValue key bd = bd ^. _snapshot .. at key
 
 setBDValue :: Key -> String -> BusinessData -> BusinessData
-setBDValue key value bd = bd # _snapshot .. _BDSnapshot .. at key .~ Just value
+setBDValue key value bd = bd # _snapshot .. at key .~ Just value

@@ -27,7 +27,7 @@ import qualified Handsontable.Types as Hot
 
 import Types
 import Api.Schema.Table
-import Lib.Template
+import Lib.Table
 import Lib.BusinessData
 
 import Component.Handsontable.Utils

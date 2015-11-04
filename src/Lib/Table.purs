@@ -1,4 +1,4 @@
-module Lib.Template where
+module Lib.Table where
 
 import Prelude
 

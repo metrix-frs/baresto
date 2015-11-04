@@ -98,10 +98,12 @@ app = parentComponent render eval
   where
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
     render st = H.div_
-      [ H.slot' cpErrorBox ErrorBoxSlot \_ -> { component: ErrorBox.errorBox, initialState: ErrorBox.initialState }
+      [ H.slot' cpErrorBox ErrorBoxSlot \_ ->
+        { component: ErrorBox.errorBox, initialState: ErrorBox.initialState }
       -- TODO: about box?
       , H.div [ cls "status" ] $
-        [ H.slot' cpSpinner SpinnerSlot \_ -> { component: Spinner.spinner, initialState: Spinner.initialState }
+        [ H.slot' cpSpinner SpinnerSlot \_ ->
+          { component: Spinner.spinner, initialState: Spinner.initialState }
         ] <>  case st.authStatus of
                 Authenticated cId ->
                   [ H.div [ cls "menu" ]
@@ -117,7 +119,8 @@ app = parentComponent render eval
           -- TODO: about button together with logout in menu?
       , case st.authStatus of
           Authenticated _ ->
-            H.slot' cpBody BodySlot \_ -> { component: Body.body, initialState: installedState Body.initialState }
+            H.slot' cpBody BodySlot \_ ->
+            { component: Body.body, initialState: installedState Body.initialState }
           LoggedOut ->
             renderAuthForm st.customerId st.licenseKey st.authError
           CheckingLicense -> H.div_
@@ -132,6 +135,7 @@ app = parentComponent render eval
         Nothing ->
           modify _{ authStatus = LoggedOut }
       pure next
+
     eval (Authenticate next) = do
       st <- get
       apiCallParent (login st.customerId st.licenseKey) \(LoginResponse res) ->
@@ -140,12 +144,15 @@ app = parentComponent render eval
                        , authError = Nothing }
           else modify _{ authError = Just res.lrMessage }
       pure next
+
     eval (SetCustomerId customerId next) = do
       modify _{ customerId = customerId}
       pure next
+
     eval (SetLicenseKey key next) = do
       modify _{ licenseKey = key }
       pure next
+
     eval (LogOut next) = do
       apiCallParent logout \_ ->
         modify _{ authStatus = LoggedOut

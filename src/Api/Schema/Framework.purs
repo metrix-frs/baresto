@@ -1,4 +1,4 @@
-module Api.Schema.Selector where
+module Api.Schema.Framework where
 
 import Prelude
 

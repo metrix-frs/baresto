@@ -22,7 +22,7 @@ import Halogen.Component
 import Types
 
 import Api.Common
-import Api.Schema.Selector
+import Api.Schema.Framework
 import Api.Schema.Module
 import Api.Schema.BusinessData
 import Api.Schema.Auth

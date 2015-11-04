@@ -31,7 +31,7 @@ import Utils (getEntropy, makeIndexed, cls)
 
 import Types
 import Api.Schema.Table
-import Lib.Template
+import Lib.Table
 import Lib.BusinessData
 
 import Component.Handsontable.Options
@@ -55,8 +55,8 @@ data Query a
   | DeleteRow Int String a
   | Rebuild S Table BusinessData a
 
-table :: forall eff. S -> Table -> BusinessData -> Component State Query Metrix
-table initialS initialTable initialBD = component render eval
+handsontable :: Component State Query Metrix
+handsontable = component render eval
   where
 
     render :: Render State Query
@@ -69,14 +69,17 @@ table initialS initialTable initialBD = component render eval
     eval (Init el next) = do
       hot <- liftEff' $ Hot.handsontableNode el { data: [] }
       modify _{ hotInstance = Just hot }
-      build initialS initialTable initialBD hot
       pure next
+
     eval (Edit changes next) = do
       pure next
+
     eval (AddRow name next) = do
       pure next
+
     eval (DeleteRow index name next) = do
       pure next
+
     eval (Rebuild s table bd next) = do
       mHot <- gets _.hotInstance
       case mHot of
@@ -84,7 +87,7 @@ table initialS initialTable initialBD = component render eval
         Just hot -> build s table bd hot
       pure next
 
-build :: forall eff. S -> Table -> BusinessData -> Hot.Handsontable String -> ComponentDSL State Query Metrix Unit
+build :: S -> Table -> BusinessData -> Hot.Handsontable String -> ComponentDSL State Query Metrix Unit
 build s table@(Table tbl) bd hot = do
   case getFactTable s table bd of
     Just vals | length vals > 0 -> do

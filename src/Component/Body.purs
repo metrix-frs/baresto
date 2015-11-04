@@ -65,9 +65,13 @@ body = parentComponent render eval
       FileSelector ->
         [ H.button [ E.onClick (E.input_ $ SetCurrentView FileViewer) ]
           [ H.text "View" ]
-        , H.slot' cpSelector SelectorSlot \_ -> { component: FS.selector, initialState: FS.initialState } ]
+        , H.slot' cpSelector SelectorSlot \_ ->
+          { component: FS.selector, initialState: FS.initialState }
+        ]
       FileViewer ->
-        [ H.slot' cpViewer ViewerSlot \_ -> { component: FV.viewer, initialState: installedState FV.initialState } ]
+        [ H.slot' cpViewer ViewerSlot \_ ->
+          { component: FV.viewer, initialState: installedState FV.initialState }
+        ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (SetCurrentView view next) = do
