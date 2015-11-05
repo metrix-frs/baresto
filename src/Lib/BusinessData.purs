@@ -10,7 +10,6 @@ module Lib.BusinessData
 , _customMembers
 , _subsetMembers
 , Edit(..)
-, Update()
 , invertUpdate
 , editToUpdate
 , applyUpdate
@@ -103,8 +102,6 @@ data Edit
   | DeleteCustomZMember   AxisId Int
   | SelectSubsetZMember   AxisId SubsetMemberId
   | DeselectSubsetZMember AxisId SubsetMemberId
-
-newtype Update = Update (M.Map Key (Tuple (Maybe String) (Maybe String)))
 
 invertUpdate :: Update -> Update
 invertUpdate (Update m) = Update $ foldl invert M.empty $ M.toList m

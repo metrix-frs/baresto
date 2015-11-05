@@ -35,10 +35,14 @@ push x (Queue q) = runExists go q
     go :: forall q. QueueF a q -> Queue a
     go (QueueF q) = Queue $ mkExists $ QueueF $ q { state = q.push x q.state }
 
-pop :: forall a. Queue a -> Maybe (Tuple (Queue a) a)
-pop (Queue q) = runExists go q
+pop :: forall a. Queue a -> { state :: Queue a, value :: Maybe a }
+pop queue@(Queue q') = runExists go q'
   where
-    go :: forall q. QueueF a q -> Maybe (Tuple (Queue a) a)
+    go :: forall q. QueueF a q -> { state :: Queue a, value :: Maybe a }
     go (QueueF q) = case q.pop q.state of
-      Nothing -> Nothing
-      Just (Tuple newQ el) -> Just $ Tuple (Queue $ mkExists $ QueueF $ q { state = newQ }) el
+      Nothing ->
+        { state: queue
+        , value: Nothing }
+      Just (Tuple newQ el) ->
+        { state: Queue $ mkExists $ QueueF $ q { state = newQ }
+        , value: Just el }

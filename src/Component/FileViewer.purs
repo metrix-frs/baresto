@@ -20,7 +20,10 @@ import qualified Component.ModuleBrowser as MB
 import qualified Component.Handsontable as Hot
 
 import Optic.Core
+import Optic.Monad.Setter
+import Optic.Refractor.Prism
 
+import Api
 import Api.Schema.Table
 import Api.Schema.BusinessData
 import Lib.Table
@@ -55,24 +58,34 @@ cpHot = cpR
 --
 
 type State =
-  { businessData :: BusinessData
-  , selectedSheet :: S
-  , file :: Maybe File
-  , table :: Maybe Table
-  , queue :: Maybe (Ref (Queue Update))
+  { fileData :: Maybe
+    { businessData :: BusinessData
+    , fileId :: FileId
+    , lastUpdateId :: UpdateId
+    , lastSaved :: UTCTime
+    , queueRef :: Ref (Queue Update)
+    }
+  , tableData :: Maybe
+    { table :: Table
+    , selectedSheet :: S
+    }
   }
+
+_fileData :: LensP State (Maybe _)
+_fileData = lens _.fileData _{ fileData = _ }
+
+_tableData :: LensP State (Maybe _)
+_tableData = lens _.tableData _{ tableData = _ }
 
 initialState :: State
 initialState =
-  { businessData: emptyBusinessData
-  , selectedSheet: S 0
-  , file: Nothing
-  , table: Nothing
-  , queue: Nothing
+  { fileData: Nothing
+  , tableData: Nothing
   }
 
 data Query a
-  = SelectSheet S a
+  = Boot ModuleId FileId a
+  | SelectSheet S a
   | AddSheet String a
   | RenameSheet Int String a
   | DeleteSheet Int a
@@ -112,7 +125,7 @@ viewer = parentComponent' render eval peek
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (SelectSheet s next) = do
-      modify _{ selectedSheet = s }
+      _tableData .. _Just %= _{ selectedSheet = s }
       pure next
 
     eval (AddSheet name next) = do
@@ -155,20 +168,37 @@ viewer = parentComponent' render eval peek
         _ -> pure unit
       pure next
 
-    withTable action = do
-      mTable <- gets _.table
-      case mTable of
-        Nothing -> pure unit
-        Just table -> action table
-
     processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    processEdit _ = pure unit
+    processEdit edit = withFileData \fd ->
+        case editToUpdate edit fd.businessData of
+          Nothing -> pure unit
+          Just update -> do
+            liftH $ liftEff' $ modifyRef fd.queueRef $ push update
+            post fd.queueRef
+      where
+        post queueRef = withFileData \fd -> do
+          mUpdate <- liftH $ liftEff' $ modifyRef' queueRef pop
+          case mUpdate of
+            Nothing -> pure unit
+            Just update -> do
+              let payload = UpdatePost
+                    { updatePostParentId: fd.lastUpdateId
+                    , updatePostFileId: fd.fileId
+                    , updatePostUpdate: update
+                    }
+              apiCallParent (postUpdate payload) \(UpdateConfirmation conf) -> do
+                _fileData .. _Just %= _{ lastUpdateId = conf.updateConfUpdateId
+                                       , lastSaved = conf.updateConfCreated }
+                post queueRef
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    rebuildHot = withTable \table -> do
-      bd <- gets _.businessData
-      s <- gets _.selectedSheet
-      void $ query' cpHot HotSlot (action $ Hot.Rebuild s table bd)
+    rebuildHot = do
+      mTableData <- gets _.tableData
+      case mTableData of
+        Nothing -> pure unit
+        Just td -> withFileData \fd -> do
+          let act = Hot.Rebuild td.selectedSheet td.table fd.businessData
+          void $ query' cpHot HotSlot $ action act
 
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
@@ -191,9 +221,22 @@ viewer = parentComponent' render eval peek
             _ -> pure unit
       peek' cpModuleBrowser child \s q -> case q of
         MB.SelectTable tId _ ->
-          apiCallParent (getTable )
+          -- TODO where is moduleId?
+          -- apiCallParent (getTable )
           pure unit
         _ -> pure unit
+
+    withTable action = do
+      mTableData <- gets _.tableData
+      case mTableData of
+        Nothing -> pure unit
+        Just tableData -> action tableData.table
+
+    withFileData action = do
+      mFileData <- gets _.fileData
+      case mFileData of
+        Nothing -> pure unit
+        Just fileData -> action fileData
 
 viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
 viewSheetSelector st = H.div_ []
