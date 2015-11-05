@@ -16,11 +16,14 @@ import qualified Halogen.HTML.Events.Indexed as E
 import qualified Component.ModuleBrowser as MB
 import qualified Component.Handsontable as Hot
 
+import Optic.Core
+
 import Api.Schema.Table
 import Lib.Table
 import Lib.BusinessData
 
 import Types
+import Utils
 
 data ModuleBrowserSlot = ModuleBrowserSlot
 
@@ -60,17 +63,17 @@ initialState =
   }
 
 data Query a
-  = SelectSheet S
+  = SelectSheet S a
 
-type StateP = InstalledState State MB.State Query MB.Query Metrix ModuleBrowserSlot
-type QueryP = Coproduct Query (ChildF ModuleBrowserSlot MB.Query)
+type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
+type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
 viewer :: Component StateP QueryP Metrix
 viewer = parentComponent render eval
   where
 
-    render :: RenderParent State MB.State Query MB.Query Metrix ModuleBrowserSlot
-    render _ = H.div [ cls "viewer" ]
+    render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
+    render st = H.div [ cls "viewer" ]
       [ H.div [ cls "vieverBar" ]
         [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
           { component: MB.moduleBrowser 0, initialState: MB.initialState }
@@ -81,7 +84,7 @@ viewer = parentComponent render eval
             [ H.text "subtitle" ]
           ]
         , H.div [ cls "sheetSelector" ]
-          [ viewSheetSelector
+          [ viewSheetSelector st
           ]
         , H.div [ cls "fileActions" ]
           [ H.text "File Actions"
@@ -93,7 +96,10 @@ viewer = parentComponent render eval
         ]
       ]
 
-    eval :: EvalParent Query State MB.State Query MB.Query Metrix ModuleBrowserSlot
+    eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (SelectSheet s next) = do
       modify _{ selectedSheet = s }
       pure next
+
+viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
+viewSheetSelector st = H.div_ []

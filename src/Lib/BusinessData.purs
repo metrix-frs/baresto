@@ -9,6 +9,11 @@ module Lib.BusinessData
 , _snapshot
 , _customMembers
 , _subsetMembers
+, Edit(..)
+, Update()
+, invertUpdate
+, editToUpdate
+, applyUpdate
 , doesSheetExist
 , gridHeight
 , getCellTable
@@ -39,6 +44,7 @@ import Optic.Refractor.Prism (_Just)
 import Optic.Fold ((^?))
 import Optic.Monad.Setter
 import Optic.Monad.Getter
+import Optic.Iso (non)
 
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode
@@ -144,8 +150,35 @@ editToUpdate bde bd = case bde of
         then Nothing
         else Just $ Update $ M.singleton key (Tuple old new)
 
-update :: Update -> BusinessData -> BusinessData
-update bdu bd = emptyBusinessData
+applyUpdate :: Update -> BusinessData -> BusinessData
+applyUpdate (Update m) bd' = foldl go bd' $ M.toList m
+  where
+    go bd (Tuple key (Tuple old new)) = bd # execState do
+      _snapshot .. at key .= new
+      case key of
+        KeyCustomYOrdinate axId cm ->
+          _customMembers .. at axId .. non [] %= case new of
+            Just newVal ->
+              flip snoc (Tuple cm newVal)
+            Nothing ->
+              filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
+        KeyCustomZMember axId cm ->
+          _customMembers .. at axId .. non [] %= case Tuple old new of
+            Tuple (Just _) (Just newVal) ->
+              map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' newVal) else (Tuple cm' val))
+            Tuple Nothing (Just newVal) ->
+              flip snoc (Tuple cm newVal)
+            Tuple (Just _) Nothing ->
+              filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
+            Tuple Nothing Nothing ->
+              id
+        KeySubsetZSelected axId sm ->
+          _subsetMembers .. at axId .. non [] %= case new of
+            Just newVal ->
+              flip snoc (Tuple sm newVal)
+            Nothing ->
+              filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
+        _ -> pure unit
 
 -- Interface
 
@@ -272,104 +305,6 @@ getSubsetMembers axId bd =
 isSubsetMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
 isSubsetMemberSelected axId memId bd =
   isJust $ getBDValue (KeySubsetZSelected axId memId) bd
-
--- Update custom members
-
-newCustomYMember :: AxisId -> CustomMemberId -> BusinessData -> BusinessData
-newCustomYMember axId memId bd =
-  bd # execState do
-    _snapshot .. at (KeyCustomYOrdinate axId memId) .= Just "customY"
-    let newMem = Tuple memId "customY"
-        alterArray Nothing =  Just [newMem]
-        alterArray (Just a) = Just $ snoc a newMem
-    _customMembers %= M.alter alterArray axId
-
-newCustomZMember :: AxisId -> CustomMemberId -> String -> BusinessData -> BusinessData
-newCustomZMember axId memId name bd =
-  bd # execState do
-    _snapshot .. at (KeyCustomZMember axId memId) .= Just name
-    let newMem = Tuple memId name
-        alterArray Nothing =  Just [newMem]
-        alterArray (Just a) = Just $ snoc a newMem
-    _customMembers %= M.alter alterArray axId
-
-renameCustomZMember :: AxisId -> Int -> String -> BusinessData -> BusinessData
-renameCustomZMember axId index name bd =
-  case (getCustomMembers axId bd) !! index of
-    Nothing -> bd
-    Just (Tuple i _) -> bd # execState do
-      _snapshot .. at (KeyCustomZMember axId i) .= Just name
-      let newMem = Tuple i name
-          updateArray a = case updateAt index newMem a of
-            Nothing -> Just a
-            Just new -> Just new
-      _customMembers %= M.update updateArray axId
-
-deleteCustomYMember :: AxisId -> Int -> BusinessData -> BusinessData
-deleteCustomYMember axId index bd =
-  case (getCustomMembers axId bd) !! index of
-    Nothing -> bd
-    Just (Tuple i _) -> bd # execState do
-      _snapshot .. at (KeyCustomYOrdinate axId i) .= Nothing
-      let updateArray a = case deleteAt index a of
-            Nothing -> Just a
-            Just new -> Just new
-      _customMembers %= M.update updateArray axId
-
-deleteCustomZMember :: AxisId -> Int -> BusinessData -> BusinessData
-deleteCustomZMember axId index bd =
-  case (getCustomMembers axId bd) !! index of
-    Nothing -> bd
-    Just (Tuple i _) -> bd # execState do
-      _snapshot .. at (KeyCustomZMember axId i) .= Nothing
-      let updateArray a = case deleteAt index a of
-            Nothing -> Just a
-            Just new -> Just new
-      _customMembers %= M.update updateArray axId
-
-selectSubsetZMember :: AxisId -> SubsetMemberId -> BusinessData -> BusinessData
-selectSubsetZMember axId memId bd =
-  case bd ^. _snapshot .. at (KeySubsetZSelected axId memId) of
-    Just _ -> bd
-    Nothing -> bd # execState do
-      _snapshot .. at (KeySubsetZSelected axId memId) .= Just "selected"
-      let newMem = Tuple memId "selected"
-          alterArray Nothing =  Just [newMem]
-          alterArray (Just a) = Just $ snoc a newMem
-      _subsetMembers %= M.alter alterArray axId
-
-deselectSubsetZMember :: AxisId -> SubsetMemberId -> BusinessData -> BusinessData
-deselectSubsetZMember axId memId bd =
-  case bd ^. _snapshot .. at (KeySubsetZSelected axId memId) of
-    Nothing -> bd
-    Just _ -> bd # execState do
-      _snapshot .. at (KeySubsetZSelected axId memId) .= Nothing
-      let updateArray a = Just $ filter (\(Tuple i _) -> i /= memId) a
-      _subsetMembers %= M.update updateArray axId
-
-  -- SnapshotLoaded snp@(BDSnapshot m) ->
-  --   bd # execState do
-  --     _snapshot      .= snp
-  --     _customMembers .= M.empty
-  --     _subsetMembers .= M.empty
-  --     --
-  --     for_ (M.toList m) \(Tuple k name) -> case k of
-  --       (CustomYMemberKey modId axId memId) -> do
-  --         let newMem = Tuple memId name
-  --             alterArray Nothing =  Just [newMem]
-  --             alterArray (Just a) = Just $ snoc a newMem
-  --         _customMembers %= M.alter alterArray (Tuple modId axId)
-  --       (CustomZMemberKey modId axId memId) -> do
-  --         let newMem = Tuple memId name
-  --             alterArray Nothing =  Just [newMem]
-  --             alterArray (Just a) = Just $ snoc a newMem
-  --         _customMembers %= M.alter alterArray (Tuple modId axId)
-  --       (SubsetZMemberKey modId axId memId) -> do
-  --         let newMem = Tuple memId name
-  --             alterArray Nothing =  Just [newMem]
-  --             alterArray (Just a) = Just $ snoc a newMem
-  --         _subsetMembers %= M.alter alterArray (Tuple modId axId)
-  --       _ -> pure unit
 
 -- Internal helper
 
