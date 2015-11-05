@@ -3,6 +3,7 @@ module Types where
 import Control.Monad.Eff.Console (CONSOLE())
 import Control.Monad.Eff.Exception (EXCEPTION())
 import Control.Monad.Eff.Random (RANDOM())
+import Control.Monad.Eff.Ref (REF())
 
 import Control.Monad.Aff (Aff())
 import Control.Monad.Aff.AVar (AVAR())
@@ -23,6 +24,7 @@ type Effects eff =
   , ajax :: AJAX
   , hot :: HOT
   , random :: RANDOM
+  , ref :: REF
   | eff )
 
 type Metrix = Aff (Effects ())

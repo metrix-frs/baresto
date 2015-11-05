@@ -54,11 +54,11 @@ apiCallParent call onSuccess = do
 
 --
 
-getTemplate :: forall e. ModuleId -> TemplateId -> Aff (Effects e) Template
-getTemplate modId templId = getJsonResponse "Could not fetch template." $
-  get $ "/api/v0.1/template/get/" <> show modId <> "/" <> show templId
+getTable :: forall e. ModuleId -> TableId -> Aff (Effects e) Table
+getTable modId tableId = getJsonResponse "Could not fetch table." $
+  get $ "/api/v0.1/table/get/" <> show modId <> "/" <> show tableId
 
-getHeader :: forall e. Aff (Effects e) Template
+getHeader :: forall e. Aff (Effects e) Table
 getHeader = getJsonResponse "Could not fetch header." $
   get $ "/api/v0.1/template/header/DE"
 

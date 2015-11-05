@@ -27,7 +27,7 @@ import qualified Handsontable       as Hot
 import qualified Handsontable.Types as Hot
 import qualified Handsontable.Hooks as Hot
 
-import Utils (getEntropy, makeIndexed, cls)
+import Utils (getEntropy, getIndices, cls)
 
 import Types
 import Api.Schema.Table
@@ -51,8 +51,8 @@ type Changes = Array (Tuple Coord String)
 data Query a
   = Init HTMLElement a
   | Edit Changes a
-  | AddRow String a
-  | DeleteRow Int String a
+  | AddRow a
+  | DeleteRow Int a
   | Rebuild S Table BusinessData a
 
 handsontable :: Component State Query Metrix
@@ -74,10 +74,10 @@ handsontable = component render eval
     eval (Edit changes next) = do
       pure next
 
-    eval (AddRow name next) = do
+    eval (AddRow next) = do
       pure next
 
-    eval (DeleteRow index name next) = do
+    eval (DeleteRow index next) = do
       pure next
 
     eval (Rebuild s table bd next) = do
@@ -115,11 +115,10 @@ build s table@(Table tbl) bd hot = do
     YAxisClosed _ _ -> pure unit
     YAxisCustom axId _ -> do
       subscribe $ eventSource_ (attachClickHandler "#newCustomY") do
-        i <- getEntropy 32
-        pure $ action $ AddRow i
-      for_ (makeIndexed $ getCustomMembers axId bd) \(Tuple i (Tuple memId _)) ->
-        subscribe $ eventSource_ (attachClickHandler ("#delCustomY" <> memId)) do
-          pure $ action $ DeleteRow i memId
+        pure $ action AddRow
+      for_ (getIndices $ getCustomMembers axId bd) \i ->
+        subscribe $ eventSource_ (attachClickHandler ("#delCustomY" <> show i)) do
+          pure $ action $ DeleteRow i
 
   -- TODO: try to subscribe to button clicks after rendering of handsontable object
   -- TODO: adjust resize

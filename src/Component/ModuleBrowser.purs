@@ -28,7 +28,7 @@ type State =
   { mod :: Maybe Module
   , open :: Boolean
   , groupOpen :: M.Map TemplateGroupId Boolean
-  , selectedTemplate :: TemplateId
+  , selectedTable :: TableId
   }
 
 _groupOpen :: LensP State (M.Map TemplateGroupId Boolean)
@@ -42,12 +42,12 @@ initialState =
   { mod: Nothing
   , open: true
   , groupOpen: M.empty
-  , selectedTemplate: 0
+  , selectedTable: 0
   }
 
 data Query a
   = Init a
-  | SelectTemplate TemplateId a
+  | SelectTable TableId a
   | ToggleGroupOpen TemplateGroupId a
   | ToggleOpen a
 
@@ -71,8 +71,8 @@ moduleBrowser initialModId = component render eval
           for_ (mod ^. _templateGroups) \g -> do
             _groupOpen .. at (g ^. _templateGroupId) .= Just true
       pure next
-    eval (SelectTemplate tId next) = do
-      modify _{ selectedTemplate = tId }
+    eval (SelectTable tId next) = do
+      modify _{ selectedTable = tId }
       pure next
     eval (ToggleGroupOpen gId next) = do
       modify $ _groupOpen .. at gId .. _Just %~ (not :: Boolean -> Boolean)

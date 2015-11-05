@@ -173,9 +173,9 @@ xOrdsData ords = [whiteData <> (ord <$> ords)]
 yOrdsData :: Table -> BusinessData -> Data
 yOrdsData table@(Table tbl) bd = case tbl.tableYAxis of
     YAxisClosed _ ords -> closed <$> ords
-    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\">+</button>" ]] <> (custom <$> getCustomMembers axId bd)
+    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\">+</button>" ]] <> (custom <$> getIndices (getCustomMembers axId bd))
   where
-    custom (Tuple memId _) = [ "", "<button id=\"delCustomY" <> memId <> "\">&#8211;</button>" ]
+    custom i = [ "", "<button id=\"delCustomY" <> show i <> "\">&#8211;</button>" ]
     closed (Ordinate o) = if o.ordinateIsAbstract
       then [ indent o.ordinateLevel (o.ordinateCode <> " " <> o.ordinateLabel) ]
       else [ indent o.ordinateLevel o.ordinateLabel, o.ordinateCode ]
