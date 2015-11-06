@@ -15,15 +15,18 @@ initialState :: State
 initialState = State
 
 data Query a
-  = Foo a
+  = SelectFile ModuleId FileId a
 
 selector :: Component State Query Metrix
 selector = component render eval
   where
 
     render :: Render State Query
-    render _ = H.div_ []
+    render _ = H.div_
+      [ H.button [ E.onClick (E.input_ $ SelectFile 35 1) ]
+        [ H.text "Open mock file" ]
+      ]
 
     eval :: Eval Query State Query Metrix
-    eval (Foo next) = do
+    eval (SelectFile _ _ next) = do
       pure next

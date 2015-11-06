@@ -112,7 +112,7 @@ app = parentComponent render eval
                       [ H.text "Logout" ]
                     ]
                   , H.div [ cls "license" ]
-                    [ H.text $ "Using license for customer id " <> cId <> ". " ]
+                    [ H.text $ "Using license for customer: " <> cId ]
                   ]
                 _ ->
                   []

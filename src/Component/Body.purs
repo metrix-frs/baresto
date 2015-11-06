@@ -2,8 +2,9 @@ module Component.Body where
 
 import Prelude
 
+import Data.Maybe
 import Data.Either
-import Data.Functor.Coproduct (Coproduct())
+import Data.Functor.Coproduct (Coproduct(), left)
 import Data.Generic (Generic, gEq, gCompare)
 
 import           Halogen
@@ -23,7 +24,7 @@ derive instance genericSelectorSlot :: Generic SelectorSlot
 instance eqSelectorSlot :: Eq SelectorSlot where eq = gEq
 instance ordSelectorSlot :: Ord SelectorSlot where compare = gCompare
 
-data ViewerSlot = ViewerSlot
+data ViewerSlot = ViewerSlot ModuleId FileId
 
 derive instance genericViewerSlot :: Generic ViewerSlot
 instance eqViewerSlot :: Eq ViewerSlot where eq = gEq
@@ -43,37 +44,46 @@ cpViewer = cpR
 
 data CurrentView
   = FileSelector
-  | FileViewer
+  | FileViewer ModuleId FileId
 
-type State = CurrentView
+type State =
+  { currentView :: CurrentView
+  , msg :: String
+  }
 
 initialState :: State
-initialState = FileSelector
+initialState =
+  { currentView: FileSelector
+  , msg: "ss"
+  }
 
 type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
 data Query a
-  = SetCurrentView CurrentView a
+  = Foo a
 
 body :: Component StateP QueryP Metrix
-body = parentComponent render eval
+body = parentComponent' render eval peek
   where
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render view = H.div_ $ case view of
+    render st = H.div_ $ case st.currentView of
       FileSelector ->
-        [ H.button [ E.onClick (E.input_ $ SetCurrentView FileViewer) ]
-          [ H.text "View" ]
-        , H.slot' cpSelector SelectorSlot \_ ->
+        [ H.slot' cpSelector SelectorSlot \_ ->
           { component: FS.selector, initialState: FS.initialState }
         ]
-      FileViewer ->
-        [ H.slot' cpViewer ViewerSlot \_ ->
-          { component: FV.viewer, initialState: installedState FV.initialState }
+      FileViewer modId fileId ->
+        [ H.slot' cpViewer (ViewerSlot modId fileId) \_ ->
+          { component: FV.viewer modId fileId, initialState: installedState FV.initialState }
         ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
-    eval (SetCurrentView view next) = do
-      modify $ const view
+    eval (Foo next) = do
       pure next
+
+    peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
+    peek child = do
+      FV.peek' cpSelector child \s q -> case q of
+        FS.SelectFile modId fileId _ ->
+          modify _{ currentView = FileViewer modId fileId }

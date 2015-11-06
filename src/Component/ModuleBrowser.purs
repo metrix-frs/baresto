@@ -46,26 +46,25 @@ initialState =
   }
 
 data Query a
-  = Init a
+  = Boot ModuleId a
   | SelectTable TableId a
   | ToggleGroupOpen TemplateGroupId a
   | ToggleOpen a
 
-moduleBrowser :: ModuleId -> Component State Query Metrix
-moduleBrowser initialModId = component render eval
+moduleBrowser :: Component State Query Metrix
+moduleBrowser = component render eval
   where
 
     render :: Render State Query
     render st = H.div
       [ cls "moduleBrowser"
-      , P.initializer \_ -> action Init
       ]
       [ H.text "foo"
       ]
 
     eval :: Eval Query State Query Metrix
-    eval (Init next) = do
-      apiCall (getModule initialModId) \mod -> do
+    eval (Boot modId next) = do
+      apiCall (getModule modId) \mod -> do
         modify $ execState do
           _mod .= Just mod
           for_ (mod ^. _templateGroups) \g -> do

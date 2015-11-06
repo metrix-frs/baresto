@@ -2,7 +2,8 @@ module Component.FileViewer where
 
 import Prelude
 
-import Control.Monad.Eff.Ref
+import Control.Monad.Aff (attempt)
+import Control.Monad.Aff.AVar
 
 import Data.Either
 import Data.Maybe
@@ -58,15 +59,16 @@ cpHot = cpR
 --
 
 type State =
-  { fileData :: Maybe
-    { businessData :: BusinessData
-    , fileId :: FileId
-    , lastUpdateId :: UpdateId
-    , lastSaved :: UTCTime
-    , queueRef :: Ref (Queue Update)
+  { fileData        :: Maybe
+    { businessData  :: BusinessData
+    , fileId        :: FileId
+    , moduleId      :: ModuleId
+    , lastUpdateId  :: UpdateId
+    , lastSaved     :: UTCTime
+    , queue         :: AVar Update
     }
-  , tableData :: Maybe
-    { table :: Table
+  , tableData       :: Maybe
+    { table         :: Table
     , selectedSheet :: S
     }
   }
@@ -83,8 +85,14 @@ initialState =
   , tableData: Nothing
   }
 
+-- TODO: use this in slot as soon as psc #1443 is fixed
+type Props =
+  { moduleId :: ModuleId
+  , fileId :: FileId
+  }
+
 data Query a
-  = Boot ModuleId FileId a
+  = Init a
   | SelectSheet S a
   | AddSheet String a
   | RenameSheet Int String a
@@ -95,15 +103,18 @@ data Query a
 type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
-viewer :: Component StateP QueryP Metrix
-viewer = parentComponent' render eval peek
+viewer :: ModuleId -> FileId -> Component StateP QueryP Metrix
+viewer propModId propFileId = parentComponent' render eval peek
   where
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render st = H.div [ cls "viewer" ]
+    render st = H.div
+      [ cls "viewer"
+      , P.initializer \_ -> action Init
+      ]
       [ H.div [ cls "vieverBar" ]
         [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
-          { component: MB.moduleBrowser 0, initialState: MB.initialState }
+          { component: MB.moduleBrowser, initialState: MB.initialState }
         , H.div [ cls "tableTitle" ]
           [ H.h1_
             [ H.text "Title"]
@@ -124,8 +135,24 @@ viewer = parentComponent' render eval peek
       ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
+    eval (Init next) = do
+      query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot propModId
+      apiCallParent (getFile propFileId) \(UpdateGet upd) -> do
+        queue <- liftH $ liftAff' makeVar
+        modify $ _{ fileData = Just
+                    { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
+                    , fileId: propFileId
+                    , moduleId: propModId
+                    , lastUpdateId: upd.updateGetId
+                    , lastSaved: upd.updateGetCreated
+                    , queue: queue
+                    }
+                  }
+        postAgent queue
+      pure next
+
     eval (SelectSheet s next) = do
-      _tableData .. _Just %= _{ selectedSheet = s }
+      modify $_tableData .. _Just %~ _{ selectedSheet = s }
       pure next
 
     eval (AddSheet name next) = do
@@ -168,28 +195,32 @@ viewer = parentComponent' render eval peek
         _ -> pure unit
       pure next
 
+    -- TODO not stack-safe? Try to get a `MonadRec` instance and use `forever`
+    postAgent :: AVar Update -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+    postAgent queue = withFileData \fd -> do
+      update <- liftH $ liftAff' $ takeVar queue
+      let payload = UpdatePost
+            { updatePostParentId: fd.lastUpdateId
+            , updatePostFileId: fd.fileId
+            , updatePostUpdate: update
+            }
+      let post = do
+            result <- liftH $ liftAff' $ attempt $ postUpdate payload
+            case result of
+              Left err -> do
+                modify $ _fileData .. _Just %~ _{ lastSaved = "error" }
+                post
+              Right (UpdateConfirmation conf) -> do
+                modify $ _fileData .. _Just %~ _{ lastUpdateId = conf.updateConfUpdateId
+                                                , lastSaved = conf.updateConfCreated }
+      post
+      postAgent queue
+
     processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     processEdit edit = withFileData \fd ->
-        case editToUpdate edit fd.businessData of
-          Nothing -> pure unit
-          Just update -> do
-            liftH $ liftEff' $ modifyRef fd.queueRef $ push update
-            post fd.queueRef
-      where
-        post queueRef = withFileData \fd -> do
-          mUpdate <- liftH $ liftEff' $ modifyRef' queueRef pop
-          case mUpdate of
-            Nothing -> pure unit
-            Just update -> do
-              let payload = UpdatePost
-                    { updatePostParentId: fd.lastUpdateId
-                    , updatePostFileId: fd.fileId
-                    , updatePostUpdate: update
-                    }
-              apiCallParent (postUpdate payload) \(UpdateConfirmation conf) -> do
-                _fileData .. _Just %= _{ lastUpdateId = conf.updateConfUpdateId
-                                       , lastSaved = conf.updateConfCreated }
-                post queueRef
+      case editToUpdate edit fd.businessData of
+        Nothing -> pure unit
+        Just update -> liftH $ liftAff' $ putVar fd.queue update
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     rebuildHot = do
@@ -219,11 +250,14 @@ viewer = parentComponent' render eval peek
               processEdit (DeleteCustomYOrdinate axId index)
               rebuildHot
             _ -> pure unit
+        _ -> pure unit
       peek' cpModuleBrowser child \s q -> case q of
         MB.SelectTable tId _ ->
-          -- TODO where is moduleId?
-          -- apiCallParent (getTable )
-          pure unit
+          withFileData \fd ->
+            apiCallParent (getTable fd.moduleId tId) \table -> do
+              modify $ _tableData .~ Just { table: table
+                                          , selectedSheet: S 0 }
+              rebuildHot
         _ -> pure unit
 
     withTable action = do

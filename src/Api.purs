@@ -37,20 +37,20 @@ apiCall :: forall eff a s f g. (MonadEff (Effects eff) g, MonadAff (Effects eff)
 apiCall call onSuccess = do
   liftEff' $ Spinner.dispatch true
   result <- liftAff' $ attempt call
+  liftEff' $ Spinner.dispatch false
   case result of
     Left err -> liftEff' $ ErrorBox.raise $ message err
     Right x -> onSuccess x
-  liftEff' $ Spinner.dispatch false
 
 apiCallParent :: forall eff a s s' f f' g p. (MonadEff (Effects eff) g, MonadAff (Effects eff) g, Functor g)
         => Aff (Effects eff) a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
 apiCallParent call onSuccess = do
   liftQuery $ liftEff' $ Spinner.dispatch true
   result <- liftQuery $ liftAff' $ attempt call
+  liftQuery $ liftEff' $ Spinner.dispatch false
   case result of
     Left err -> liftQuery $ liftEff' $ ErrorBox.raise $ message err
     Right x -> onSuccess x
-  liftQuery $ liftEff' $ Spinner.dispatch false
 
 -- Api.Table
 
@@ -72,7 +72,7 @@ getFrameworks = getJsonResponse "Could not load frameworks." $
 
 getModule :: forall eff. ModuleId -> Aff (Effects eff) Module
 getModule modId = getJsonResponse "Could not load templates of module." $
-  get $ "/api/v0.1/module/" <> show modId
+  get $ "/api/v0.1/module/get/" <> show modId
 
 -- Api.BusinessData
 
