@@ -252,9 +252,9 @@ viewer propModId propFileId = parentComponent' render eval peek
             _ -> pure unit
         _ -> pure unit
       peek' cpModuleBrowser child \s q -> case q of
-        MB.SelectTable tId _ ->
+        MB.SelectTable tSelect _ ->
           withFileData \fd ->
-            apiCallParent (getTable fd.moduleId tId) \table -> do
+            apiCallParent (getTable fd.moduleId tSelect.id) \table -> do
               modify $ _tableData .~ Just { table: table
                                           , selectedSheet: S 0 }
               rebuildHot

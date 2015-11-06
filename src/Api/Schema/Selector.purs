@@ -1,4 +1,4 @@
-module Api.Schema.Framework where
+module Api.Schema.Selector where
 
 import Prelude
 
@@ -9,7 +9,30 @@ import Optic.Core
 
 import Types
 
-type Selector = Array Framework
+newtype File = File
+  { fileId :: FileId
+  , fileModuleId :: ModuleId
+  }
+
+_File :: LensP File _
+_File = lens (\(File r) -> r) (\_ r -> File r)
+
+_fileId :: LensP File FileId
+_fileId = _File .. lens _.fileId _{ fileId = _ }
+
+_fileModuleId :: LensP File ModuleId
+_fileModuleId = _File .. lens _.fileModuleId _{ fileModuleId = _ }
+
+instance isForeignFile :: IsForeign File where
+  read json = do
+    file <- { fileId: _
+            , fileModuleId: _
+            }
+      <$> readProp "id" json
+      <*> readProp "moduleId" json
+    pure $ File file
+
+--
 
 newtype Framework = Framework
   { frameworkId :: FrameworkId

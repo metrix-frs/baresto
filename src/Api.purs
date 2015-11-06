@@ -22,7 +22,7 @@ import Halogen.Component
 import Types
 
 import Api.Common
-import Api.Schema.Framework
+import Api.Schema.Selector
 import Api.Schema.Module
 import Api.Schema.BusinessData
 import Api.Schema.Auth
@@ -62,12 +62,6 @@ getHeader :: forall eff. Aff (Effects eff) Table
 getHeader = getJsonResponse "Could not fetch header." $
   get $ "/api/v0.1/template/header/DE"
 
--- Api.Framework
-
-getFrameworks :: forall eff. Aff (Effects eff) (Array Framework)
-getFrameworks = getJsonResponse "Could not load frameworks." $
-  get "/api/v0.1/modules"
-
 -- Api.Module
 
 getModule :: forall eff. ModuleId -> Aff (Effects eff) Module
@@ -87,6 +81,16 @@ newFile modId name = getJsonResponse "Could not create file." $
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $
   postJson "/api/v0.1/businessdata/update/post" upd
+
+-- Api.Selector
+
+listFrameworks :: forall eff. Aff (Effects eff) (Array Framework)
+listFrameworks = getJsonResponse "Could not get frameworks." $
+  get "/api/v0.1/selector/frameworks"
+
+listFiles :: forall eff. Aff (Effects eff) (Array File)
+listFiles = getJsonResponse "Could not get files." $
+  get "/api/v0.1/selector/files"
 
 -- Api.Validate
 

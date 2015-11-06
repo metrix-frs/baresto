@@ -1,0 +1,78 @@
+ul {
+  list-style: none;
+  margin: 0px;
+  padding: 0px;
+}
+
+li {
+  .row {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    clear: both;
+    .label {
+      margin-right: 10px;
+      cursor: pointer;
+      color: $metrix-darkgray;
+      &:hover {
+        color: black;
+      }
+    }
+  }
+}
+
+ul.group {
+  background-color: white;
+  li {
+    margin-bottom: 1px;
+    background-color: $metrix-lightblue;
+    font-weight: bold;
+  }
+}
+
+ul.template {
+  background-color: white;
+  li {
+    background-color: white;
+    font-weight: normal;
+    .row {
+      padding-left: 20px;
+    }
+  }
+}
+
+ul.table {
+  background-color: white;
+  li {
+    background-color: white;
+    font-weight: bold;
+    .row {
+      padding-left: 40px;
+    }
+  }
+  .template-label {
+    color: gray;
+  }
+  .tableCode {
+    cursor: pointer;
+    &:hover {
+      color: black;
+    }
+  }
+  .selected {
+    @extend .tableCode;
+    text-decoration: underline;
+  }
+}
+
+table.template {
+  background-color: #FFFFFF;
+  border-spacing: 0px;
+  border-collapse: separate;
+  td {
+    vertical-align: top;
+    padding: 0px;
+  }
+  td.template-label {
+    color: gray;
+  }
+}

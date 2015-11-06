@@ -7,6 +7,8 @@ import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
+import Api
+
 import Types
 
 data State = State
@@ -15,7 +17,8 @@ initialState :: State
 initialState = State
 
 data Query a
-  = SelectFile ModuleId FileId a
+  = Init a
+  | SelectFile ModuleId FileId a
 
 selector :: Component State Query Metrix
 selector = component render eval
@@ -28,5 +31,11 @@ selector = component render eval
       ]
 
     eval :: Eval Query State Query Metrix
+    eval (Init next) = do
+      apiCall listFiles \files ->
+        apiCall listFrameworks \frameworks ->
+          pure unit
+      pure next
+
     eval (SelectFile _ _ next) = do
       pure next
