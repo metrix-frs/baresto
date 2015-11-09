@@ -12,6 +12,8 @@ import Types
 newtype File = File
   { fileId :: FileId
   , fileModuleId :: ModuleId
+  , fileLabel :: String
+  , fileCreated :: UTCTime
   }
 
 _File :: LensP File _
@@ -27,9 +29,13 @@ instance isForeignFile :: IsForeign File where
   read json = do
     file <- { fileId: _
             , fileModuleId: _
+            , fileLabel: _
+            , fileCreated: _
             }
       <$> readProp "id" json
       <*> readProp "moduleId" json
+      <*> readProp "label" json
+      <*> readProp "created" json
     pure $ File file
 
 --
@@ -89,7 +95,7 @@ instance isForeignTaxonomy :: IsForeign Taxonomy where
 newtype ConceptualModule = ConceptualModule
   { conceptId :: ConceptualModuleId
   , conceptLabel :: String
-  , modules :: Array ModuleId
+  , moduleEntries :: Array ModuleEntry
   }
 
 _ConceptualModule :: LensP ConceptualModule _
@@ -101,13 +107,25 @@ _conceptId = _ConceptualModule .. lens _.conceptId _{conceptId = _ }
 _conceptLabel :: LensP ConceptualModule String
 _conceptLabel = _ConceptualModule .. lens _.conceptLabel _{ conceptLabel = _ }
 
-_modules :: LensP ConceptualModule (Array ModuleId)
-_modules = _ConceptualModule .. lens _.modules _{ modules = _ }
+_moduleEntries :: LensP ConceptualModule (Array ModuleEntry)
+_moduleEntries = _ConceptualModule .. lens _.moduleEntries _{ moduleEntries = _ }
 
 instance isForeignConceptualModule :: IsForeign ConceptualModule where
   read json = do
-    con <- { conceptId: _, conceptLabel: _, modules: _ }
+    con <- { conceptId: _, conceptLabel: _, moduleEntries: _ }
       <$> readProp "id"      json
       <*> readProp "label"   json
       <*> readProp "modules" json
     pure $ ConceptualModule con
+
+newtype ModuleEntry = ModuleEntry
+  { moduleEntryId :: ModuleId
+  , moduleEntryLabel :: String
+  }
+
+instance isForeignModuleEntry :: IsForeign ModuleEntry where
+  read json = do
+    mod <- { moduleEntryId: _, moduleEntryLabel: _ }
+      <$> readProp "id" json
+      <*> readProp "label" json
+    pure $ ModuleEntry mod

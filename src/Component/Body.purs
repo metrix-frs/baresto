@@ -85,5 +85,6 @@ body = parentComponent' render eval peek
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
       FV.peek' cpSelector child \s q -> case q of
-        FS.SelectFile modId fileId _ ->
+        FS.OpenFile modId fileId _ ->
           modify _{ currentView = FileViewer modId fileId }
+        _ -> pure unit

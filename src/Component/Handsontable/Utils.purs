@@ -2,6 +2,7 @@ module Component.Handsontable.Utils
   ( toHotCoords
   , fromHotCoords
   , attachClickHandler
+  , forceString
   ) where
 
 import Prelude
@@ -24,3 +25,5 @@ headerHeight (Table tbl) = length tbl.tableXHeader + case tbl.tableYAxis of
   YAxisClosed _ _ -> 1
 
 foreign import attachClickHandler :: forall eff a. String -> Eff eff a -> Eff eff a
+
+foreign import forceString :: String -> String

@@ -17,8 +17,6 @@ module Lib.BusinessData
 , gridHeight
 , getCellTable
 , getFactTable
-, getFact
-, setFact
 , getCustomMembers
 , getSubsetMembers
 , isSubsetMemberSelected
@@ -108,6 +106,8 @@ invertUpdate (Update m) = Update $ foldl invert M.empty $ M.toList m
   where
     invert m' (Tuple key (Tuple old new)) = M.insert key (Tuple new old) m'
 
+foreign import stripDecimals :: String -> Int -> String
+
 editToUpdate :: Edit -> BusinessData -> Maybe Update
 editToUpdate bde bd = case bde of
   SetFacts table changes ->
@@ -134,13 +134,29 @@ editToUpdate bde bd = case bde of
     single (KeySubsetZSelected axId sm) Nothing
   where
     go table m (Tuple coord val) = case getKey coord table bd of
-      Just key ->
-        let old = getBDValue key bd
-            new = if val == "" then Nothing else Just val
-        in  if  old == new
-              then m
-              else M.insert key (Tuple old new) m
-      Nothing -> m
+        Just key ->
+          let old = getBDValue key bd
+              new = if val == "" then Nothing else Just val
+          in  if  old == new
+                then m
+                else M.insert key (Tuple old new) m
+        Nothing -> m
+      where
+        conv v = case cellLookup coord table of
+          Just (FactCell _ dType) -> case dType of
+            CodeData pairs ->
+              fromMaybe v $ lookupBySnd v pairs
+            BooleanData ->
+              fromMaybe v $ lookupBySnd v boolValueMap
+            MonetaryData ->
+              stripDecimals v 2
+            PercentageData ->
+              stripDecimals v 4
+            _ -> v
+          Just _ -> v
+          Nothing -> v
+        lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
+
     single key new =
       let old = getBDValue key bd in
       if  old == new
@@ -227,29 +243,6 @@ getFact coord table@(Table tbl) bd = do
         fromMaybe k $ lookup k boolValueMap
       Just _ -> k
       Nothing -> k
-
-foreign import stripDecimals :: String -> Int -> String
-
-setFact :: Coord -> Table -> String -> BusinessData -> BusinessData
-setFact coord table@(Table tbl) val bd =
-    case getKey coord table bd of
-      Just key -> setBDValue key (conv val) bd
-      Nothing -> bd
-  where
-    conv v = case cellLookup coord table of
-      Just (FactCell _ dType) -> case dType of
-        CodeData pairs ->
-          fromMaybe v $ lookupBySnd v pairs
-        BooleanData ->
-          fromMaybe v $ lookupBySnd v boolValueMap
-        MonetaryData ->
-          stripDecimals v 2
-        PercentageData ->
-          stripDecimals v 4
-        _ -> v
-      Just _ -> v
-      Nothing -> v
-    lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
 
 getKey :: Coord -> Table -> BusinessData -> Maybe Key
 getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =

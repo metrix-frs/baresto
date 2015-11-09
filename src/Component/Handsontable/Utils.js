@@ -10,3 +10,7 @@ exports.attachClickHandler = function(selector) {
     }
   };
 };
+
+exports.forceString = function(val) {
+  return val.toString();
+};

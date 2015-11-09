@@ -8,3 +8,37 @@
 .currentCol.xOrdinateCode {
   background-color: $ordinates-selected !important;
 }
+
+div.sheet {
+
+  td.shaded {
+    background-color: $shaded;
+  }
+
+  td.noCell {
+    background-color: $noCell;
+  }
+
+  td.cellError {
+    background-color: $cellError;
+  }
+
+  td.xOrdinate, td.yOrdinate, td.xOrdinateCode, td.yOrdinateCode, td.xNoOrdinate {
+    background-color: $ordinates;
+  }
+
+  td.yOrdinateCode {
+    text-align: right;
+  }
+
+  td.yAbstract {
+    background-color: $abstractRows;
+    font-weight: bold;
+  }
+
+  td.yAbstractCode {
+    background-color: $abstractRows;
+    text-align: right;
+  }
+
+}

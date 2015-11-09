@@ -2,6 +2,7 @@ module Component.FileViewer where
 
 import Prelude
 
+import Control.Monad.Eff.Console (log)
 import Control.Monad.Aff (attempt)
 import Control.Monad.Aff.AVar
 
@@ -115,12 +116,6 @@ viewer propModId propFileId = parentComponent' render eval peek
       [ H.div [ cls "vieverBar" ]
         [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
           { component: MB.moduleBrowser, initialState: MB.initialState }
-        , H.div [ cls "tableTitle" ]
-          [ H.h1_
-            [ H.text "Title"]
-          , H.p_
-            [ H.text "subtitle" ]
-          ]
         , H.div [ cls "sheetSelector" ]
           [ viewSheetSelector st
           ]
@@ -136,6 +131,7 @@ viewer propModId propFileId = parentComponent' render eval peek
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
+      liftH $ liftEff' $ log "mb init"
       query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot propModId
       apiCallParent (getFile propFileId) \(UpdateGet upd) -> do
         queue <- liftH $ liftAff' makeVar
