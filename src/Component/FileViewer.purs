@@ -7,10 +7,12 @@ import Control.Monad.Aff (attempt)
 import Control.Monad.Aff.AVar
 
 import           Data.Either
+import           Data.Array (replicate)
 import           Data.Maybe
 import qualified Data.Map as M
 import           Data.Tuple
 import           Data.List (fromList)
+import           Data.Foldable
 import           Data.Functor.Coproduct (Coproduct())
 import           Data.Generic (Generic, gEq, gCompare)
 
@@ -119,27 +121,33 @@ viewer propModId propFileId = parentComponent' render eval peek
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
     render st = H.div
-      [ cls "viewer"
-      , P.initializer \_ -> action Init
-      ]
-      [ H.div [ cls "vieverBar" ]
-        [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
-          { component: MB.moduleBrowser, initialState: MB.initialState }
-        , H.div [ cls "sheetSelector" ]
-          [ viewSheetSelector st
-          ]
-        , H.div [ cls "fileActions" ]
-          [ H.text "File Actions"
-          ]
+        [ cls "viewer"
+        , P.initializer \_ -> action Init
         ]
-      , H.div [ cls "viewerContent" ]
-        [ H.slot' cpHot HotSlot \_ ->
-          { component: Hot.handsontable, initialState: Hot.initialState }
+        [ H.div [ cls "vieverBar" ]
+          [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
+            { component: MB.moduleBrowser, initialState: MB.initialState }
+          , H.div [ cls "sheetSelector" ]
+            [ viewSheetSelector st
+            ]
+          , H.div [ cls "fileActions" ]
+            [ H.text "File Actions"
+            ]
+          ]
+        , H.div [ cls "viewerContent" ]
+          [ case Tuple st.fileData st.tableData of
+              Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
+                then H.slot' cpHot HotSlot \_ ->
+                       { component: Hot.handsontable, initialState: Hot.initialState }
+                else H.text "No sheets to display. Add member or select member for the z-Axis."
+              _ -> H.text "loading..."
+          ]
+        , case st.fileData of
+            Just fd -> debugBusinessData fd.businessData
+            Nothing -> H.div_ []
         ]
-      , case st.fileData of
-          Just fd -> debugBusinessData fd.businessData
-          Nothing -> H.div_ []
-      ]
+      where
+        hasSheets table bd = doesSheetExist table bd (S 0)
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
@@ -282,7 +290,96 @@ viewer propModId propFileId = parentComponent' render eval peek
         Just fileData -> action fileData
 
 viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-viewSheetSelector st = H.div_ []
+viewSheetSelector st = case Tuple st.fileData st.tableData of
+    Tuple (Just fd) (Just td) ->
+      let
+        selectSheet i = SelectSheet $ S $ readId i
+        currentSheet = if doesSheetExist td.table fd.businessData td.selectedSheet
+          then td.selectedSheet
+          else S 0
+
+        customZMember axId (Tuple s (Tuple memId name)) = H.tr_
+          [ H.td_
+            [ H.button
+              [ E.onClick $ E.input_ $ DeleteSheet s ]
+              [ H.text "-" ]
+            ]
+          , H.td_
+            [ H.input
+              [ E.onValueInput $ E.input $ RenameSheet s
+              , P.value name
+              ]
+            ]
+          , H.input
+            [ P.inputType P.InputRadio
+            , P.checked (S s == currentSheet)
+            , E.onChecked $ E.input_ $ selectSheet $ show s
+            ]
+          ]
+
+        subsetMember axId (SubsetMemberOption m) = H.tr_
+          [ H.td_
+            -- TODO where is P.style?
+            -- [ H.span [ P.style $ space m.memberLevel ] []
+            [ H.text m.memberLabel
+            ]
+          , H.td_
+            [ H.input
+              [ P.inputType P.InputCheckbox
+              , P.checked $ isSubsetMemberSelected axId m.memberId fd.businessData
+              , E.onChecked $ E.input \v -> case v of
+                  true  -> ChooseMember m.memberId
+                  false -> UnchooseMember m.memberId
+              ]
+            ]
+          ]
+
+        closedOption (Tuple s (Ordinate o)) =
+          let selected = S s == currentSheet
+              text = (foldl (<>) "" $ replicate o.ordinateLevel "--") <> o.ordinateLabel
+          in  H.option [ P.selected selected
+                       , P.value $ show s
+                       ] [ H.text text ]
+
+        subsetOption mems (Tuple s (Tuple memId _)) =
+          let selected = S s == currentSheet
+              -- TODO: may need performance optimization in the future
+              memLabel = maybe "NOT FOUND" (\(SubsetMemberOption m) -> m.memberLabel)
+                         $ find (\(SubsetMemberOption m) -> m.memberId == memId) mems
+          in  H.option [ P.selected selected
+                       , P.value $ show s
+                       ] [ H.text memLabel ]
+      in case td.table of
+        Table tbl -> H.div_ $ case tbl.tableZAxis of
+          ZAxisSingleton ->
+            []
+          ZAxisClosed _ ords ->
+            [ H.text "Sheet: "
+            , H.select [ E.onValueChange $ E.input $ selectSheet ]
+                       $ closedOption <$> makeIndexed ords
+            ]
+          ZAxisCustom axId label ->
+            [ H.table_ $
+              [ H.tr_
+                [ H.td_
+                  [ H.button
+                    [ E.onClick $ E.input_ $ AddSheet "" ]
+                    [ H.text "+" ]
+                  ]
+                , H.td [ P.colSpan 2 ] [ H.text label ]
+                ]
+              ] <> (customZMember axId <$> makeIndexed (getCustomMembers axId fd.businessData))
+            ]
+          ZAxisSubset axId label mems ->
+            [ H.text $ label <> ": "
+            , H.div [ cls "subsetMemberList" ]
+              [ H.table_ $ subsetMember axId <$> mems ]
+            , H.select
+              [ E.onValueChange $ E.input $ selectSheet ]
+              $ subsetOption mems <$> makeIndexed (getSubsetMembers axId fd.businessData)
+            ]
+
+    _ -> H.text "loading..."
 
 debugBusinessData :: BusinessData -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 debugBusinessData bd = H.div_
