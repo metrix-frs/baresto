@@ -136,7 +136,7 @@ editToUpdate bde bd = case bde of
     go table m (Tuple coord val) = case getKey coord table bd of
         Just key ->
           let old = getBDValue key bd
-              new = if val == "" then Nothing else Just val
+              new = if val == "" then Nothing else Just (conv val)
           in  if  old == new
                 then m
                 else M.insert key (Tuple old new) m
@@ -248,8 +248,8 @@ getKey :: Coord -> Table -> BusinessData -> Maybe Key
 getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
     case cellLookup coord table of
       Just (FactCell cellId _)  -> if tbl.tableIsHeader
-                                     then go cellId false
-                                     else Just $ KeyHeaderFact cellId
+                                     then Just $ KeyHeaderFact cellId
+                                     else go cellId false
       Just (YMemberCell cellId) -> go cellId true
       _                         -> Nothing
   where

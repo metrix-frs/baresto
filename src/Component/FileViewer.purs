@@ -6,11 +6,13 @@ import Control.Monad.Eff.Console (log)
 import Control.Monad.Aff (attempt)
 import Control.Monad.Aff.AVar
 
-import Data.Either
-import Data.Maybe
-import Data.Tuple
-import Data.Functor.Coproduct (Coproduct())
-import Data.Generic (Generic, gEq, gCompare)
+import           Data.Either
+import           Data.Maybe
+import qualified Data.Map as M
+import           Data.Tuple
+import           Data.List (fromList)
+import           Data.Functor.Coproduct (Coproduct())
+import           Data.Generic (Generic, gEq, gCompare)
 
 import           Halogen
 import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>), prjSlot, prjQuery)
@@ -59,25 +61,32 @@ cpHot = cpR
 
 --
 
-type State =
-  { fileData        :: Maybe
-    { businessData  :: BusinessData
-    , fileId        :: FileId
-    , moduleId      :: ModuleId
-    , lastUpdateId  :: UpdateId
-    , lastSaved     :: UTCTime
-    , queue         :: AVar Update
-    }
-  , tableData       :: Maybe
-    { table         :: Table
-    , selectedSheet :: S
-    }
+type FileData =
+  { businessData  :: BusinessData
+  , fileId        :: FileId
+  , moduleId      :: ModuleId
+  , lastUpdateId  :: UpdateId
+  , lastSaved     :: UTCTime
+  , queue         :: AVar Update
   }
 
-_fileData :: LensP State (Maybe _)
+_fdBusinessData :: LensP FileData BusinessData
+_fdBusinessData = lens _.businessData _{ businessData = _ }
+
+type TableData =
+  { table         :: Table
+  , selectedSheet :: S
+  }
+
+type State =
+  { fileData  :: Maybe FileData
+  , tableData :: Maybe TableData
+  }
+
+_fileData :: LensP State (Maybe FileData)
 _fileData = lens _.fileData _{ fileData = _ }
 
-_tableData :: LensP State (Maybe _)
+_tableData :: LensP State (Maybe TableData)
 _tableData = lens _.tableData _{ tableData = _ }
 
 initialState :: State
@@ -127,11 +136,13 @@ viewer propModId propFileId = parentComponent' render eval peek
         [ H.slot' cpHot HotSlot \_ ->
           { component: Hot.handsontable, initialState: Hot.initialState }
         ]
+      , case st.fileData of
+          Just fd -> debugBusinessData fd.businessData
+          Nothing -> H.div_ []
       ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
-      liftH $ liftEff' $ log "mb init"
       query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot propModId
       apiCallParent (getFile propFileId) \(UpdateGet upd) -> do
         queue <- liftH $ liftAff' makeVar
@@ -148,7 +159,7 @@ viewer propModId propFileId = parentComponent' render eval peek
       pure next
 
     eval (SelectSheet s next) = do
-      modify $_tableData .. _Just %~ _{ selectedSheet = s }
+      modify $ _tableData .. _Just %~ _{ selectedSheet = s }
       pure next
 
     eval (AddSheet name next) = do
@@ -216,7 +227,9 @@ viewer propModId propFileId = parentComponent' render eval peek
     processEdit edit = withFileData \fd ->
       case editToUpdate edit fd.businessData of
         Nothing -> pure unit
-        Just update -> liftH $ liftAff' $ putVar fd.queue update
+        Just update -> do
+          liftH $ liftAff' $ putVar fd.queue update
+          modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     rebuildHot = do
@@ -270,6 +283,17 @@ viewer propModId propFileId = parentComponent' render eval peek
 
 viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
 viewSheetSelector st = H.div_ []
+
+debugBusinessData :: BusinessData -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
+debugBusinessData bd = H.div_
+    [ H.table_ $ bdEntry <$> (fromList $ M.toList (bd ^. _snapshot))
+    , H.table_ []
+    ]
+  where
+    bdEntry (Tuple key val) = H.tr_
+      [ H.td_ [ H.text $ show key ]
+      , H.td_ [ H.text val ]
+      ]
 
 -- TODO: purescript-halogen PR
 peek' :: forall s s' s'' f f' f'' g p p' a

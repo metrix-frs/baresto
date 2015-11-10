@@ -70,8 +70,6 @@ handsontable = component render eval
     eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       modify _{ hotRoot = Just el }
-      -- hot <- liftEff' $ Hot.handsontableNode el { data: [] }
-      -- modify _{ hotInstance = Just hot }
       pure next
 
     eval (Edit changes next) = do
@@ -131,7 +129,6 @@ build s table@(Table tbl) bd = do
             subscribe $ eventSource_ (attachClickHandler ("#delCustomY" <> show i)) do
               pure $ action $ DeleteRow i
 
-  -- TODO: try to subscribe to button clicks after rendering of handsontable object
   -- TODO: adjust resize
 
 -- resize :: Eff _ Unit
