@@ -109,7 +109,8 @@ app = parentComponent render eval
                   [ H.div [ cls "menu" ]
                     [ H.button
                       [ E.onClick (E.input_ $ LogOut) ]
-                      [ H.text "Logout" ]
+                      [ H.span [ cls "octicon octicon-sign-out" ] []
+                      , H.text "Logout" ]
                     ]
                   , H.div [ cls "license" ]
                     [ H.text $ "Using license for customer: " <> cId ]
