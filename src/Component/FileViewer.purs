@@ -138,7 +138,8 @@ viewer propModId propFileId = parentComponent' render eval peek
           [ case Tuple st.fileData st.tableData of
               Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
                 then H.slot' cpHot HotSlot \_ ->
-                       { component: Hot.handsontable, initialState: Hot.initialState }
+                       { component: Hot.handsontable td.selectedSheet td.table fd.businessData
+                       , initialState: Hot.initialState }
                 else H.text "No sheets to display. Add member or select member for the z-Axis."
               _ -> H.text "loading..."
           ]

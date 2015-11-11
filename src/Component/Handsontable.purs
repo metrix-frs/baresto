@@ -57,8 +57,8 @@ data Query a
   | DeleteRow Int a
   | Rebuild S Table BusinessData a
 
-handsontable :: Component State Query Metrix
-handsontable = component render eval
+handsontable :: S -> Table -> BusinessData -> Component State Query Metrix
+handsontable propS propTable propBusinessData = component render eval
   where
 
     render :: Render State Query
@@ -70,6 +70,7 @@ handsontable = component render eval
     eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       modify _{ hotRoot = Just el }
+      build propS propTable propBusinessData
       pure next
 
     eval (Edit changes next) = do

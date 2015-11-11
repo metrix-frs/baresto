@@ -4,6 +4,7 @@ import Prelude
 
 import qualified Data.Map as M
 import           Data.Maybe
+import           Data.Array hiding ((..))
 import           Data.Foldable
 
 import Control.Monad.State (execState)
@@ -40,11 +41,14 @@ type ModuleBrowserInfo =
 
 type State = Maybe ModuleBrowserInfo
 
+_mod :: LensP ModuleBrowserInfo Module
+_mod = lens _.mod _{ mod = _ }
+
 _groupOpen :: LensP ModuleBrowserInfo (M.Map TemplateGroupId Boolean)
 _groupOpen = lens _.groupOpen _{ groupOpen = _ }
 
-_mod :: LensP ModuleBrowserInfo Module
-_mod = lens _.mod _{ mod = _ }
+_selectedTable :: LensP ModuleBrowserInfo (Maybe TableSelect)
+_selectedTable = lens _.selectedTable _{ selectedTable = _ }
 
 initialState :: State
 initialState = Nothing
@@ -78,12 +82,15 @@ moduleBrowser = component render eval
           , selectedTable: Nothing
           }
       pure next
+
     eval (SelectTable tSelect next) = do
       modify $ map _{ selectedTable = Just tSelect }
       pure next
+
     eval (ToggleGroupOpen gId next) = do
       modify $ _Just .. _groupOpen .. at gId .. non true %~ (not :: Boolean -> Boolean)
       pure next
+
     eval (ToggleOpen next) = do
       modify $ map \info -> info { open = not info.open }
       pure next
@@ -95,8 +102,13 @@ renderModuleBrowser info = H.div_
         Nothing ->
           [ H.p_ [ H.text "no table selected" ] ]
         Just tSelect ->
+          let next = goRelativeModuloLen tSelect ((+) 1) (flattenTables info.mod)
+              prev = goRelativeModuloLen tSelect (\i -> i - 1) (flattenTables info.mod)
+          in
           [ H.p_ [ H.text tSelect.code ]
           , H.p_ [ H.text tSelect.label ]
+          , H.button [ E.onClick $ E.input_ $ SelectTable prev ] [ H.text "<"]
+          , H.button [ E.onClick $ E.input_ $ SelectTable next ] [ H.text ">"]
           ]
     , H.ul [ cls "group" ] $ if info.open
         then renderTemplateGroup <$> (info.mod ^. _templateGroups)
@@ -145,3 +157,21 @@ renderModuleBrowser info = H.div_
         selected tbl= case info.selectedTable of
           Nothing -> false
           Just sel -> (tbl ^. _tableEntryId) == sel.id
+
+--
+
+flattenTables :: Module -> Array TableSelect
+flattenTables mod     = concat $ goGroup <$> (mod ^. _templateGroups)
+  where goGroup g     = concat $ goTemplate <$> (g ^. _templates)
+        goTemplate t  = goTable (t ^. _templateLabel) <$> (t ^. _templateTables)
+        goTable lbl t =
+          { id: t ^. _tableEntryId
+          , code: t ^. _tableEntryCode
+          , label: lbl
+          }
+
+goRelativeModuloLen :: TableSelect -> (Int -> Int) -> Array TableSelect -> TableSelect
+goRelativeModuloLen x dir xs = fromMaybe x do
+    i <- findIndex (\x' -> x.id == x'.id) xs
+    index xs $ (dir i) `realMod` (length xs)
+  where realMod a b = let r = a `mod` b in if r < 0 then r + b else r
