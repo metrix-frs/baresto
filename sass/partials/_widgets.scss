@@ -1,0 +1,11 @@
+.frame {
+  position: absolute;
+  left:   $panel-padding;
+  top:    $panel-padding;
+  right:  $panel-padding;
+  bottom: $panel-padding;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  border-radius: 3px;
+  background-color: white;
+}

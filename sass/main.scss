@@ -1,11 +1,7 @@
 @import "modules/colors";
-@import "modules/icons";
+@import "modules/dimensions";
 
 $font: Calibri, Candara, Segoe, 'Segoe UI', Optima, Arial, sans-serif;
-
-html {
-  overflow-y: scroll;
-}
 
 body {
   font-family: $font;
@@ -18,6 +14,11 @@ body {
   color: $metrix-darkgray;
 }
 
+.app {
+  width: 100%;
+  height: 100%;
+}
+
 @import "partials/controls";
 @import "partials/formula";
 @import "partials/handsontable";
@@ -26,3 +27,7 @@ body {
 @import "partials/spinner";
 @import "partials/statusbar";
 @import "partials/module";
+@import "partials/widgets";
+@import "partials/content";
+@import "partials/toolbar";
+@import "partials/frameworks";

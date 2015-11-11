@@ -17,6 +17,7 @@ import qualified Component.FileSelector as FS
 import qualified Component.FileViewer as FV
 
 import Types
+import Utils (cls)
 
 data SelectorSlot = SelectorSlot
 
@@ -68,7 +69,7 @@ body = parentComponent' render eval peek
   where
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render st = H.div_ $ case st.currentView of
+    render st = H.div [ cls "body" ] $ case st.currentView of
       FileSelector ->
         [ H.slot' cpSelector SelectorSlot \_ ->
           { component: FS.selector, initialState: FS.initialState }

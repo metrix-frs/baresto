@@ -1,0 +1,50 @@
+ul.frameworks {
+  list-style: none;
+  margin: 0px;
+  padding: 0px;
+
+  li {
+    padding-top: 2px;
+    background-color: white;
+  }
+
+  li.framework {
+    padding-left: 5px;
+    font-weight: bold;
+  }
+
+  li.taxonomy {
+    padding-left: 20px;
+  }
+
+  li.conceptualModule {
+    padding-left: 40px;
+    font-weight: bold;
+  }
+
+  li.module {
+    padding-left: 75px;
+  }
+
+  li.selected {
+    background-color: #DDD;
+  }
+
+  .octicon {
+    width: 16px;
+    text-align: center;
+    @extend .label;
+  }
+
+  .label {
+    cursor: pointer;
+    color: $metrix-darkgray;
+    margin-left: 3px;
+
+    &:hover {
+      color: black;
+    }
+
+  }
+
+}

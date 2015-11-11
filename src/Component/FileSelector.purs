@@ -85,17 +85,33 @@ selector = component render eval
   where
 
     render :: Render State Query
-    render st = H.div_
+    render st = H.div [ cls "container" ] $
       -- TODO report halogen issue about initializer
       [ H.span [ P.initializer \_ -> action Init ] []
-      , case st of
-          Just st' -> H.div_
-            [ renderFrameworks st'
-            , renderFiles st'
-            ]
-          Nothing -> H.div_
-            [ H.text "loading..."
-            ]
+      , H.div [ cls "toolbar" ]
+        [ H.div [ cls "toolarea" ] $ case st of
+            Just st' -> case st'.selectedNode of
+              SelectedModule mId ->
+                [ H.input
+                  [ E.onValueChange $ E.input SetFileName
+                  , P.value st'.newFileName
+                  ]
+                , H.button
+                  [ E.onClick $ E.input_ (CreateFile mId) ]
+                  [ H.text "Create" ]
+                ]
+              _ ->
+                [ H.text "Please select a module to create a new file" ]
+            Nothing -> []
+        ]
+      , H.div [ cls "content" ] $ case st of
+              Just st' ->
+                [ renderFrameworks st'
+                , renderFiles st'
+                ]
+              Nothing ->
+                [ H.text "loading..."
+                ]
       ]
 
     eval :: Eval Query State Query Metrix
@@ -160,13 +176,18 @@ selector = component render eval
       pure next
 
 renderFrameworks :: StateInfo -> ComponentHTML Query
-renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
+renderFrameworks st = H.div [ cls "panel-frameworklist" ]
+    [ H.div [ cls "frame" ]
+      [ H.ul [ cls "frameworks" ] $ concat $ renderFramework <$> st.frameworks
+      ]
+    ]
   where
-    renderFramework :: Framework -> ComponentHTML Query
-    renderFramework (Framework f) = H.li_
-        [ H.div [ cls "row" ]
-          [ H.div
-            [ cls $ if open then "open" else "closed"
+    renderFramework :: Framework -> Array (ComponentHTML Query)
+    renderFramework (Framework f) =
+        [ H.li
+          [ cls $ "framework" <> if selected then " selected" else "" ]
+          [ H.span
+            [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
             , E.onClick $ E.input_ (ToggleFrameworkOpen f.frameworkId)
             ] []
           , H.span
@@ -176,20 +197,19 @@ renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
             [ H.text f.frameworkLabel
             ]
           ]
-        , H.ul [ cls "framework" ]
-          $ if open then renderTaxonomy <$> f.taxonomies else []
-        ]
+        ] <> if open then concat $ renderTaxonomy <$> f.taxonomies else []
       where
         open = fromMaybe true $ M.lookup f.frameworkId st.openFramework
         selected = case st.selectedNode of
           SelectedFramework fId -> fId == f.frameworkId
           _                     -> false
 
-    renderTaxonomy :: Taxonomy -> ComponentHTML Query
-    renderTaxonomy (Taxonomy t) = H.li_
-        [ H.div [ cls "row" ]
-          [ H.div
-            [ cls $ if open then "open" else "closed"
+    renderTaxonomy :: Taxonomy -> Array (ComponentHTML Query)
+    renderTaxonomy (Taxonomy t) =
+        [ H.li
+          [ cls $ "taxonomy" <> if selected then " selected" else "" ]
+          [ H.span
+            [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
             , E.onClick $ E.input_ (ToggleTaxonomyOpen t.taxonomyId)
             ] []
           , H.span
@@ -199,20 +219,19 @@ renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
             [ H.text t.taxonomyLabel
             ]
           ]
-        , H.ul [ cls "taxonomy" ]
-          $ if open then renderConceptualModule t.taxonomyId <$> t.conceptualModules else []
-        ]
+        ] <> if open then concat $ renderConceptualModule t.taxonomyId <$> t.conceptualModules else []
       where
         open = fromMaybe true $ M.lookup t.taxonomyId st.openTaxonomy
         selected = case st.selectedNode of
           SelectedTaxonomy tId -> tId == t.taxonomyId
           _                    -> false
 
-    renderConceptualModule :: TaxonomyId -> ConceptualModule -> ComponentHTML Query
-    renderConceptualModule tId (ConceptualModule c) = H.li_
-        [ H.div [ cls "row" ]
-          [ H.div
-            [ cls $ if open then "open" else "closed"
+    renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array (ComponentHTML Query)
+    renderConceptualModule tId (ConceptualModule c) =
+        [ H.li
+          [ cls $ "conceptualModule" <> if selected then " selected" else "" ]
+          [ H.span
+            [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
             , E.onClick $ E.input_ (ToggleConceptualModuleOpen tId c.conceptId)
             ] []
           , H.span
@@ -222,9 +241,7 @@ renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
             [ H.text c.conceptLabel
             ]
           ]
-        , H.ul [ cls "conceptualModule" ]
-          $ if open then renderModuleEntry <$> c.moduleEntries else []
-        ]
+        ] <> if open then renderModuleEntry <$> c.moduleEntries else []
       where
         open = fromMaybe true $ M.lookup (Tuple tId c.conceptId) st.openConceptualModule
         selected = case st.selectedNode of
@@ -232,14 +249,13 @@ renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
           _                                 -> false
 
     renderModuleEntry :: ModuleEntry -> ComponentHTML Query
-    renderModuleEntry (ModuleEntry m) = H.li_
-        [ H.div [ cls "row"]
-          [ H.span
-            [ cls "label"
-            , E.onClick $ E.input_ (SelectModule m.moduleEntryId)
-            ]
-            [ H.text m.moduleEntryLabel
-            ]
+    renderModuleEntry (ModuleEntry m) = H.li
+        [ cls $ "module" <> if selected then " selected" else "" ]
+        [ H.span
+          [ cls "label"
+          , E.onClick $ E.input_ (SelectModule m.moduleEntryId)
+          ]
+          [ H.text m.moduleEntryLabel
           ]
         ]
       where
@@ -248,22 +264,10 @@ renderFrameworks st = H.ul_ $ renderFramework <$> st.frameworks
           _                  -> false
 
 renderFiles :: StateInfo -> ComponentHTML Query
-renderFiles st = H.div_
-    [ H.div
-      [ cls "newFile" ]
-      $ case st.selectedNode of
-          SelectedModule mId ->
-            [ H.input
-              [ E.onValueChange $ E.input SetFileName
-              , P.value st.newFileName
-              ]
-            , H.button
-              [ E.onClick $ E.input_ (CreateFile mId) ]
-              [ H.text "Create" ]
-            ]
-          _ ->
-            [ H.text "Please select a module to create a new file" ]
-    , H.ul_ $ mod <$> arrangeFiles st
+renderFiles st = H.div [ cls "panel-filelist" ]
+    [ H.div [ cls "frame" ]
+      [ H.ul_ $ mod <$> arrangeFiles st
+      ]
     ]
   where
     mod (Tuple (ModuleEntry m) files) = H.li_

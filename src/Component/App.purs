@@ -97,7 +97,7 @@ app :: Component StateP QueryP Metrix
 app = parentComponent render eval
   where
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render st = H.div_
+    render st = H.div [ cls "app" ]
       [ H.slot' cpErrorBox ErrorBoxSlot \_ ->
         { component: ErrorBox.errorBox, initialState: ErrorBox.initialState }
       -- TODO: about box?

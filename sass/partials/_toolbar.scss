@@ -1,0 +1,12 @@
+.toolbar {
+  width: 100%;
+  height: $toolbar-height;
+  background-color: $metrix-lightblue;
+}
+
+.toolarea {
+  height: 100%;
+  float: right;
+  border-left: 1px solid lighten($metrix-lightblue, 20%);
+  border-right: 1px solid darken($metrix-darkblue, 20%);
+}
