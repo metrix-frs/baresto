@@ -1,78 +1,95 @@
-ul {
-  list-style: none;
-  margin: 0px;
-  padding: 0px;
-}
+.module-control {
+  top: 0px;
+  right: 0px;
+  width: $modulebrowser-width;
+  height: $toolbar-height;
+  z-index: 1001;
+  position: absolute;
+  background-color: $metrix-lightblue;
 
-li {
-  .row {
-    padding-top: 3px;
-    padding-bottom: 3px;
-    clear: both;
-    .label {
-      margin-right: 10px;
-      cursor: pointer;
-      color: $metrix-darkgray;
-      &:hover {
-        color: black;
-      }
+  .nav-button {
+    @include clickable();
+    float: left;
+    width: 32px;
+    height: 100%;
+    text-align: center;
+    line-height: $toolbar-height;
+    .mega-octicon {
+      vertical-align: middle;
     }
   }
+
+  .current {
+    @include clickable();
+    float: left;
+    width: $modulebrowser-width - 64px;
+    height: 100%;
+    line-height: $toolbar-height;
+
+    p {
+      vertical-align: middle;
+      text-align: center;
+      font-size: 20pt;
+      font-weight: bold;
+      margin: 0px;
+    }
+
+  }
+
 }
 
-ul.group {
+.modules {
+  position: fixed;
+  top: $statusbar-height + $toolbar-height;
+  right: 0px;
+  bottom: 0px;
+  width: $modulebrowser-width;
+  z-index: 1000;
   background-color: white;
+  box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.3);
+  overflow-y: scroll;
+
+  ul {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+  }
+
   li {
-    margin-bottom: 1px;
+    padding-top: 2px;
+  }
+
+  li.group {
+    padding-left: 2px;
+    font-weight: bold;
+  }
+
+  li.template {
+    padding-left: 20px;
+  }
+
+  li.table {
+    padding-left: 38px;
+  }
+
+  li.selected {
     background-color: $metrix-lightblue;
-    font-weight: bold;
   }
-}
 
-ul.template {
-  background-color: white;
-  li {
-    background-color: white;
-    font-weight: normal;
-    .row {
-      padding-left: 20px;
-    }
+  .octicon {
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
   }
-}
 
-ul.table {
-  background-color: white;
-  li {
-    background-color: white;
-    font-weight: bold;
-    .row {
-      padding-left: 40px;
-    }
-  }
-  .template-label {
-    color: gray;
-  }
-  .tableCode {
+  .label {
     cursor: pointer;
+    color: $metrix-darkgray;
+
     &:hover {
       color: black;
     }
-  }
-  .selected {
-    @extend .tableCode;
-    text-decoration: underline;
-  }
-}
 
-table.template {
-  background-color: #FFFFFF;
-  border-spacing: 0px;
-  border-collapse: separate;
-  td {
-    vertical-align: top;
-    padding: 0px;
   }
-  td.template-label {
-    color: gray;
-  }
+
 }

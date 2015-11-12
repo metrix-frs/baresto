@@ -2,11 +2,72 @@
   width: 100%;
   height: $toolbar-height;
   background-color: $metrix-lightblue;
+  border-bottom: 1px solid darken($metrix-lightblue, 5%);
 }
 
-.toolarea {
+@mixin toolsep() {
   height: 100%;
+  width: 0px;
+  border-right: 1px solid lighten($metrix-lightblue, 5%);
+  border-left: 1px solid darken($metrix-lightblue, 10%);
+}
+
+.toolsep-left {
+  @include toolsep();
+  float: left;
+}
+
+.toolsep-right {
+  @include toolsep();
   float: right;
-  border-left: 1px solid lighten($metrix-lightblue, 20%);
-  border-right: 1px solid darken($metrix-darkblue, 20%);
+}
+
+@mixin tool() {
+  height: 100%;
+}
+
+@mixin clickable() {
+  cursor: pointer;
+  &:hover {
+    background-color: lighten($metrix-lightblue, 5%);
+  }
+}
+
+.tool-newfile {
+  @include tool();
+  float: left;
+  width: 200px;
+  padding: 10px;
+  text-align: right;
+}
+
+.tool-importxbrl {
+  @include tool();
+  float: left;
+  width: 100px;
+  padding: 10px;
+}
+
+.tool-modulebrowser {
+  @include tool();
+  float: right;
+  width: $modulebrowser-width;
+}
+
+.tool-fileaction {
+  @include tool();
+  @include clickable();
+  float: right;
+  width: $toolbar-height;
+  text-align: center;
+  line-height: $toolbar-height;
+  .mega-octicon {
+    vertical-align: middle;
+  }
+}
+
+.tool-sheets {
+  @include tool();
+  float: right;
+  width: 300px;
 }

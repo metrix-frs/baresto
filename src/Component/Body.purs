@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Maybe
 import Data.Either
-import Data.Functor.Coproduct (Coproduct(), left)
+import Data.Functor.Coproduct (Coproduct(), left, coproduct)
 import Data.Generic (Generic, gEq, gCompare)
 
 import           Halogen
@@ -85,7 +85,13 @@ body = parentComponent' render eval peek
 
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
-      FV.peek' cpSelector child \s q -> case q of
-        FS.OpenFile modId fileId _ ->
-          modify _{ currentView = FileViewer modId fileId }
-        _ -> pure unit
+        FV.peek' cpSelector child \s q -> case q of
+          FS.OpenFile modId fileId _ ->
+            modify _{ currentView = FileViewer modId fileId }
+          _ -> pure unit
+        FV.peek' cpViewer child \s q -> coproduct goViewer (const $ pure unit) q
+      where
+        goViewer q = case q of
+          FV.CloseFile _ ->
+            modify _{ currentView = FileSelector }
+          _ -> pure unit

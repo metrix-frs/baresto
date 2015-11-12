@@ -63,7 +63,7 @@ handsontable propS propTable propBusinessData = component render eval
 
     render :: Render State Query
     render = const $ H.div
-      [ cls "hotcontainer"
+      [ cls "hotContainer"
       , P.initializer \el -> action (Init el)
       ] []
 

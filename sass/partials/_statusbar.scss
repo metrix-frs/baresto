@@ -1,9 +1,7 @@
 .status {
   background-color: $metrix-blue;
   height: $statusbar-height;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  padding-left: 4px;
+  padding: 2px;
   color: black;
   .spinnerContainer {
     float: left;
@@ -12,10 +10,9 @@
   }
   .license {
     float: right;
+    margin-right: 10px;
   }
   .menu {
     float: right;
-    margin-right: 10px;
-    margin-left: 10px;
   }
 }

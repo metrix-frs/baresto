@@ -1,5 +1,10 @@
 .hotContainer {
   overflow: auto;
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
 }
 
 .currentRow.yOrdinate, .currentRow.yOrdinateCode, .currentRow.yAbstract, .currentRow.yAbstractCode {

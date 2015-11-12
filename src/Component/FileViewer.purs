@@ -105,6 +105,7 @@ type Props =
 
 data Query a
   = Init a
+  | CloseFile a
   | SelectSheet S a
   | AddSheet String a
   | RenameSheet Int String a
@@ -121,27 +122,40 @@ viewer propModId propFileId = parentComponent' render eval peek
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
     render st = H.div
-        [ cls "viewer"
+        [ cls "container"
         , P.initializer \_ -> action Init
         ]
-        [ H.div [ cls "vieverBar" ]
+        [ H.div [ cls "toolbar" ]
           [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
             { component: MB.moduleBrowser, initialState: MB.initialState }
-          , H.div [ cls "sheetSelector" ]
+          , H.div [ cls "toolsep-right" ] []
+          , H.div
+            [ cls "tool-fileaction"
+            , E.onClick $ E.input_ CloseFile
+            ]
+            [ H.span [ cls "mega-octicon octicon-x" ] []
+            ]
+          , H.div [ cls "tool-fileaction" ]
+            [ H.span [ cls "mega-octicon octicon-three-bars" ] []
+            ]
+          , H.div [ cls "toolsep-right" ] []
+          , H.div [ cls "tool-sheets" ]
             [ viewSheetSelector st
             ]
-          , H.div [ cls "fileActions" ]
-            [ H.text "File Actions"
-            ]
+          , H.div [ cls "toolsep-right" ] []
           ]
-        , H.div [ cls "viewerContent" ]
-          [ case Tuple st.fileData st.tableData of
-              Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
-                then H.slot' cpHot HotSlot \_ ->
-                       { component: Hot.handsontable td.selectedSheet td.table fd.businessData
-                       , initialState: Hot.initialState }
-                else H.text "No sheets to display. Add member or select member for the z-Axis."
-              _ -> H.text "loading..."
+        , H.div [ cls "content" ]
+          [ H.div [ cls "panel-table"]
+            [ H.div [ cls "frame"]
+              [ case Tuple st.fileData st.tableData of
+                  Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
+                    then H.slot' cpHot HotSlot \_ ->
+                           { component: Hot.handsontable td.selectedSheet td.table fd.businessData
+                           , initialState: Hot.initialState }
+                    else H.text "No sheets to display. Add member or select member for the z-Axis."
+                  _ -> H.text "loading..."
+              ]
+            ]
           ]
         , case st.fileData of
             Just fd -> debugBusinessData fd.businessData
@@ -165,6 +179,9 @@ viewer propModId propFileId = parentComponent' render eval peek
                     }
                   }
         postAgent queue
+      pure next
+
+    eval (CloseFile next) = do
       pure next
 
     eval (SelectSheet s next) = do

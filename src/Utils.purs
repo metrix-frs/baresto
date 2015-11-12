@@ -10,6 +10,7 @@ module Utils
   , createEvent
   , createCustomEvent
   , customEventDetail
+  , shorten
   ) where
 
 import Prelude
@@ -20,7 +21,8 @@ import Data.Int hiding (round)
 import Data.Either
 import Data.Maybe
 import Data.Tuple
-import Data.Array
+import Data.Array hiding (take)
+import Data.String (take)
 import Data.Map (Map())
 import Data.Nullable
 import Data.String (toCharArray, fromCharArray)
@@ -87,3 +89,8 @@ foreign import customEventDetailImpl :: Event -> Nullable String
 
 customEventDetail :: Event -> Maybe String
 customEventDetail = toMaybe <<< customEventDetailImpl
+
+shorten :: String -> Int -> Maybe String
+shorten s len = let short = take len s in
+  if s == short then Nothing
+                else Just short

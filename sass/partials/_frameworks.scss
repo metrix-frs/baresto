@@ -19,15 +19,14 @@ ul.frameworks {
 
   li.conceptualModule {
     padding-left: 40px;
-    font-weight: bold;
   }
 
   li.module {
-    padding-left: 75px;
+    padding-left: 60px;
   }
 
   li.selected {
-    background-color: #DDD;
+    background-color: $metrix-lightblue;
   }
 
   .octicon {

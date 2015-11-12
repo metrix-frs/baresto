@@ -34,6 +34,7 @@
     border-radius: 3px;
     box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.5);
     pointer-events: none;
+    z-index: 300;
   }
 }
 
@@ -54,4 +55,13 @@
   bottom: 0px;
   right: 0px;
   top: 0px;
+}
+
+.panel-table {
+  @include panel();
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
 }

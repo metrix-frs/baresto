@@ -65,7 +65,7 @@ moduleBrowser = component render eval
 
     render :: Render State Query
     render st = H.div
-      [ cls "moduleBrowser"
+      [ cls "tool-modulebrowser"
       ]
       [ case st of
           Nothing -> H.text "module not loaded"
@@ -96,62 +96,86 @@ moduleBrowser = component render eval
       pure next
 
 renderModuleBrowser :: ModuleBrowserInfo -> ComponentHTML Query
-renderModuleBrowser info = H.div_
-    [ H.text (info.mod ^. _moduleLabel)
-    , H.div_ $ case info.selectedTable of
-        Nothing ->
-          [ H.p_ [ H.text "no table selected" ] ]
-        Just tSelect ->
-          let next = goRelativeModuloLen tSelect ((+) 1) (flattenTables info.mod)
-              prev = goRelativeModuloLen tSelect (\i -> i - 1) (flattenTables info.mod)
-          in
-          [ H.p_ [ H.text tSelect.code ]
-          , H.p_ [ H.text tSelect.label ]
-          , H.button [ E.onClick $ E.input_ $ SelectTable prev ] [ H.text "<"]
-          , H.button [ E.onClick $ E.input_ $ SelectTable next ] [ H.text ">"]
-          ]
-    , H.ul [ cls "group" ] $ if info.open
-        then renderTemplateGroup <$> (info.mod ^. _templateGroups)
-        else []
-    ]
+renderModuleBrowser info = H.div_ $
+    [ H.div
+      [ cls "module-control"
+      ] case info.selectedTable of
+          Nothing ->
+            [ H.p_ [ H.text "no table selected" ] ]
+          Just tSelect ->
+            let next = goRelativeModuloLen tSelect ((+) 1) (flattenTables info.mod)
+                prev = goRelativeModuloLen tSelect (\i -> i - 1) (flattenTables info.mod)
+            in
+            [ H.div
+              [ cls "nav-button"
+              , E.onClick $ E.input_ $ SelectTable prev
+              ]
+              [ H.span [ cls "mega-octicon octicon-triangle-left" ] []
+              ]
+            , H.div
+              [ cls "current"
+              , E.onClick $ E.input_ ToggleOpen
+              ]
+              [ H.p_ [ H.text tSelect.code ]
+              ]
+            , H.div
+              [ cls "nav-button"
+              , E.onClick $ E.input_ $ SelectTable next
+              ]
+              [ H.span [ cls "mega-octicon octicon-triangle-right" ] []
+              ]
+            ]
+    ] <> if info.open
+           then [ H.div [ cls "modules" ]
+                  [ H.ul_ $
+                      concat $ renderTemplateGroup <$> (info.mod ^. _templateGroups)
+                  ]
+                ]
+           else []
   where
-    renderTemplateGroup :: TemplateGroup -> ComponentHTML Query
-    renderTemplateGroup g = H.li_
-        [ H.div [ cls "row" ]
-          [ H.div [ cls $ if open then "open" else "closed" ] []
-          , H.span
+    renderTemplateGroup :: TemplateGroup -> Array (ComponentHTML Query)
+    renderTemplateGroup g =
+        [ H.li [ cls "group" ]
+          [ H.span
             [ cls "label"
             , E.onClick $ E.input_ $ ToggleGroupOpen gId
             ]
-            [ H.text (g ^. _templateGroupLabel) ]
+            [ H.span [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right" ] []
+            , H.text (g ^. _templateGroupLabel)
+            ]
           ]
-        , H.ul [ cls "template" ]
-          $ if open then renderTemplate <$> (g ^. _templates) else []
-        ]
+        ] <> if open then concat $ renderTemplate <$> (g ^. _templates) else []
       where
         gId = g ^. _templateGroupId
         open = fromMaybe true $ M.lookup gId info.groupOpen
 
-    renderTemplate :: Template -> ComponentHTML Query
-    renderTemplate t = H.li_
-        [ H.div [ cls "row" ]
-          [ H.span [ cls "template-label" ]
-            [ H.text (t ^. _templateLabel) ]
+    renderTemplate :: Template -> Array (ComponentHTML Query)
+    renderTemplate t =
+        [ H.li [ cls "template" ]
+          [ H.span [ cls "octicon octicon-primitive-dot" ] []
+          , case shorten (t ^. _templateLabel) 30 of
+              Nothing ->
+                H.text (t ^. _templateLabel)
+              Just short ->
+                H.a [ cls "tooltip" ]
+                  [ H.span_ [ H.text (t ^. _templateLabel) ]
+                  , H.text short
+                  , H.b_ [ H.text "..." ]
+                  ]
           ]
-        , H.ul [ cls "table" ]
-          $ renderTable <$> (t ^. _templateTables)
-        ]
+        ] <> (renderTable <$> (t ^. _templateTables))
       where
-        renderTable tbl = H.li_
-          [ H.div [ cls "row" ]
-            [ H.span
-              [ cls $ if selected tbl then "tableCode selected" else "tableCode"
-              , E.onClick $ E.input_ $ SelectTable { id: tbl ^. _tableEntryId
-                                                   , code: tbl ^. _tableEntryCode
-                                                   , label: t ^. _templateLabel
-                                                   }
-              ]
-              [ H.text (tbl ^. _tableEntryCode) ]
+        renderTable tbl = H.li
+          [ cls $ "table" <> if selected tbl then " selected" else "" ]
+          [ H.span
+            [ cls "label"
+            , E.onClick $ E.input_ $ SelectTable { id: tbl ^. _tableEntryId
+                                                 , code: tbl ^. _tableEntryCode
+                                                 , label: t ^. _templateLabel
+                                                 }
+            ]
+            [ H.span [ cls "octicon octicon-browser" ] []
+            , H.text (tbl ^. _tableEntryCode)
             ]
           ]
         selected tbl= case info.selectedTable of

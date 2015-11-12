@@ -89,7 +89,15 @@ selector = component render eval
       -- TODO report halogen issue about initializer
       [ H.span [ P.initializer \_ -> action Init ] []
       , H.div [ cls "toolbar" ]
-        [ H.div [ cls "toolarea" ] $ case st of
+        [ H.div [ cls "tool-importxbrl" ]
+          [ H.button
+            []
+            [ H.span [ cls "octicon octicon-arrow-up" ] []
+            , H.text "Import XBRL"
+            ]
+          ]
+        , H.div [ cls "toolsep-left" ] []
+        , H.div [ cls "tool-newfile" ] $ case st of
             Just st' -> case st'.selectedNode of
               SelectedModule mId ->
                 [ H.input
@@ -101,17 +109,18 @@ selector = component render eval
                   [ H.text "Create" ]
                 ]
               _ ->
-                [ H.text "Please select a module to create a new file" ]
+                [ H.text "Please select a module to create a new file." ]
             Nothing -> []
+        , H.div [ cls "toolsep-left" ] []
         ]
       , H.div [ cls "content" ] $ case st of
-              Just st' ->
-                [ renderFrameworks st'
-                , renderFiles st'
-                ]
-              Nothing ->
-                [ H.text "loading..."
-                ]
+          Just st' ->
+            [ renderFrameworks st'
+            , renderFiles st'
+            ]
+          Nothing ->
+            [ H.text "loading..."
+            ]
       ]
 
     eval :: Eval Query State Query Metrix
@@ -252,6 +261,9 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
     renderModuleEntry (ModuleEntry m) = H.li
         [ cls $ "module" <> if selected then " selected" else "" ]
         [ H.span
+          [ cls $ "octicon octicon-package"
+          ] []
+        , H.span
           [ cls "label"
           , E.onClick $ E.input_ (SelectModule m.moduleEntryId)
           ]
@@ -266,18 +278,31 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
 renderFiles :: StateInfo -> ComponentHTML Query
 renderFiles st = H.div [ cls "panel-filelist" ]
     [ H.div [ cls "frame" ]
-      [ H.ul_ $ mod <$> arrangeFiles st
+      [ H.ul [ cls "files" ] $ concat $ mod <$> arrangeFiles st
       ]
     ]
   where
-    mod (Tuple (ModuleEntry m) files) = H.li_
-      [ H.text $ m.moduleEntryLabel
-      , H.ul_ $ file <$> files
-      ]
-    file (File f) = H.li_
-      [ H.span
-        [ E.onClick (E.input_ (OpenFile f.fileModuleId f.fileId)) ]
-        [ H.text $ f.fileLabel <> ", created " <> f.fileCreated ]
+    mod (Tuple (ModuleEntry m) files) =
+      [ H.li [ cls "module" ]
+        [ H.span
+          [ cls $ "octicon octicon-package"
+          ] []
+        , H.text $ m.moduleEntryLabel
+        ]
+      ] <> (file <$> files)
+    file (File f) = H.li [ cls "file" ]
+      [ H.div
+        [ cls "label"
+        , E.onClick (E.input_ (OpenFile f.fileModuleId f.fileId))
+        ]
+        [ H.span
+          [ cls "octicon octicon-file-text"
+          ] []
+        , H.text f.fileLabel
+        ]
+      , H.div [ cls "details" ]
+        [ H.text $ "Created: " <> f.fileCreated
+        ]
       ]
 
 --
