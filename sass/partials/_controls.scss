@@ -18,14 +18,6 @@ button {
   }
 }
 
-a {
-  text-decoration: none;
-  color: $metrix-blue;
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 input {
   border-radius: 5px;
   border: 2px solid $metrix-darkblue;
@@ -82,4 +74,8 @@ a.tooltip {
       }
     }
   }
+}
+
+p.msg {
+  margin: 30px;
 }

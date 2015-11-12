@@ -126,19 +126,19 @@ viewer propModId propFileId = parentComponent' render eval peek
         , P.initializer \_ -> action Init
         ]
         [ H.div [ cls "toolbar" ]
-          [ H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
-            { component: MB.moduleBrowser, initialState: MB.initialState }
-          , H.div [ cls "toolsep-right" ] []
-          , H.div
-            [ cls "tool-fileaction"
+          [ H.div
+            [ cls "tool-close"
             , E.onClick $ E.input_ CloseFile
             ]
             [ H.span [ cls "mega-octicon octicon-x" ] []
             ]
-          , H.div [ cls "tool-fileaction" ]
+          , H.div [ cls "tool-menu" ]
             [ H.span [ cls "mega-octicon octicon-three-bars" ] []
             ]
-          , H.div [ cls "toolsep-right" ] []
+          , H.div [ cls "toolsep-mb-right" ] []
+          , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
+            { component: MB.moduleBrowser, initialState: MB.initialState }
+          , H.div [ cls "toolsep-mb-left" ] []
           , H.div [ cls "tool-sheets" ]
             [ viewSheetSelector st
             ]
@@ -153,7 +153,7 @@ viewer propModId propFileId = parentComponent' render eval peek
                            { component: Hot.handsontable td.selectedSheet td.table fd.businessData
                            , initialState: Hot.initialState }
                     else H.text "No sheets to display. Add member or select member for the z-Axis."
-                  _ -> H.text "loading..."
+                  _ -> H.p [ cls "msg" ] [ H.text "Please select a table from the list on the right..." ]
               ]
             ]
           ]

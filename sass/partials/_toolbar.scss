@@ -6,7 +6,7 @@
 }
 
 @mixin toolsep() {
-  height: 100%;
+  height: $toolbar-height;
   width: 0px;
   border-right: 1px solid lighten($metrix-lightblue, 5%);
   border-left: 1px solid darken($metrix-lightblue, 10%);
@@ -22,8 +22,26 @@
   float: right;
 }
 
+@mixin toolsep-abs() {
+  @include toolsep();
+  z-index: 1004;
+  position: absolute;
+  top: 0px;
+}
+
+.toolsep-mb-right {
+  @include toolsep-abs();
+  right: 2 * $toolbar-height;
+}
+
+.toolsep-mb-left {
+  @include toolsep-abs();
+  right: $modulebrowser-width - 1;
+}
+
 @mixin tool() {
-  height: 100%;
+  height: $toolbar-height;
+  background-color: $metrix-lightblue;
 }
 
 @mixin clickable() {
@@ -51,19 +69,31 @@
 .tool-modulebrowser {
   @include tool();
   float: right;
-  width: $modulebrowser-width;
+  width: $modulebrowser-width - 2 * $toolbar-height - 3;
 }
 
-.tool-fileaction {
+@mixin tool-action() {
   @include tool();
   @include clickable();
-  float: right;
   width: $toolbar-height;
   text-align: center;
   line-height: $toolbar-height;
+  z-index: 1004;
+  position: absolute;
+  top: 0px;
   .mega-octicon {
     vertical-align: middle;
   }
+}
+
+.tool-close {
+  @include tool-action();
+  right: 0px;
+}
+
+.tool-menu {
+  @include tool-action();
+  right: $toolbar-height;
 }
 
 .tool-sheets {

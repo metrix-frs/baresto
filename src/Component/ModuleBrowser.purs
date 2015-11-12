@@ -68,7 +68,7 @@ moduleBrowser = component render eval
       [ cls "tool-modulebrowser"
       ]
       [ case st of
-          Nothing -> H.text "module not loaded"
+          Nothing -> H.text ""
           Just mbInfo -> renderModuleBrowser mbInfo
       ]
 
@@ -101,7 +101,7 @@ renderModuleBrowser info = H.div_ $
       [ cls "module-control"
       ] case info.selectedTable of
           Nothing ->
-            [ H.p_ [ H.text "no table selected" ] ]
+            [ H.text "" ]
           Just tSelect ->
             let next = goRelativeModuloLen tSelect ((+) 1) (flattenTables info.mod)
                 prev = goRelativeModuloLen tSelect (\i -> i - 1) (flattenTables info.mod)
@@ -153,7 +153,7 @@ renderModuleBrowser info = H.div_ $
     renderTemplate t =
         [ H.li [ cls "template" ]
           [ H.span [ cls "octicon octicon-primitive-dot" ] []
-          , case shorten (t ^. _templateLabel) 30 of
+          , case shorten (t ^. _templateLabel) 45 of
               Nothing ->
                 H.text (t ^. _templateLabel)
               Just short ->
