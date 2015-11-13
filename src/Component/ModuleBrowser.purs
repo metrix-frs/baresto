@@ -95,6 +95,10 @@ moduleBrowser = component render eval
       modify $ map \info -> info { open = not info.open }
       pure next
 
+    -- TODO purescript-halogen issue about type inference
+    htmlProblem :: forall f. Int -> ComponentHTML f
+    htmlProblem x = H.li_ ([H.br_ :: ComponentHTML f, H.text "hl" ] <> [H.li_ [], H.br_])
+
 renderModuleBrowser :: ModuleBrowserInfo -> ComponentHTML Query
 renderModuleBrowser info = H.div_ $
     [ H.div

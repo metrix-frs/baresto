@@ -24,6 +24,7 @@ import qualified Halogen.HTML.Events.Indexed as E
 
 import qualified Component.ModuleBrowser as MB
 import qualified Component.Handsontable as Hot
+import qualified Component.Validation as V
 
 import Optic.Core
 import Optic.Monad.Setter
@@ -51,15 +52,24 @@ derive instance genericHotSlot :: Generic HotSlot
 instance eqHotSlot :: Eq HotSlot where eq = gEq
 instance ordHotSlot :: Ord HotSlot where compare = gCompare
 
-type ChildState = Either MB.State Hot.State
-type ChildQuery = Coproduct MB.Query Hot.Query
-type ChildSlot = Either ModuleBrowserSlot HotSlot
+data ValidationSlot = ValidationSlot
+
+derive instance genericValidationSlot :: Generic ValidationSlot
+instance eqValidationSlot :: Eq ValidationSlot where eq = gEq
+instance ordValidationSlot :: Ord ValidationSlot where compare = gCompare
+
+type ChildState = Either MB.State (Either Hot.State V.State)
+type ChildQuery = Coproduct MB.Query (Coproduct Hot.Query V.Query)
+type ChildSlot = Either ModuleBrowserSlot (Either HotSlot ValidationSlot)
 
 cpModuleBrowser :: ChildPath MB.State ChildState MB.Query ChildQuery ModuleBrowserSlot ChildSlot
 cpModuleBrowser = cpL
 
 cpHot :: ChildPath Hot.State ChildState Hot.Query ChildQuery HotSlot ChildSlot
-cpHot = cpR
+cpHot = cpR :> cpL
+
+cpValidation :: ChildPath V.State ChildState V.Query ChildQuery ValidationSlot ChildSlot
+cpValidation = cpR :> cpR
 
 --
 
@@ -144,6 +154,9 @@ viewer propModId propFileId = parentComponent' render eval peek
             ]
           , H.div [ cls "toolsep-right" ] []
           ]
+        , H.slot' cpValidation ValidationSlot \_ ->
+            { component: V.validation propModId
+            , initialState: V.initialState }
         , H.div [ cls "content" ]
           [ H.div [ cls "panel-table"]
             [ H.div [ cls "frame"]

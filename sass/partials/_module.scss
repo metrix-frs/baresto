@@ -52,7 +52,7 @@
   ul {
     list-style: none;
     margin: 0px;
-    padding: 0px;
+    padding: 5px 0px 5px 0px;
   }
 
   li {
@@ -60,16 +60,16 @@
   }
 
   li.group {
-    padding-left: 2px;
+    padding-left: 7px;
     font-weight: bold;
   }
 
   li.template {
-    padding-left: 20px;
+    padding-left: 25px;
   }
 
   li.table {
-    padding-left: 38px;
+    padding-left: 43px;
   }
 
   li.selected {
