@@ -11,6 +11,7 @@ module Utils
   , createCustomEvent
   , customEventDetail
   , shorten
+  , peek'
   ) where
 
 import Prelude
@@ -35,6 +36,8 @@ import Control.Monad.Eff
 import Control.Bind
 import Control.Alt ((<|>))
 
+import           Halogen
+import           Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Core as H
 
@@ -94,3 +97,13 @@ shorten :: String -> Int -> Maybe String
 shorten s len = let short = take len s in
   if s == short then Nothing
                 else Just short
+
+-- TODO: purescript-halogen PR
+peek' :: forall s s' s'' f f' f'' g p p' a
+       . ChildPath s'' s' f'' f' p' p
+      -> ChildF p f' a
+      -> (p' -> f'' a -> ParentDSL s s' f f' g p Unit)
+      -> ParentDSL s s' f f' g p Unit
+peek' cp (ChildF s q) action = case Tuple (prjSlot cp s) (prjQuery cp q) of
+  Tuple (Just s') (Just q') -> action s' q'
+  _ -> pure unit

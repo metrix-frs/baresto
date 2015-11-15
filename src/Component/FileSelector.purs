@@ -11,6 +11,8 @@ import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Foldable
 import           Data.Tuple
+import           Data.Functor.Coproduct (Coproduct())
+import           Data.Generic (Generic, gEq, gCompare)
 
 import Optic.Core
 import Optic.At
@@ -24,11 +26,20 @@ import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
+import qualified Component.File as F
+
 import Api
 import Api.Schema.Selector
+import Api.Schema.File
 
 import Types
 import Utils
+
+data FileSlot = FileSlot FileId
+
+derive instance genericFileSlot :: Generic FileSlot
+instance eqFileSlot :: Eq FileSlot where eq = gEq
+instance ordFileSlot :: Ord FileSlot where compare = gCompare
 
 data SelectedNode
   = SelectedNone
@@ -69,7 +80,6 @@ initialState = Nothing
 
 data Query a
   = Init a
-  | OpenFile ModuleId UpdateId a
   | SetFileName String a
   | CreateFile ModuleId String a
   | SelectFramework FrameworkId a
@@ -80,11 +90,15 @@ data Query a
   | ToggleTaxonomyOpen TaxonomyId a
   | ToggleConceptualModuleOpen TaxonomyId ConceptualModuleId a
 
-selector :: Component State Query Metrix
-selector = component render eval
+type StateP = InstalledState State F.State Query F.Query Metrix FileSlot
+type QueryP = Coproduct Query (ChildF FileSlot F.Query)
+type ComponentHTMLP = ParentHTML F.State Query F.Query Metrix FileSlot
+
+selector :: Component StateP QueryP Metrix
+selector = parentComponent' render eval peek
   where
 
-    render :: Render State Query
+    render :: RenderParent State F.State Query F.Query Metrix FileSlot
     render st = H.div [ cls "container" ] $
       -- TODO report halogen issue about initializer
       [ H.span [ P.initializer \_ -> action Init ] []
@@ -123,10 +137,10 @@ selector = component render eval
             ]
       ]
 
-    eval :: Eval Query State Query Metrix
+    eval :: EvalParent Query State F.State Query F.Query Metrix FileSlot
     eval (Init next) = do
-      apiCall listFiles \files -> do
-        apiCall listFrameworks \frameworks -> do
+      apiCallParent listFiles \files -> do
+        apiCallParent listFrameworks \frameworks -> do
           modify $ const $ Just
             { files: files
             , frameworks: frameworks
@@ -137,9 +151,6 @@ selector = component render eval
             , newFileName: ""
             }
           pure unit
-      pure next
-
-    eval (OpenFile _ _ next) = do
       pure next
 
     eval (SetFileName name next) = do
@@ -177,14 +188,20 @@ selector = component render eval
       modify $ _Just .. _openConceptualModule .. at (Tuple t c) .. non true %~ (not :: Boolean -> Boolean)
       pure next
 
-renderFrameworks :: StateInfo -> ComponentHTML Query
+    peek :: Peek (ChildF FileSlot F.Query) State F.State Query F.Query Metrix FileSlot
+    peek (ChildF (FileSlot fileId) q) = case q of
+      F.Delete _ -> do
+        pure unit
+      _ -> pure unit
+
+renderFrameworks :: StateInfo -> ComponentHTMLP
 renderFrameworks st = H.div [ cls "panel-frameworklist" ]
     [ H.div [ cls "frame" ]
       [ H.ul [ cls "frameworks" ] $ concat $ renderFramework <$> st.frameworks
       ]
     ]
   where
-    renderFramework :: Framework -> Array (ComponentHTML Query)
+    renderFramework :: Framework -> Array ComponentHTMLP
     renderFramework (Framework f) =
         [ H.li
           [ cls $ "framework" <> if selected then " selected" else "" ]
@@ -206,7 +223,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           SelectedFramework fId -> fId == f.frameworkId
           _                     -> false
 
-    renderTaxonomy :: Taxonomy -> Array (ComponentHTML Query)
+    renderTaxonomy :: Taxonomy -> Array ComponentHTMLP
     renderTaxonomy (Taxonomy t) =
         [ H.li
           [ cls $ "taxonomy" <> if selected then " selected" else "" ]
@@ -228,7 +245,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           SelectedTaxonomy tId -> tId == t.taxonomyId
           _                    -> false
 
-    renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array (ComponentHTML Query)
+    renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array ComponentHTMLP
     renderConceptualModule tId (ConceptualModule c) =
         [ H.li
           [ cls $ "conceptualModule" <> if selected then " selected" else "" ]
@@ -250,7 +267,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           SelectedConceptualModule tId' cId -> tId' == tId && cId == c.conceptId
           _                                 -> false
 
-    renderModuleEntry :: ModuleEntry -> ComponentHTML Query
+    renderModuleEntry :: ModuleEntry -> ComponentHTMLP
     renderModuleEntry (ModuleEntry m) = H.li
         [ cls $ "module" <> if selected then " selected" else "" ]
         [ H.span
@@ -268,7 +285,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           SelectedModule mId -> mId == m.moduleEntryId
           _                  -> false
 
-renderFiles :: StateInfo -> ComponentHTML Query
+renderFiles :: StateInfo -> ComponentHTMLP
 renderFiles st = H.div [ cls "panel-filelist" ]
     [ H.div [ cls "frame" ]
       [ H.ul [ cls "files" ] $ concat $ mod <$> arrangeFiles st
@@ -282,21 +299,11 @@ renderFiles st = H.div [ cls "panel-filelist" ]
           ] []
         , H.text $ m.moduleEntryLabel
         ]
-      ] <> (file <$> files)
-    file (File f) = H.li [ cls "file" ]
-      [ H.div
-        [ cls "label"
-        , E.onClick (E.input_ (OpenFile f.fileModuleId f.fileLastUpdateId))
-        ]
-        [ H.span
-          [ cls "octicon octicon-file-text"
-          ] []
-        , H.text f.fileLabel
-        ]
-      , H.div [ cls "details" ]
-        [ H.text $ "Created: " <> f.fileCreated
-        ]
-      ]
+      ] <> (renderFile <$> files)
+    renderFile file@(File f) = H.slot (FileSlot f.fileId) \_ ->
+      { component: F.file
+      , initialState: F.initialState file
+      }
 
 --
 

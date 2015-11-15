@@ -40,6 +40,7 @@ type TemplateId         = Int
 
 type FileId             = Int
 type UpdateId           = Int
+type TagId              = Int
 
 type TableId            = Int
 type AxisId             = Int

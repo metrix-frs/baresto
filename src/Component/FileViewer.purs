@@ -17,7 +17,7 @@ import           Data.Functor.Coproduct (Coproduct())
 import           Data.Generic (Generic, gEq, gCompare)
 
 import           Halogen
-import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>), prjSlot, prjQuery)
+import           Halogen.Component.ChildPath (cpL, cpR, (:>))
 import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
@@ -419,13 +419,3 @@ debugBusinessData bd = H.div_
       [ H.td_ [ H.text $ show key ]
       , H.td_ [ H.text val ]
       ]
-
--- TODO: purescript-halogen PR
-peek' :: forall s s' s'' f f' f'' g p p' a
-       . ChildPath s'' s' f'' f' p' p
-      -> ChildF p f' a
-      -> (p' -> f'' a -> ParentDSL s s' f f' g p Unit)
-      -> ParentDSL s s' f f' g p Unit
-peek' cp (ChildF s q) action = case Tuple (prjSlot cp s) (prjQuery cp q) of
-  Tuple (Just s') (Just q') -> action s' q'
-  _ -> pure unit

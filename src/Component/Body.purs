@@ -13,11 +13,12 @@ import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
+import qualified Component.File as F
 import qualified Component.FileSelector as FS
 import qualified Component.FileViewer as FV
 
 import Types
-import Utils (cls)
+import Utils (cls, peek')
 import Api
 import Api.Schema.BusinessData
 
@@ -33,11 +34,11 @@ derive instance genericViewerSlot :: Generic ViewerSlot
 instance eqViewerSlot :: Eq ViewerSlot where eq = gEq
 instance ordViewerSlot :: Ord ViewerSlot where compare = gCompare
 
-type ChildState = Either FS.State FV.StateP
-type ChildQuery = Coproduct FS.Query FV.QueryP
+type ChildState = Either FS.StateP FV.StateP
+type ChildQuery = Coproduct FS.QueryP FV.QueryP
 type ChildSlot = Either SelectorSlot ViewerSlot
 
-cpSelector :: ChildPath FS.State ChildState FS.Query ChildQuery SelectorSlot ChildSlot
+cpSelector :: ChildPath FS.StateP ChildState FS.QueryP ChildQuery SelectorSlot ChildSlot
 cpSelector = cpL
 
 cpViewer :: ChildPath FV.StateP ChildState FV.QueryP ChildQuery ViewerSlot ChildSlot
@@ -74,7 +75,7 @@ body = parentComponent' render eval peek
     render st = H.div [ cls "body" ] $ case st.currentView of
       FileSelector ->
         [ H.slot' cpSelector SelectorSlot \_ ->
-          { component: FS.selector, initialState: FS.initialState }
+          { component: FS.selector, initialState: installedState FS.initialState }
         ]
       FileViewer modId updateId ->
         [ H.slot' cpViewer (ViewerSlot modId updateId) \_ ->
@@ -87,16 +88,19 @@ body = parentComponent' render eval peek
 
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
-        FV.peek' cpSelector child \s q -> case q of
-          FS.OpenFile modId updateId _ ->
-            modify _{ currentView = FileViewer modId updateId }
+        peek' cpSelector child \s q -> coproduct peekSelector peekFile q
+        peek' cpViewer   child \s q -> coproduct peekViewer (const $ pure unit) q
+      where
+        peekSelector q = case q of
           FS.CreateFile modId name _ ->
             apiCallParent (newFile modId name) \(UpdateGet u) ->
               modify _{ currentView = FileViewer modId u.updateGetId }
           _ -> pure unit
-        FV.peek' cpViewer child \s q -> coproduct goViewer (const $ pure unit) q
-      where
-        goViewer q = case q of
+        peekFile (ChildF _ q) = case q of
+          F.Open modId updateId _ ->
+            modify _{ currentView = FileViewer modId updateId }
+          _ -> pure unit
+        peekViewer q = case q of
           FV.CloseFile _ ->
             modify _{ currentView = FileSelector }
           _ -> pure unit
