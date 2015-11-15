@@ -69,9 +69,9 @@ initialState = Nothing
 
 data Query a
   = Init a
-  | OpenFile ModuleId FileId a
+  | OpenFile ModuleId UpdateId a
   | SetFileName String a
-  | CreateFile ModuleId a
+  | CreateFile ModuleId String a
   | SelectFramework FrameworkId a
   | SelectTaxonomy TaxonomyId a
   | SelectConceptualModule TaxonomyId ConceptualModuleId a
@@ -105,7 +105,7 @@ selector = component render eval
                   , P.value st'.newFileName
                   ]
                 , H.button
-                  [ E.onClick $ E.input_ (CreateFile mId) ]
+                  [ E.onClick $ E.input_ (CreateFile mId st'.newFileName) ]
                   [ H.text "Create" ]
                 ]
               _ ->
@@ -146,14 +146,7 @@ selector = component render eval
       modify $ _Just .. _newFileName .~ name
       pure next
 
-    eval (CreateFile modId next) = do
-      st <- get
-      case st of
-        Just stInfo -> when (stInfo.newFileName /= "") do
-          apiCall (newFile modId stInfo.newFileName) \resp ->
-            -- TODO get fileId from server
-            pure unit
-        Nothing -> pure unit
+    eval (CreateFile _ _ next) = do
       pure next
 
     eval (SelectFramework f next) = do
@@ -293,7 +286,7 @@ renderFiles st = H.div [ cls "panel-filelist" ]
     file (File f) = H.li [ cls "file" ]
       [ H.div
         [ cls "label"
-        , E.onClick (E.input_ (OpenFile f.fileModuleId f.fileId))
+        , E.onClick (E.input_ (OpenFile f.fileModuleId f.fileLastUpdateId))
         ]
         [ H.span
           [ cls "octicon octicon-file-text"

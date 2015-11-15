@@ -52,65 +52,70 @@ apiCallParent call onSuccess = do
     Left err -> liftQuery $ liftEff' $ ErrorBox.raise $ message err
     Right x -> onSuccess x
 
+--
+
+prefix :: String
+prefix = "/api/v0.1/"
+
 -- Api.Table
 
 getTable :: forall eff. ModuleId -> TableId -> Aff (Effects eff) Table
 getTable modId tableId = getJsonResponse "Could not fetch table." $
-  get $ "/api/v0.1/table/get/" <> show modId <> "/" <> show tableId
+  get $ prefix <> "table/get/" <> show modId <> "/" <> show tableId
 
 getHeader :: forall eff. Aff (Effects eff) Table
 getHeader = getJsonResponse "Could not fetch header." $
-  get $ "/api/v0.1/template/header/DE"
+  get $ prefix <> "template/header/DE"
 
 -- Api.Module
 
 getModule :: forall eff. ModuleId -> Aff (Effects eff) Module
 getModule modId = getJsonResponse "Could not load templates of module." $
-  get $ "/api/v0.1/module/get/" <> show modId
+  get $ prefix <> "module/get/" <> show modId
 
 -- Api.BusinessData
 
-getFile :: forall eff. FileId -> Aff (Effects eff) UpdateGet
-getFile fileId = getJsonResponse "Could not load file." $
-  get $ "/api/v0.1/businessdata/file/get/" <> show fileId
+getUpdateSnapshot :: forall eff. UpdateId -> Aff (Effects eff) UpdateGet
+getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
+  get $ prefix <> "businessdata/update/snapshot/" <> show updateId
 
 newFile :: forall eff. ModuleId -> String -> Aff (Effects eff) UpdateGet
 newFile modId name = getJsonResponse "Could not create file." $
-  get $ "/api/v0.1/businessdata/file/new/" <> show modId <> "/" <> name
+  get $ prefix <> "businessdata/file/new/" <> show modId <> "/" <> name
 
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $
-  postJson "/api/v0.1/businessdata/update/post" upd
+  postJson (prefix <> "businessdata/update") upd
 
 -- Api.Selector
 
 listFrameworks :: forall eff. Aff (Effects eff) (Array Framework)
 listFrameworks = getJsonResponse "Could not get frameworks." $
-  get "/api/v0.1/selector/frameworks"
+  get $ prefix <> "selector/frameworks"
 
 listFiles :: forall eff. Aff (Effects eff) (Array File)
 listFiles = getJsonResponse "Could not get files." $
-  get "/api/v0.1/selector/files"
+  get $ prefix <> "selector/files"
 
 -- Api.Validate
 
 validate :: forall eff. ModuleId -> Aff (Effects eff) (Array Finding)
 validate modId = getJsonResponse "Could not validate." $
-  get $ "/api/v0.1/validate/byModuleId/" <> show modId
+  get $ prefix <> "validate/byModuleId/" <> show modId
 
 -- Api.Auth
 
 login :: forall eff. String -> String -> Aff (Effects eff) LoginResponse
 login customerId pw = getJsonResponse "Could not login." $
-  get $ "/api/v0.1/auth/login/?customerId=" <> customerId <> "&password=" <> pw
+  get $ prefix <> "auth/login/?customerId=" <> customerId <> "&password=" <> pw
 
 logout :: forall eff. Aff (Effects eff) Unit
 logout = do
-  res <- get "/api/v0.1/auth/logout"
+  res <- get $ prefix <> "auth/logout"
   if succeeded res.status
     then pure (res.response :: String) *> pure unit
     else throwError $ error "Error logging out."
 
 loginStatus :: forall eff. Aff (Effects eff) LoginStatus
 loginStatus = getJsonResponse "Could not get login status." $
-  get "/api/v0.1/auth/status"
+  get $ prefix <> "auth/status"

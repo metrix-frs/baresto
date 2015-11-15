@@ -47,13 +47,14 @@ validation propModId = component render eval
     render :: Render State Query
     render st = if st.open
       then H.div
-        [ cls "validation-open"
-        , E.onClick $ E.input_ ToggleOpen
-        ]
+        [ cls "validation-open" ]
         [ H.button
           [ E.onClick $ E.input_ Validate ]
           [ H.span [ cls "octicon octicon-tasklist" ] []
           , H.text "Validate" ]
+        , H.button
+          [ E.onClick $ E.input_ ToggleOpen ]
+          [ H.text "Close" ]
         , H.ul_ $ renderFinding <$> st.findings
         ]
       else H.div
@@ -63,7 +64,16 @@ validation propModId = component render eval
         [ H.text "^"
         ]
 
+    -- TODO purescript-halogen issue about type inference
+    htmlProblem :: forall f. Int -> ComponentHTML f
+    htmlProblem x = H.li_ ([H.br_ :: ComponentHTML f, H.text "hl" ] <> [H.li_ [], H.br_])
+
     eval :: Eval Query State Query Metrix
     eval (ToggleOpen next) = do
       modify \st -> st{ open = not st.open }
+      pure next
+
+    eval (Validate next) = do
+      apiCall (validate propModId) \findings ->
+        modify _{ findings = findings }
       pure next

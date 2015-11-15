@@ -14,6 +14,7 @@ newtype File = File
   , fileModuleId :: ModuleId
   , fileLabel :: String
   , fileCreated :: UTCTime
+  , fileLastUpdateId :: UpdateId
   }
 
 _File :: LensP File _
@@ -31,11 +32,13 @@ instance isForeignFile :: IsForeign File where
             , fileModuleId: _
             , fileLabel: _
             , fileCreated: _
+            , fileLastUpdateId: _
             }
       <$> readProp "id" json
       <*> readProp "moduleId" json
       <*> readProp "label" json
       <*> readProp "created" json
+      <*> readProp "lastUpdateId" json
     pure $ File file
 
 --

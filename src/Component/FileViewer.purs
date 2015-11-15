@@ -75,7 +75,6 @@ cpValidation = cpR :> cpR
 
 type FileData =
   { businessData  :: BusinessData
-  , fileId        :: FileId
   , moduleId      :: ModuleId
   , lastUpdateId  :: UpdateId
   , lastSaved     :: UTCTime
@@ -110,7 +109,7 @@ initialState =
 -- TODO: use this in slot as soon as psc #1443 is fixed
 type Props =
   { moduleId :: ModuleId
-  , fileId :: FileId
+  , updateId :: UpdateId
   }
 
 data Query a
@@ -126,8 +125,8 @@ data Query a
 type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
-viewer :: ModuleId -> FileId -> Component StateP QueryP Metrix
-viewer propModId propFileId = parentComponent' render eval peek
+viewer :: ModuleId -> UpdateId -> Component StateP QueryP Metrix
+viewer propModId propUpdateId = parentComponent' render eval peek
   where
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
@@ -180,11 +179,10 @@ viewer propModId propFileId = parentComponent' render eval peek
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
       query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot propModId
-      apiCallParent (getFile propFileId) \(UpdateGet upd) -> do
+      apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) -> do
         queue <- liftH $ liftAff' makeVar
         modify $ _{ fileData = Just
                     { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
-                    , fileId: propFileId
                     , moduleId: propModId
                     , lastUpdateId: upd.updateGetId
                     , lastSaved: upd.updateGetCreated
@@ -247,7 +245,6 @@ viewer propModId propFileId = parentComponent' render eval peek
       update <- liftH $ liftAff' $ takeVar queue
       let payload = UpdatePost
             { updatePostParentId: fd.lastUpdateId
-            , updatePostFileId: fd.fileId
             , updatePostUpdate: update
             }
       let post = do

@@ -18,6 +18,8 @@ import qualified Component.FileViewer as FV
 
 import Types
 import Utils (cls)
+import Api
+import Api.Schema.BusinessData
 
 data SelectorSlot = SelectorSlot
 
@@ -45,7 +47,7 @@ cpViewer = cpR
 
 data CurrentView
   = FileSelector
-  | FileViewer ModuleId FileId
+  | FileViewer ModuleId UpdateId
 
 type State =
   { currentView :: CurrentView
@@ -74,9 +76,9 @@ body = parentComponent' render eval peek
         [ H.slot' cpSelector SelectorSlot \_ ->
           { component: FS.selector, initialState: FS.initialState }
         ]
-      FileViewer modId fileId ->
-        [ H.slot' cpViewer (ViewerSlot modId fileId) \_ ->
-          { component: FV.viewer modId fileId, initialState: installedState FV.initialState }
+      FileViewer modId updateId ->
+        [ H.slot' cpViewer (ViewerSlot modId updateId) \_ ->
+          { component: FV.viewer modId updateId, initialState: installedState FV.initialState }
         ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
@@ -86,8 +88,11 @@ body = parentComponent' render eval peek
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
         FV.peek' cpSelector child \s q -> case q of
-          FS.OpenFile modId fileId _ ->
-            modify _{ currentView = FileViewer modId fileId }
+          FS.OpenFile modId updateId _ ->
+            modify _{ currentView = FileViewer modId updateId }
+          FS.CreateFile modId name _ ->
+            apiCallParent (newFile modId name) \(UpdateGet u) ->
+              modify _{ currentView = FileViewer modId u.updateGetId }
           _ -> pure unit
         FV.peek' cpViewer child \s q -> coproduct goViewer (const $ pure unit) q
       where

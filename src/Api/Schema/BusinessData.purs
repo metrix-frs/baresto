@@ -55,13 +55,11 @@ instance encodeJsonChange :: EncodeJson Change where
 
 newtype UpdatePost = UpdatePost
   { updatePostParentId :: UpdateId
-  , updatePostFileId   :: FileId
   , updatePostUpdate   :: Update
   }
 
 instance encodeJsonUpdatePost :: EncodeJson UpdatePost where
   encodeJson (UpdatePost p) = "parentId" := p.updatePostParentId
-                           ~> "fileId" := p.updatePostFileId
                            ~> "update" := p.updatePostUpdate
                            ~> jsonEmptyObject
 

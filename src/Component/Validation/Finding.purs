@@ -18,16 +18,16 @@ import Api.Schema.Finding
 import Utils (cls)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
-renderFinding (Finding f) = H.li_ []--$
-  -- [ H.b_ [ H.text $ f.finCode <> ": " ]
-  -- , H.text f.finMessage
-  -- , H.br_
-  -- ] <> case f.finFormula of
-  --        Just formula ->
-  --         [ renderFormula formula
-  --         , H.br_
-  --         ]
-  --        Nothing -> []
+renderFinding (Finding f) = H.li_ $
+  [ H.b_ [ H.text $ f.finCode <> ": " ]
+  , H.text f.finMessage
+  , H.br_ :: ComponentHTML f
+  ] <> case f.finFormula of
+         Just formula ->
+          [ renderFormula formula
+          , H.br_ :: ComponentHTML f
+          ]
+         Nothing -> []
 
 renderFormula :: forall f. Formula -> ComponentHTML f
 renderFormula f = H.div [ cls "formula" ] $ renderTerm f
