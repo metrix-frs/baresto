@@ -60,6 +60,9 @@ type StateInfo =
 
 type State = Maybe StateInfo
 
+_files :: LensP StateInfo (Array File)
+_files = lens _.files _{ files = _ }
+
 _openFramework :: LensP StateInfo (M.Map FrameworkId Boolean)
 _openFramework = lens _.openFramework _{ openFramework = _ }
 
@@ -190,8 +193,10 @@ selector = parentComponent' render eval peek
 
     peek :: Peek (ChildF FileSlot F.Query) State F.State Query F.Query Metrix FileSlot
     peek (ChildF (FileSlot fileId) q) = case q of
-      F.Delete _ -> do
-        pure unit
+      F.DeleteYes _ -> do
+        apiCallParent (deleteFile fileId) \_ -> do
+          modify $ _Just .. _files %~ filter (\(File f) -> f.fileId /= fileId)
+          pure unit
       _ -> pure unit
 
 renderFrameworks :: StateInfo -> ComponentHTMLP

@@ -17,7 +17,7 @@ import           Data.Functor.Coproduct (Coproduct())
 import           Data.Generic (Generic, gEq, gCompare)
 
 import           Halogen
-import           Halogen.Component.ChildPath (cpL, cpR, (:>))
+import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
 import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E

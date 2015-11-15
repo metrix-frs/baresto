@@ -84,6 +84,21 @@ newFile :: forall eff. ModuleId -> String -> Aff (Effects eff) UpdateGet
 newFile modId name = getJsonResponse "Could not create file." $
   get $ prefix <> "businessdata/file/new/" <> show modId <> "/" <> name
 
+deleteFile :: forall eff. FileId -> Aff (Effects eff) Unit
+deleteFile fileId = do
+  res <- get $ prefix <> "businessdata/file/delete/" <> show fileId
+  if succeeded res.status
+    then pure (res.response :: String) *> pure unit
+    else throwError $ error "Error deleting file."
+
+renameFile :: forall eff. FileId -> String -> Aff (Effects eff) Unit
+renameFile fileId newName = do
+  res <- get $ prefix <> "businessdata/file/rename/" <> show fileId <> "/" <> newName
+  if succeeded res.status
+    then pure (res.response :: String) *> pure unit
+    else throwError $ error "Error renaming file."
+
+
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $
   postJson (prefix <> "businessdata/update") upd

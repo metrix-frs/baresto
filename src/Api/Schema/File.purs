@@ -26,6 +26,9 @@ _fileId = _File .. lens _.fileId _{ fileId = _ }
 _fileModuleId :: LensP File ModuleId
 _fileModuleId = _File .. lens _.fileModuleId _{ fileModuleId = _ }
 
+_fileLabel :: LensP File Label
+_fileLabel = _File .. lens _.fileLabel _{ fileLabel = _ }
+
 instance isForeignFile :: IsForeign File where
   read json = do
     file <- { fileId: _
