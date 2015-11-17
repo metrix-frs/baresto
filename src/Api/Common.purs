@@ -40,7 +40,8 @@ uploadFiles u f = affjax $ defaultRequest
   { method = POST
   , url = u
   , content = Just $ toRequest $ filesToFormData f
-  , headers = [ContentType multipartFormData]
+  -- TODO: report purescript-affjax issue about `multipartFormData` and boundary
+  -- , headers = [ContentType multipartFormData]
   }
 
 succeeded :: StatusCode -> Boolean
