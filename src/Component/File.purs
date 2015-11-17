@@ -15,6 +15,8 @@ import Api
 import Api.Schema.Selector
 import Api.Schema.File
 
+import Component.Common
+
 import Types
 import Utils
 
@@ -77,22 +79,24 @@ file = component render eval
         , H.button
           [ E.onClick $ E.input_ ToggleTagsOpen ]
           [ H.text $ if st.tagsOpen then "Close tags" else "Open tags" ]
+        , H.button
+          [ E.onClick $ E.input_ Delete ]
+          [ H.text "Delete" ]
         ] <> (
           if st.deleteConfirmOpen
             then
-              [ H.text "Really delete? All data will be lost!"
-              , H.button
-                [ E.onClick $ E.input_ DeleteNo ]
-                [ H.text "No" ]
-              , H.button
-                [ E.onClick $ E.input_ DeleteYes ]
-                [ H.text "Yes" ]
+              [ modal "Delete File"
+                [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
+                [ H.button
+                  [ E.onClick $ E.input_ DeleteNo ]
+                  [ H.text "No" ]
+                , H.button
+                  [ E.onClick $ E.input_ DeleteYes ]
+                  [ H.text "Yes" ]
+                ]
               ]
             else
-              [ H.button
-                [ E.onClick $ E.input_ Delete ]
-                [ H.text "Delete" ]
-              ]
+              [ ]
         ) <> (
           case st.renaming of
             Just name ->

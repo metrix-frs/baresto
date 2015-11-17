@@ -95,6 +95,8 @@ body = parentComponent' render eval peek
           FS.CreateFile modId name _ ->
             apiCallParent (newFile modId name) \(UpdateGet u) ->
               modify _{ currentView = FileViewer modId u.updateGetId }
+          FS.UploadXbrlOpenFile modId updateId _ ->
+            modify _{ currentView = FileViewer modId updateId }
           _ -> pure unit
         peekFile (ChildF _ q) = case q of
           F.Open modId updateId _ ->

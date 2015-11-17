@@ -12,8 +12,9 @@ import Control.Monad.Error.Class (throwError)
 
 import Data.Either
 
-import Network.HTTP.Affjax
+import DOM.File.Types (FileList())
 
+import Network.HTTP.Affjax
 import Network.HTTP.Affjax.Response
 
 import Halogen.Query (liftEff', liftAff')
@@ -22,6 +23,7 @@ import Halogen.Component
 import Types
 
 import Api.Common
+import Api.Schema
 import Api.Schema.Selector
 import Api.Schema.File
 import Api.Schema.Module
@@ -29,6 +31,7 @@ import Api.Schema.BusinessData
 import Api.Schema.Auth
 import Api.Schema.Table
 import Api.Schema.Finding
+import Api.Schema.Import
 
 import qualified Component.Spinner as Spinner
 import qualified Component.ErrorBox as ErrorBox
@@ -98,6 +101,9 @@ renameFile fileId newName = do
     then pure (res.response :: String) *> pure unit
     else throwError $ error "Error renaming file."
 
+uploadXbrl :: forall eff. FileList -> Aff (Effects eff) (ServerResponse XbrlImportConf)
+uploadXbrl files = getJsonResponse "Could not upload xbrl file." $
+  uploadFiles (prefix <> "xbrl/import") files
 
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $

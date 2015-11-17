@@ -12,6 +12,7 @@ module Utils
   , customEventDetail
   , shorten
   , peek'
+  , getInputFileList
   ) where
 
 import Prelude
@@ -29,6 +30,8 @@ import Data.Nullable
 import Data.String (toCharArray, fromCharArray)
 
 import DOM.Event.Types (Event(), EventType(..))
+import DOM (DOM())
+import DOM.File.Types (FileList())
 
 import Control.Monad.Eff.Random
 
@@ -107,3 +110,10 @@ peek' :: forall s s' s'' f f' f'' g p p' a
 peek' cp (ChildF s q) action = case Tuple (prjSlot cp s) (prjQuery cp q) of
   Tuple (Just s') (Just q') -> action s' q'
   _ -> pure unit
+
+foreign import getInputFileListImpl :: forall eff. String -> Eff (dom :: DOM | eff) (Nullable FileList)
+
+-- | Get the input field with the given id. Only returns `Just` if at least one file
+-- has been selected.
+getInputFileList :: forall eff. String -> Eff (dom :: DOM | eff) (Maybe FileList)
+getInputFileList i = toMaybe <$> getInputFileListImpl i

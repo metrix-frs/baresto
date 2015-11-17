@@ -54,7 +54,7 @@
 .tool-newfile {
   @include tool();
   float: left;
-  width: 200px;
+  width: 300px;
   padding: 10px;
   text-align: right;
 }
@@ -62,7 +62,7 @@
 .tool-importxbrl {
   @include tool();
   float: left;
-  width: 100px;
+  width: 400px;
   padding: 10px;
 }
 

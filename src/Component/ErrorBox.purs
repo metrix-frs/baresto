@@ -31,6 +31,8 @@ import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
+import Component.Common (modal)
+
 import Types
 import Utils
 
@@ -70,17 +72,12 @@ errorBox = component render eval
       , P.id_ errorId
       ] $ case st of
             Just msg ->
-              [ H.div [ cls "modalContainer" ]
-                [ H.div [ cls "modalFade" ] []
-                , H.div [ cls "modal" ]
-                  [ H.h1_ [ H.text "Error" ]
-                  , H.p_ [ H.text msg ]
-                  , H.div [ cls "controls" ]
-                    [ H.button
-                      [ E.onClick (E.input_ Close) ]
-                      [ H.text "Close" ]
-                    ]
-                  ]
+              [ modal "Error"
+                [ H.p_ [ H.text msg ]
+                ]
+                [ H.button
+                  [ E.onClick (E.input_ Close) ]
+                  [ H.text "Close" ]
                 ]
               ]
             Nothing ->

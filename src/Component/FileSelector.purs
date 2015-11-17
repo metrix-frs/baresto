@@ -27,10 +27,13 @@ import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
 import qualified Component.File as F
+import           Component.Common (modal)
 
 import Api
+import Api.Schema
 import Api.Schema.Selector
 import Api.Schema.File
+import Api.Schema.Import
 
 import Types
 import Utils
@@ -56,6 +59,7 @@ type StateInfo =
   , openConceptualModule :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean
   , selectedNode :: SelectedNode
   , newFileName :: String
+  , xbrlImportResponse :: Maybe (ServerResponse XbrlImportConf)
   }
 
 type State = Maybe StateInfo
@@ -83,7 +87,10 @@ initialState = Nothing
 
 data Query a
   = Init a
-  | SetFileName String a
+  | UploadXbrl a
+  | UploadXbrlCloseModal a
+  | UploadXbrlOpenFile ModuleId UpdateId a
+  | SetNewFileName String a
   | CreateFile ModuleId String a
   | SelectFramework FrameworkId a
   | SelectTaxonomy TaxonomyId a
@@ -107,8 +114,12 @@ selector = parentComponent' render eval peek
       [ H.span [ P.initializer \_ -> action Init ] []
       , H.div [ cls "toolbar" ]
         [ H.div [ cls "tool-importxbrl" ]
-          [ H.button
-            []
+          [ H.input
+            [ P.inputType P.InputFile
+            , P.id_ "xbrlFile"
+            ]
+          , H.button
+            [ E.onClick $ E.input_ UploadXbrl ]
             [ H.span [ cls "octicon octicon-arrow-up" ] []
             , H.text "Import XBRL"
             ]
@@ -118,7 +129,7 @@ selector = parentComponent' render eval peek
             Just st' -> case st'.selectedNode of
               SelectedModule mId ->
                 [ H.input
-                  [ E.onValueChange $ E.input SetFileName
+                  [ E.onValueChange $ E.input SetNewFileName
                   , P.value st'.newFileName
                   ]
                 , H.button
@@ -134,6 +145,7 @@ selector = parentComponent' render eval peek
           Just st' ->
             [ renderFrameworks st'
             , renderFiles st'
+            , renderXbrlImportResponse st'.xbrlImportResponse
             ]
           Nothing ->
             [ H.text "loading..."
@@ -152,15 +164,33 @@ selector = parentComponent' render eval peek
             , openConceptualModule: (M.empty :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
             , selectedNode: SelectedNone
             , newFileName: ""
+            , xbrlImportResponse: Nothing
             }
           pure unit
       pure next
 
-    eval (SetFileName name next) = do
+    eval (UploadXbrl next) = do
+      mFiles <- liftH $ liftEff' $ getInputFileList "xbrlFile"
+      case mFiles of
+        Nothing -> pure unit
+        Just files -> apiCallParent (uploadXbrl files) \resp ->
+          modify $ _Just %~ _{ xbrlImportResponse = Just resp }
+      pure next
+
+    eval (UploadXbrlOpenFile _ _ next) =
+      pure next
+
+    eval (UploadXbrlCloseModal next) = do
+      modify $ _Just %~ _{ xbrlImportResponse = Nothing }
+      apiCallParent listFiles \files ->
+        modify $ _Just .. _files .~ files
+      pure next
+
+    eval (SetNewFileName name next) = do
       modify $ _Just .. _newFileName .~ name
       pure next
 
-    eval (CreateFile _ _ next) = do
+    eval (CreateFile _ _ next) =
       pure next
 
     eval (SelectFramework f next) = do
@@ -193,11 +223,44 @@ selector = parentComponent' render eval peek
 
     peek :: Peek (ChildF FileSlot F.Query) State F.State Query F.Query Metrix FileSlot
     peek (ChildF (FileSlot fileId) q) = case q of
-      F.DeleteYes _ -> do
+      F.DeleteYes _ ->
         apiCallParent (deleteFile fileId) \_ -> do
           modify $ _Just .. _files %~ filter (\(File f) -> f.fileId /= fileId)
           pure unit
       _ -> pure unit
+
+renderXbrlImportResponse :: Maybe (ServerResponse XbrlImportConf) -> ComponentHTMLP
+renderXbrlImportResponse resp = case resp of
+    Nothing -> H.div_ []
+    Just (ServerSuccess (XbrlImportConf conf)) -> H.div [ cls "modal" ]
+      [ modal "Import XBRL"
+        [ H.p_ [ H.text "XBRL file successfully imported!" ]
+        , H.h2_ [ H.text "Warnings:" ]
+        , H.ul_ $ warning <$> conf.warnings
+        ]
+        [ H.button
+          [ E.onClick $ E.input_ UploadXbrlCloseModal ]
+          [ H.text "Close" ]
+        , H.button
+          [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.moduleId conf.updateId) ]
+          [ H.text "Open File" ]
+        ]
+      ]
+    Just (ServerError err) -> H.div [ cls "modal" ]
+      [ modal err.title
+        [ H.p_ [ H.text err.body ] ]
+        [ H.button
+          [ E.onClick $ E.input_ UploadXbrlCloseModal ]
+          [ H.text "Close" ]
+        ]
+      ]
+  where
+    warning (XbrlImportWarning w) = H.li_
+      [ H.b_ [ H.text "Message: " ]
+      , H.text w.message
+      , H.b_ [ H.text "Context:" ]
+      , H.text w.context
+      ]
 
 renderFrameworks :: StateInfo -> ComponentHTMLP
 renderFrameworks st = H.div [ cls "panel-frameworklist" ]
