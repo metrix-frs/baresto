@@ -20,3 +20,44 @@
   background-color: white;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
 }
+
+.formula {
+  .op {
+    font-size: 20px;
+    margin: 0px 2px 0px 2px;
+  }
+  div {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .hole, .param, .value {
+    background-color: $metrix-lightblue;
+    margin: 4px;
+    line-height: 16px;
+    padding: 0px 4px 0px 4px;
+    border: 1px solid $metrix-blue;
+    border-radius: 5px;
+    text-align: center;
+    .holetable {
+      color: gray;
+      font-size: 12px;
+    }
+    .holecoords {
+      padding-top: 2px;
+      color: gray;
+      font-size: 12px;
+    }
+  }
+  .data {
+    font-weight: bold;
+    .missing {
+      color: gray;
+      font-style: italic;
+    }
+  }
+  .val {
+    font-weight: bold;
+    color: #AA0E91;
+    font-style: italic;
+  }
+}

@@ -25,6 +25,7 @@ import qualified Halogen.HTML.Events.Indexed as E
 import qualified Component.ModuleBrowser as MB
 import qualified Component.Handsontable as Hot
 import qualified Component.Validation as V
+import qualified Component.FileMenu as Menu
 
 import Optic.Core
 import Optic.Monad.Setter
@@ -58,9 +59,15 @@ derive instance genericValidationSlot :: Generic ValidationSlot
 instance eqValidationSlot :: Eq ValidationSlot where eq = gEq
 instance ordValidationSlot :: Ord ValidationSlot where compare = gCompare
 
-type ChildState = Either MB.State (Either Hot.State V.State)
-type ChildQuery = Coproduct MB.Query (Coproduct Hot.Query V.Query)
-type ChildSlot = Either ModuleBrowserSlot (Either HotSlot ValidationSlot)
+data MenuSlot = MenuSlot
+
+derive instance genericMenuSlot :: Generic MenuSlot
+instance eqMenuSlot :: Eq MenuSlot where eq = gEq
+instance ordMenuSlot :: Ord MenuSlot where compare = gCompare
+
+type ChildState = Either MB.State (Either Hot.State (Either V.State Menu.State))
+type ChildQuery = Coproduct MB.Query (Coproduct Hot.Query (Coproduct V.Query Menu.Query))
+type ChildSlot = Either ModuleBrowserSlot (Either HotSlot (Either ValidationSlot MenuSlot))
 
 cpModuleBrowser :: ChildPath MB.State ChildState MB.Query ChildQuery ModuleBrowserSlot ChildSlot
 cpModuleBrowser = cpL
@@ -69,7 +76,10 @@ cpHot :: ChildPath Hot.State ChildState Hot.Query ChildQuery HotSlot ChildSlot
 cpHot = cpR :> cpL
 
 cpValidation :: ChildPath V.State ChildState V.Query ChildQuery ValidationSlot ChildSlot
-cpValidation = cpR :> cpR
+cpValidation = cpR :> cpR :> cpL
+
+cpMenu :: ChildPath Menu.State ChildState Menu.Query ChildQuery MenuSlot ChildSlot
+cpMenu = cpR :> cpR :> cpR
 
 --
 
@@ -141,9 +151,10 @@ viewer propModId propUpdateId = parentComponent' render eval peek
             ]
             [ H.span [ cls "mega-octicon octicon-x" ] []
             ]
-          , H.div [ cls "tool-menu" ]
-            [ H.span [ cls "mega-octicon octicon-three-bars" ] []
-            ]
+          , H.slot' cpMenu MenuSlot \_ ->
+            { component: Menu.fileMenu
+            , initialState: Menu.initialState
+            }
           , H.div [ cls "toolsep-mb-right" ] []
           , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
             { component: MB.moduleBrowser, initialState: MB.initialState }
@@ -278,6 +289,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
 
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
+
       peek' cpHot child \s q -> case q of
         Hot.Edit changes _ ->
           withTable \table ->
@@ -296,6 +308,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               rebuildHot
             _ -> pure unit
         _ -> pure unit
+
       peek' cpModuleBrowser child \s q -> case q of
         MB.SelectTable tSelect _ ->
           withFileData \fd ->
@@ -303,6 +316,16 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               modify $ _tableData .~ Just { table: table
                                           , selectedSheet: S 0 }
               rebuildHot
+        _ -> pure unit
+
+      peek' cpMenu child \s q -> case q of
+        Menu.UploadCsvConfirm (UpdateGet u) _ -> do
+          modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
+          modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId
+                                          , lastSaved = u.updateGetCreated
+                                          }
+          rebuildHot
+
         _ -> pure unit
 
     withTable action = do

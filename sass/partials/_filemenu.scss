@@ -1,0 +1,11 @@
+.menu-content {
+  position: absolute;
+  top: $toolbar-height;
+  right: $toolbar-height;
+  width: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  background-color: white;
+}

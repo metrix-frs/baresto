@@ -102,8 +102,12 @@ renameFile fileId newName = do
     else throwError $ error "Error renaming file."
 
 uploadXbrl :: forall eff. FileList -> Aff (Effects eff) (ServerResponse XbrlImportConf)
-uploadXbrl files = getJsonResponse "Could not upload xbrl file." $
+uploadXbrl files = getJsonResponse "Could not upload XBRL file." $
   uploadFiles (prefix <> "xbrl/import") files
+
+uploadCsv :: forall eff. FileList -> Aff (Effects eff) (ServerResponse CsvImportConf)
+uploadCsv files = getJsonResponse "Could not upload CSV file." $
+  uploadFiles (prefix <> "csv/import") files
 
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $

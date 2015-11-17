@@ -255,10 +255,10 @@ renderXbrlImportResponse resp = case resp of
         ]
       ]
   where
-    warning (XbrlImportWarning w) = H.li_
+    warning (Warning w) = H.li_
       [ H.b_ [ H.text "Message: " ]
       , H.text w.message
-      , H.b_ [ H.text "Context:" ]
+      , H.b_ [ H.text "Context: " ]
       , H.text w.context
       ]
 
