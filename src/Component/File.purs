@@ -73,47 +73,47 @@ file = component render eval
             ] []
           , H.text f.fileLabel
           ]
-        , H.div [ cls "details" ]
+        , H.div [ cls "details" ] $
           [ H.text $ "Created: " <> f.fileCreated
-          ]
-        , H.button
-          [ E.onClick $ E.input_ ToggleTagsOpen ]
-          [ H.text $ if st.tagsOpen then "Close tags" else "Open tags" ]
-        , H.button
-          [ E.onClick $ E.input_ Delete ]
-          [ H.text "Delete" ]
-        ] <> (
-          if st.deleteConfirmOpen
-            then
-              [ modal "Delete File"
-                [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
-                [ H.button
-                  [ E.onClick $ E.input_ DeleteNo ]
-                  [ H.text "No" ]
+        -- , H.button
+        --   [ E.onClick $ E.input_ ToggleTagsOpen ]
+        --   [ H.text $ if st.tagsOpen then "Close tags" else "Open tags" ]
+          , H.button
+            [ E.onClick $ E.input_ Delete ]
+            [ H.text "Delete" ]
+          ] <> (
+            if st.deleteConfirmOpen
+              then
+                [ modal "Delete File"
+                  [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
+                  [ H.button
+                    [ E.onClick $ E.input_ DeleteNo ]
+                    [ H.text "No" ]
+                  , H.button
+                    [ E.onClick $ E.input_ DeleteYes ]
+                    [ H.text "Yes" ]
+                  ]
+                ]
+              else
+                [ ]
+          ) <> (
+            case st.renaming of
+              Just name ->
+                [ H.input
+                  [ E.onValueChange $ E.input RenameSetNewName
+                  , P.value name
+                  ]
                 , H.button
-                  [ E.onClick $ E.input_ DeleteYes ]
-                  [ H.text "Yes" ]
+                  [ E.onClick $ E.input_ RenameDone ]
+                  [ H.text "Ok" ]
                 ]
-              ]
-            else
-              [ ]
-        ) <> (
-          case st.renaming of
-            Just name ->
-              [ H.input
-                [ E.onValueChange $ E.input RenameSetNewName
-                , P.value name
+              Nothing ->
+                [ H.button
+                  [ E.onClick $ E.input_ RenameOpen ]
+                  [ H.text "Rename" ]
                 ]
-              , H.button
-                [ E.onClick $ E.input_ RenameDone ]
-                [ H.text "Ok" ]
-              ]
-            Nothing ->
-              [ H.button
-                [ E.onClick $ E.input_ RenameOpen ]
-                [ H.text "Rename" ]
-              ]
-        )
+          )
+        ]
 
     eval :: Eval Query State Query Metrix
     eval (Init next) = do

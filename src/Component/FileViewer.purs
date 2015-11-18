@@ -164,9 +164,11 @@ viewer propModId propUpdateId = parentComponent' render eval peek
             ]
           , H.div [ cls "toolsep-right" ] []
           ]
-        , H.slot' cpValidation ValidationSlot \_ ->
-            { component: V.validation propModId
-            , initialState: V.initialState }
+        , case st.fileData of
+            Just fd -> H.slot' cpValidation ValidationSlot \_ ->
+                       { component: V.validation
+                       , initialState: V.initialState fd.lastUpdateId }
+            Nothing -> H.div_ []
         , H.div [ cls "content" ]
           [ H.div [ cls "panel-table"]
             [ H.div [ cls "frame"]
@@ -267,6 +269,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               Right (UpdateConfirmation conf) -> do
                 modify $ _fileData .. _Just %~ _{ lastUpdateId = conf.updateConfUpdateId
                                                 , lastSaved = conf.updateConfCreated }
+                query' cpValidation ValidationSlot $ action $ V.SetUpdateId conf.updateConfUpdateId
       post
       postAgent queue
 
@@ -430,7 +433,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
               $ subsetOption mems <$> makeIndexed (getSubsetMembers axId fd.businessData)
             ]
 
-    _ -> H.text "loading..."
+    _ -> H.text ""
 
 debugBusinessData :: BusinessData -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 debugBusinessData bd = H.div_

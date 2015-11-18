@@ -25,7 +25,6 @@ renderFinding (Finding f) = H.li_ $
   ] <> case f.finFormula of
          Just formula ->
           [ renderFormula formula
-          , H.br_ :: ComponentHTML f
           ]
          Nothing -> []
 

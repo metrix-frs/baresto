@@ -28,20 +28,23 @@ import Component.Validation.Finding
 type State =
   { open :: Boolean
   , findings :: Array Finding
+  , updateId :: UpdateId
   }
 
-initialState :: State
-initialState =
+initialState :: UpdateId -> State
+initialState updateId =
   { open: false
   , findings: []
+  , updateId: updateId
   }
 
 data Query a
   = ToggleOpen a
+  | SetUpdateId UpdateId a
   | Validate a
 
-validation :: ModuleId -> Component State Query Metrix
-validation propModId = component render eval
+validation :: Component State Query Metrix
+validation = component render eval
   where
 
     render :: Render State Query
@@ -49,19 +52,23 @@ validation propModId = component render eval
       then H.div
         [ cls "validation-open" ]
         [ H.button
-          [ E.onClick $ E.input_ Validate ]
-          [ H.span [ cls "octicon octicon-tasklist" ] []
-          , H.text "Validate" ]
-        , H.button
           [ E.onClick $ E.input_ ToggleOpen ]
-          [ H.text "Close" ]
-        , H.ul_ $ renderFinding <$> st.findings
+          [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
+        , H.br_
+        , H.br_
+        , H.button
+          [ E.onClick $ E.input_ Validate ]
+          [ H.span [ cls "octicon octicon-checklist" ] []
+          ]
+        , H.div [ cls "validation-content" ]
+          [ H.ul_ $ renderFinding <$> st.findings
+          ]
         ]
       else H.div
-        [ cls "validation-closed"
-        , E.onClick $ E.input_ ToggleOpen
-        ]
-        [ H.text "^"
+        [ cls "validation-closed"]
+        [ H.button
+          [ E.onClick $ E.input_ ToggleOpen ]
+          [ H.span [ cls "octicon octicon-chevron-up" ] [] ]
         ]
 
     -- TODO purescript-halogen issue about type inference
@@ -73,7 +80,12 @@ validation propModId = component render eval
       modify \st -> st{ open = not st.open }
       pure next
 
+    eval (SetUpdateId updateId next) = do
+      modify _{ updateId = updateId }
+      pure next
+
     eval (Validate next) = do
-      apiCall (validate propModId) \findings ->
+      updateId <- gets _.updateId
+      apiCall (validate updateId) \findings ->
         modify _{ findings = findings }
       pure next

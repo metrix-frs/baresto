@@ -125,9 +125,9 @@ listFiles = getJsonResponse "Could not get files." $
 
 -- Api.Validate
 
-validate :: forall eff. ModuleId -> Aff (Effects eff) (Array Finding)
-validate modId = getJsonResponse "Could not validate." $
-  get $ prefix <> "validate/byModuleId/" <> show modId
+validate :: forall eff. UpdateId -> Aff (Effects eff) (Array Finding)
+validate updateId = getJsonResponse "Could not validate." $
+  get $ prefix <> "validate/byUpdateId/" <> show updateId
 
 -- Api.Auth
 

@@ -8,4 +8,24 @@
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
   z-index: 10000;
   background-color: white;
+
+  ul {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+  }
+
+  li {
+    cursor: pointer;
+    padding: 8px 15px 8px 15px;
+
+    &:hover {
+      background-color: $metrix-lightblue;
+    }
+
+    .octicon {
+      margin-right: 10px;
+    }
+  }
+
 }

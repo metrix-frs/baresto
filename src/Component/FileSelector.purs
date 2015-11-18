@@ -148,7 +148,7 @@ selector = parentComponent' render eval peek
             , renderXbrlImportResponse st'.xbrlImportResponse
             ]
           Nothing ->
-            [ H.text "loading..."
+            [ H.text ""
             ]
       ]
 
@@ -258,6 +258,7 @@ renderXbrlImportResponse resp = case resp of
     warning (Warning w) = H.li_
       [ H.b_ [ H.text "Message: " ]
       , H.text w.message
+      , H.br_
       , H.b_ [ H.text "Context: " ]
       , H.text w.context
       ]

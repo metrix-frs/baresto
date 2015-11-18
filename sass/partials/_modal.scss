@@ -12,6 +12,7 @@
     background-color: black;
   }
   .modal {
+    color: $metrix-darkgray;
     z-index: 25000;
     position: absolute;
     top: 50%;
@@ -26,6 +27,11 @@
       font-size: 25px;
       font-weight: bold;
       background-color: $metrix-blue;
+      padding: 10px;
+    }
+    h2 {
+      margin: 0px 0px 10px 0px;
+      font-size: 20px;
       padding: 10px;
     }
     p {

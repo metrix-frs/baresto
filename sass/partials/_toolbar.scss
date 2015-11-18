@@ -53,14 +53,15 @@
 
 .tool-newfile {
   @include tool();
+  height: $toolbar-height - 20px;
   float: left;
   width: 300px;
   padding: 10px;
-  text-align: right;
 }
 
 .tool-importxbrl {
   @include tool();
+  height: $toolbar-height - 20px;
   float: left;
   width: 400px;
   padding: 10px;
