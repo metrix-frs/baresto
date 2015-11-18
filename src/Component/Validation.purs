@@ -39,7 +39,8 @@ initialState updateId =
   }
 
 data Query a
-  = ToggleOpen a
+  = Open a
+  | Close a
   | SetUpdateId UpdateId a
   | Validate a
 
@@ -52,7 +53,7 @@ validation = component render eval
       then H.div
         [ cls "validation-open" ]
         [ H.button
-          [ E.onClick $ E.input_ ToggleOpen ]
+          [ E.onClick $ E.input_ Close ]
           [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
         , H.br_
         , H.br_
@@ -67,17 +68,22 @@ validation = component render eval
       else H.div
         [ cls "validation-closed"]
         [ H.button
-          [ E.onClick $ E.input_ ToggleOpen ]
+          [ E.onClick $ E.input_ Open ]
           [ H.span [ cls "octicon octicon-chevron-up" ] [] ]
         ]
 
-    -- TODO purescript-halogen issue about type inference
+    -- TODO: report purescript-halogen issue about type inference
     htmlProblem :: forall f. Int -> ComponentHTML f
     htmlProblem x = H.li_ ([H.br_ :: ComponentHTML f, H.text "hl" ] <> [H.li_ [], H.br_])
 
     eval :: Eval Query State Query Metrix
-    eval (ToggleOpen next) = do
-      modify \st -> st{ open = not st.open }
+    eval (Open next) = do
+      modify _{ open = true }
+      runValidation
+      pure next
+
+    eval (Close next) = do
+      modify _{ open = false }
       pure next
 
     eval (SetUpdateId updateId next) = do
@@ -85,7 +91,11 @@ validation = component render eval
       pure next
 
     eval (Validate next) = do
+      runValidation
+      pure next
+
+    runValidation :: ComponentDSL State Query Metrix Unit
+    runValidation = do
       updateId <- gets _.updateId
       apiCall (validate updateId) \findings ->
         modify _{ findings = findings }
-      pure next

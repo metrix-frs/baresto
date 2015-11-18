@@ -7,7 +7,7 @@ import Control.Monad.Aff (attempt)
 import Control.Monad.Aff.AVar
 
 import           Data.Either
-import           Data.Array (replicate)
+import           Data.Array (head, replicate)
 import           Data.Maybe
 import qualified Data.Map as M
 import           Data.Tuple
@@ -33,6 +33,7 @@ import Optic.Refractor.Prism
 
 import Api
 import Api.Schema.Table
+import Api.Schema.Module
 import Api.Schema.BusinessData
 import Lib.Table
 import Lib.BusinessData
@@ -178,7 +179,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                            { component: Hot.handsontable td.selectedSheet td.table fd.businessData
                            , initialState: Hot.initialState }
                     else H.text "No sheets to display. Add member or select member for the z-Axis."
-                  _ -> H.p [ cls "msg" ] [ H.text "Please select a table from the list on the right..." ]
+                  _ -> H.div_ []
               ]
             ]
           ]
@@ -191,9 +192,8 @@ viewer propModId propUpdateId = parentComponent' render eval peek
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
-      query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot propModId
+      queue <- liftH $ liftAff' makeVar
       apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) -> do
-        queue <- liftH $ liftAff' makeVar
         modify $ _{ fileData = Just
                     { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
                     , moduleId: propModId
@@ -202,7 +202,23 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                     , queue: queue
                     }
                   }
-        postAgent queue
+      apiCallParent (getModule propModId) \mod -> do
+        query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot mod
+        let mTableSelect = do
+              firstGroup <- head (mod ^. _templateGroups)
+              firstTempl <- head (firstGroup ^. _templates)
+              firstTbl   <- head (firstTempl ^. _templateTables)
+              pure { id: firstTbl ^. _tableEntryId
+                   , code: firstTbl ^. _tableEntryCode
+                   , label: firstTempl ^. _templateLabel
+                   }
+        case mTableSelect of
+          Just tableSelect -> do
+            loadTable tableSelect.id
+            query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
+            pure unit
+          Nothing -> pure unit
+      postAgent queue
       pure next
 
     eval (CloseFile next) = do
@@ -290,6 +306,14 @@ viewer propModId propUpdateId = parentComponent' render eval peek
           let act = Hot.Rebuild td.selectedSheet td.table fd.businessData
           void $ query' cpHot HotSlot $ action act
 
+    loadTable :: TableId -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+    loadTable tableId =
+      withFileData \fd ->
+        apiCallParent (getTable fd.moduleId tableId) \table -> do
+          modify $ _tableData .~ Just { table: table
+                                      , selectedSheet: S 0 }
+          rebuildHot
+
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
 
@@ -314,11 +338,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
 
       peek' cpModuleBrowser child \s q -> case q of
         MB.SelectTable tSelect _ ->
-          withFileData \fd ->
-            apiCallParent (getTable fd.moduleId tSelect.id) \table -> do
-              modify $ _tableData .~ Just { table: table
-                                          , selectedSheet: S 0 }
-              rebuildHot
+          loadTable tSelect.id
         _ -> pure unit
 
       peek' cpMenu child \s q -> case q of

@@ -54,7 +54,7 @@ initialState :: State
 initialState = Nothing
 
 data Query a
-  = Boot ModuleId a
+  = Boot Module a
   | SelectTable TableSelect a
   | ToggleGroupOpen TemplateGroupId a
   | ToggleOpen a
@@ -73,14 +73,13 @@ moduleBrowser = component render eval
       ]
 
     eval :: Eval Query State Query Metrix
-    eval (Boot modId next) = do
-      apiCall (getModule modId) \mod -> do
-        modify $ const $ Just
-          { mod: mod
-          , open: true
-          , groupOpen: (M.empty :: M.Map TemplateGroupId Boolean)
-          , selectedTable: Nothing
-          }
+    eval (Boot mod next) = do
+      modify $ const $ Just
+        { mod: mod
+        , open: true
+        , groupOpen: (M.empty :: M.Map TemplateGroupId Boolean)
+        , selectedTable: Nothing
+        }
       pure next
 
     eval (SelectTable tSelect next) = do
