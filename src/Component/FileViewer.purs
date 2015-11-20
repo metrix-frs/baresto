@@ -96,9 +96,13 @@ _fdBusinessData :: LensP FileData BusinessData
 _fdBusinessData = lens _.businessData _{ businessData = _ }
 
 type TableData =
-  { table         :: Table
-  , selectedSheet :: S
+  { table                 :: Table
+  , selectedSheet         :: S
+  , sheetConfiguratorOpen :: Boolean
   }
+
+_sheetConfiguratorOpen :: LensP TableData Boolean
+_sheetConfiguratorOpen = lens _.sheetConfiguratorOpen _{ sheetConfiguratorOpen = _ }
 
 type State =
   { fileData  :: Maybe FileData
@@ -127,6 +131,7 @@ data Query a
   = Init a
   | CloseFile a
   | SelectSheet S a
+  | ToggleSheetConfiguratorOpen a
   | AddSheet String a
   | RenameSheet Int String a
   | DeleteSheet Int a
@@ -229,6 +234,11 @@ viewer propModId propUpdateId = parentComponent' render eval peek
 
     eval (SelectSheet s next) = do
       modify $ _tableData .. _Just %~ _{ selectedSheet = s }
+      rebuildHot
+      pure next
+
+    eval (ToggleSheetConfiguratorOpen next) = do
+      modify $ _tableData .. _Just .. _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
       pure next
 
     eval (AddSheet name next) = do
@@ -314,7 +324,9 @@ viewer propModId propUpdateId = parentComponent' render eval peek
       withFileData \fd ->
         apiCallParent (getTable fd.moduleId tableId) \table -> do
           modify $ _tableData .~ Just { table: table
-                                      , selectedSheet: S 0 }
+                                      , selectedSheet: S 0
+                                      , sheetConfiguratorOpen: false
+                                      }
           rebuildHot
 
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
@@ -370,12 +382,12 @@ viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix Child
 viewSheetSelector st = case Tuple st.fileData st.tableData of
     Tuple (Just fd) (Just td) ->
       let
-        selectSheet i = SelectSheet $ S $ readId i
+        selectSheet = SelectSheet <<< S <<< readId
         currentSheet = if doesSheetExist td.table fd.businessData td.selectedSheet
           then td.selectedSheet
           else S 0
 
-        customZMember axId (Tuple s (Tuple memId name)) = H.tr_
+        customZMember (Tuple s (Tuple _ name)) = H.tr_
           [ H.td_
             [ H.button
               [ E.onClick $ E.input_ $ DeleteSheet s ]
@@ -386,11 +398,6 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
               [ E.onValueInput $ E.input $ RenameSheet s
               , P.value name
               ]
-            ]
-          , H.input
-            [ P.inputType P.InputRadio
-            , P.checked (S s == currentSheet)
-            , E.onChecked $ E.input_ $ selectSheet $ show s
             ]
           ]
 
@@ -426,35 +433,57 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
           in  H.option [ P.selected selected
                        , P.value $ show s
                        ] [ H.text memLabel ]
+
+        customOption (Tuple s (Tuple memId name)) =
+          H.option [ P.selected (S s == currentSheet)
+                   , P.value $ show s
+                   ] [ H.text name ]
+
       in case td.table of
         Table tbl -> H.div_ $ case tbl.tableZAxis of
           ZAxisSingleton ->
-            []
+            [ H.text "Only one sheet available." ]
           ZAxisClosed _ ords ->
             [ H.text "Sheet: "
             , H.select [ E.onValueChange $ E.input $ selectSheet ]
                        $ closedOption <$> makeIndexed ords
             ]
           ZAxisCustom axId label ->
-            [ H.table_ $
-              [ H.tr_
-                [ H.td_
-                  [ H.button
-                    [ E.onClick $ E.input_ $ AddSheet "" ]
-                    [ H.text "+" ]
+            [ H.select [ E.onValueChange $ E.input $ selectSheet ]
+                       $ customOption <$> makeIndexed (getCustomMembers axId fd.businessData)
+            , H.button
+              [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
+              [ H.text "Configure" ]
+            ] <> if td.sheetConfiguratorOpen then
+                [ H.div [ cls "sheet-configurator" ]
+                  [ H.table_ $
+                    [ H.tr_
+                      [ H.td_
+                        [ H.button
+                          [ E.onClick $ E.input_ $ AddSheet "" ]
+                          [ H.text "+" ]
+                        ]
+                      , H.td_ [ H.text label ]
+                      ]
+                    ] <> (customZMember <$> makeIndexed (getCustomMembers axId fd.businessData))
                   ]
-                , H.td [ P.colSpan 2 ] [ H.text label ]
                 ]
-              ] <> (customZMember axId <$> makeIndexed (getCustomMembers axId fd.businessData))
-            ]
+              else []
           ZAxisSubset axId label mems ->
-            [ H.text $ label <> ": "
-            , H.div [ cls "subsetMemberList" ]
-              [ H.table_ $ subsetMember axId <$> mems ]
-            , H.select
+            [ H.select
               [ E.onValueChange $ E.input $ selectSheet ]
               $ subsetOption mems <$> makeIndexed (getSubsetMembers axId fd.businessData)
-            ]
+            , H.button
+              [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
+              [ H.text "Configure" ]
+            ] <> if td.sheetConfiguratorOpen then
+                [ H.div [ cls "sheet-configurator" ]
+                  [ H.text $ label <> ": "
+                  , H.div [ cls "subsetMemberList" ]
+                    [ H.table_ $ subsetMember axId <$> mems ]
+                  ]
+                ]
+              else []
 
     _ -> H.text ""
 

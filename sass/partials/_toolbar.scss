@@ -69,7 +69,7 @@
 
 .tool-modulebrowser {
   @include tool();
-  float: right;
+  right: 2 * $toolbar-height + 2;
   width: $modulebrowser-width - 2 * $toolbar-height - 3;
 }
 
@@ -99,6 +99,8 @@
 
 .tool-sheets {
   @include tool();
-  float: right;
-  width: 300px;
+  position: absolute;
+  top: 0px;
+  right: $modulebrowser-width;
+  width: 500px;
 }
