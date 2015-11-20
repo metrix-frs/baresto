@@ -30,16 +30,18 @@ type State =
   { open :: Boolean
   , location :: Location
   , csvImportResponse :: Maybe (ServerResponse CsvImportConf)
+  , lastUpdateId :: UpdateId
   }
 
 _open :: LensP State Boolean
 _open = lens _.open _{ open = _ }
 
-initialState :: State
-initialState =
+initialState :: UpdateId -> State
+initialState updateId =
   { open: false
   , location: LocationHome
   , csvImportResponse: Nothing
+  , lastUpdateId: updateId
   }
 
 data Query a
@@ -48,6 +50,7 @@ data Query a
   | UploadCsv a
   | UploadCsvCancel a
   | UploadCsvConfirm UpdateGet a
+  | SetLastUpdateId UpdateId a
 
 fileMenu :: Component State Query Metrix
 fileMenu = component render eval
@@ -96,6 +99,10 @@ fileMenu = component render eval
               }
       pure next
 
+    eval (SetLastUpdateId updateId next) = do
+      modify $ _{ lastUpdateId = updateId }
+      pure next
+
 renderMenu :: Render State Query
 renderMenu st = H.div [ cls "menu-content" ] $
   case st.location of
@@ -110,6 +117,13 @@ renderMenu st = H.div [ cls "menu-content" ] $
           [ E.onClick $ E.input_ (Go LocationTags) ]
           [ H.span [ cls "octicon octicon-git-commit" ] []
           , H.text "Tags"
+          ]
+        , H.li_
+          [ H.a
+            [ P.href $ "/api/v0.1/xbrl/create/" <> show st.lastUpdateId
+            , P.target "_blank"
+            ]
+            [ H.text "Export XBRL" ]
           ]
         ]
       ]

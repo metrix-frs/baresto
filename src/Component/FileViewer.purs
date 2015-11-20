@@ -152,10 +152,13 @@ viewer propModId propUpdateId = parentComponent' render eval peek
             ]
             [ H.span [ cls "mega-octicon octicon-x" ] []
             ]
-          , H.slot' cpMenu MenuSlot \_ ->
-            { component: Menu.fileMenu
-            , initialState: Menu.initialState
-            }
+          , case st.fileData of
+              Just fd ->
+                H.slot' cpMenu MenuSlot \_ ->
+                { component: Menu.fileMenu
+                , initialState: Menu.initialState fd.lastUpdateId
+                }
+              Nothing -> H.div_ []
           , H.div [ cls "toolsep-mb-right" ] []
           , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
             { component: MB.moduleBrowser, initialState: MB.initialState }
