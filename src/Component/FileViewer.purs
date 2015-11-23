@@ -196,7 +196,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
             Nothing -> H.div_ []
         ]
       where
-        hasSheets table bd = doesSheetExist table bd (S 0)
+        hasSheets table bd = doesSheetExist (S 0) table bd
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
@@ -332,22 +332,28 @@ viewer propModId propUpdateId = parentComponent' render eval peek
     peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
     peek child = do
 
-      peek' cpHot child \s q -> case q of
+      peek' cpHot child \_ q -> case q of
         Hot.Edit changes _ ->
           withTable \table ->
             processEdit (SetFacts table changes)
         Hot.AddRow _ ->
-          withTable \(Table tbl) -> case tbl.tableYAxis of
-            YAxisCustom axId _ -> do
-              cm <- liftH $ liftEff' $ getEntropy 32
-              processEdit (NewCustomYOrdinate axId cm)
-              rebuildHot
+          withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
+            YAxisCustom axId _ ->
+              case sheetToZLocation s table bd of
+                Nothing -> pure unit
+                Just zLoc -> do
+                  cm <- liftH $ liftEff' $ getEntropy 32
+                  processEdit (NewCustomRow axId zLoc cm)
+                  rebuildHot
             _ -> pure unit
         Hot.DeleteRow index _ ->
-          withTable \(Table tbl) -> case tbl.tableYAxis of
+          withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
             YAxisCustom axId _ -> do
-              processEdit (DeleteCustomYOrdinate axId index)
-              rebuildHot
+              case sheetToZLocation s table bd of
+                Nothing -> pure unit
+                Just zLoc -> do
+                  processEdit (DeleteCustomRow axId zLoc index)
+                  rebuildHot
             _ -> pure unit
         _ -> pure unit
 
@@ -378,12 +384,20 @@ viewer propModId propUpdateId = parentComponent' render eval peek
         Nothing -> pure unit
         Just fileData -> action fileData
 
+    withSheetTableBd action = do
+      mTableData <- gets _.tableData
+      mFileData <- gets _.fileData
+      case Tuple mTableData mFileData of
+        Tuple (Just td) (Just fd) ->
+          action td.selectedSheet td.table fd.businessData
+        _ -> pure unit
+
 viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
 viewSheetSelector st = case Tuple st.fileData st.tableData of
     Tuple (Just fd) (Just td) ->
       let
         selectSheet = SelectSheet <<< S <<< readId
-        currentSheet = if doesSheetExist td.table fd.businessData td.selectedSheet
+        currentSheet = if doesSheetExist td.selectedSheet td.table fd.businessData
           then td.selectedSheet
           else S 0
 
@@ -410,7 +424,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
           , H.td_
             [ H.input
               [ P.inputType P.InputCheckbox
-              , P.checked $ isSubsetMemberSelected axId m.memberId fd.businessData
+              , P.checked $ isSubsetZMemberSelected axId m.memberId fd.businessData
               , E.onChecked $ E.input \v -> case v of
                   true  -> ChooseMember m.memberId
                   false -> UnchooseMember m.memberId
@@ -450,7 +464,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
             ]
           ZAxisCustom axId label ->
             [ H.select [ E.onValueChange $ E.input $ selectSheet ]
-                       $ customOption <$> makeIndexed (getCustomMembers axId fd.businessData)
+                       $ customOption <$> makeIndexed (getCustomZMembers axId fd.businessData)
             , H.button
               [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
               [ H.text "Configure" ]
@@ -465,14 +479,14 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
                         ]
                       , H.td_ [ H.text label ]
                       ]
-                    ] <> (customZMember <$> makeIndexed (getCustomMembers axId fd.businessData))
+                    ] <> (customZMember <$> makeIndexed (getCustomZMembers axId fd.businessData))
                   ]
                 ]
               else []
           ZAxisSubset axId label mems ->
             [ H.select
               [ E.onValueChange $ E.input $ selectSheet ]
-              $ subsetOption mems <$> makeIndexed (getSubsetMembers axId fd.businessData)
+              $ subsetOption mems <$> makeIndexed (getSubsetZMembers axId fd.businessData)
             , H.button
               [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
               [ H.text "Configure" ]

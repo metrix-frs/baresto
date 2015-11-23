@@ -52,12 +52,12 @@ tableOptions :: S -> Table -> BusinessData -> Hot.Options String _
 tableOptions s table@(Table tbl) bd =
   { data:             xHeaderData  tbl.tableXHeader
                    <> xOrdsData    tbl.tableXOrdinates
-                   <> yOrdsData    table bd
+                   <> yOrdsData    s table bd
   , mergeCells:       xHeaderMerge tbl.tableXHeader
                    <> yOrdsMerge   table
   , cell:             xHeaderProps tbl.tableXHeader
                    <> xOrdsProps   table
-                   <> yOrdsProps   table bd
+                   <> yOrdsProps   s table bd
                    <> cellProps    s table bd
   , columns:          columns table
   , customBorders:    xHeaderBorders tbl.tableXHeader
@@ -65,12 +65,13 @@ tableOptions s table@(Table tbl) bd =
   , className:        "sheet"
   , maxRows: case tbl.tableYAxis of
       YAxisClosed _ ords -> length tbl.tableXHeader + 1 + length ords
-      YAxisCustom axId _ -> length tbl.tableXHeader + 2 + length (getCustomMembers axId bd)
+      YAxisCustom axId _ -> length tbl.tableXHeader + 2 + length (getCustomYMembersBySheet axId s table bd)
   , fixedRowsTop: length tbl.tableXHeader + 1
   , fixedColumnsLeft: 2
   , currentRowClassName: "currentRow"
   , currentColClassName: "currentCol"
   }
+
 
 type Border =
   { width :: Int
@@ -170,10 +171,10 @@ xOrdsData ords = [whiteData <> (ord <$> ords)]
   where
     ord (Ordinate o) = o.ordinateCode
 
-yOrdsData :: Table -> BusinessData -> Data
-yOrdsData table@(Table tbl) bd = case tbl.tableYAxis of
+yOrdsData :: S -> Table -> BusinessData -> Data
+yOrdsData s table@(Table tbl) bd = case tbl.tableYAxis of
     YAxisClosed _ ords -> closed <$> ords
-    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\">+</button>" ]] <> (custom <$> getIndices (getCustomMembers axId bd))
+    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\">+</button>" ]] <> (custom <$> getIndices (getCustomYMembersBySheet axId s table bd))
   where
     custom i = [ "", "<button id=\"delCustomY" <> show i <> "\">&#8211;</button>" ]
     closed (Ordinate o) = if o.ordinateIsAbstract
@@ -226,10 +227,10 @@ xOrdsProps (Table tbl) = whiteCells rowIndex <> (cell <$> makeIndexed tbl.tableX
       , renderer = renderSetClass "xOrdinateCode"
       }
 
-yOrdsProps :: Table -> BusinessData -> Array Props
-yOrdsProps table@(Table tbl) bd = case tbl.tableYAxis of
+yOrdsProps :: S -> Table -> BusinessData -> Array Props
+yOrdsProps s table@(Table tbl) bd = case tbl.tableYAxis of
   YAxisClosed _ ords -> join $ closed <$> makeIndexed ords
-  YAxisCustom axId _ -> (join $ custom <$> getIndices (getCustomMembers axId bd)) <>
+  YAxisCustom axId _ -> (join $ custom <$> getIndices (getCustomYMembersBySheet axId s table bd)) <>
                         (customHeader <$> getIndices tbl.tableXOrdinates) <>
     [ defProps
       { row = firstRow

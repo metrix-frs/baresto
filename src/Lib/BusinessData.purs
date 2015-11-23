@@ -21,6 +21,7 @@ module Lib.BusinessData
 , getCellTable
 , getFactTable
 , getCustomYMembers
+, getCustomYMembersBySheet
 , getCustomZMembers
 , getSubsetZMembers
 , isSubsetZMemberSelected
@@ -294,6 +295,11 @@ getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
 getCustomYMembers :: AxisId -> ZLocation -> BusinessData -> Array CustomMember
 getCustomYMembers axId zLoc bd =
   fromMaybe [] $ bd ^. _customYMembers .. at (Tuple axId zLoc)
+
+getCustomYMembersBySheet :: AxisId -> S -> Table -> BusinessData -> Array CustomMember
+getCustomYMembersBySheet axId s table bd = case sheetToZLocation s table bd of
+  Just zLoc -> getCustomYMembers axId zLoc bd
+  Nothing   -> []
 
 getCustomZMembers :: AxisId -> BusinessData -> Array CustomMember
 getCustomZMembers axId bd =

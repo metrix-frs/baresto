@@ -126,7 +126,7 @@ build s table@(Table tbl) bd = do
         YAxisCustom axId _ -> do
           subscribe $ eventSource_ (attachClickHandler "#newCustomY") do
             pure $ action AddRow
-          for_ (getIndices $ getCustomMembers axId bd) \i ->
+          for_ (getIndices $ getCustomYMembersBySheet axId s table bd) \i ->
             subscribe $ eventSource_ (attachClickHandler ("#delCustomY" <> show i)) do
               pure $ action $ DeleteRow i
 
