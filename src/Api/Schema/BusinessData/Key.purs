@@ -1,5 +1,8 @@
 module Api.Schema.BusinessData.Key
 ( Key(..)
+, IsRowKey(..)
+, YLocation(..)
+, ZLocation(..)
 , parseKeyF
 ) where
 
@@ -25,43 +28,55 @@ import Types
 
 data Key
   = KeyHeaderFact      CellId
-  | KeyPlainFact       CellId
-  | KeySubsetZFact     CellId AxisId SubsetMemberId
-  | KeyCustomZFact     CellId AxisId CustomMemberId
-  | KeyCustomYFact     CellId AxisId CustomMemberId
-  | KeyCustomYZFact    CellId AxisId CustomMemberId AxisId CustomMemberId
-  | KeyMemberYFact     CellId AxisId CustomMemberId
-  | KeyMemberYZFact    CellId AxisId CustomMemberId AxisId CustomMemberId
-  | KeyCustomYOrdinate        AxisId CustomMemberId
-  | KeyCustomZMember          AxisId CustomMemberId
-  | KeySubsetZSelected        AxisId SubsetMemberId
+  | KeyFact            CellId IsRowKey        YLocation ZLocation
+  | KeySubsetZSelected                 AxisId                     SubsetMemberId
+  | KeyCustomZMember                   AxisId                     CustomMemberId
+  | KeyCustomRow                       AxisId           ZLocation CustomMemberId -- value: order
 
--- Show
+data IsRowKey
+  = RowKey
+  | NoRowKey
+
+data YLocation
+  = YLocClosed
+  | YLocCustom AxisId CustomMemberId
+
+data ZLocation
+  = ZLocClosed
+  | ZLocCustom AxisId CustomMemberId
+  | ZLocSubset AxisId SubsetMemberId
 
 instance showKey :: Show Key where
-  show (KeyHeaderFact e)               = "a" <> showCell e
-  show (KeyPlainFact e)                = "b" <> showCell e
-  show (KeySubsetZFact e a s)          = "c" <> showCell e <> showAxis a  <> showSubsetM s
-  show (KeyCustomZFact e a c)          = "d" <> showCell e <> showAxis a  <> showCustomM c
-  show (KeyCustomYFact e a c)          = "e" <> showCell e <> showAxis a  <> showCustomM c
-  show (KeyCustomYZFact e ay cy az cz) = "f" <> showCell e <> showAxis ay <> showCustomM cy <> showAxis az <> showCustomM cz
-  show (KeyMemberYFact e a c)          = "g" <> showCell e <> showAxis a  <> showCustomM c
-  show (KeyMemberYZFact e ay cy az cz) = "h" <> showCell e <> showAxis ay <> showCustomM cy <> showAxis az <> showCustomM cz
-  show (KeyCustomYOrdinate a c)        = "i" <>               showAxis a  <> showCustomM c
-  show (KeyCustomZMember a c)          = "j" <>               showAxis a  <> showCustomM c
-  show (KeySubsetZSelected a s)        = "k" <>               showAxis a  <> showSubsetM s
+  show (KeyHeaderFact c)        = "a" <> showCell c
+  show (KeyFact c r y z)        = "b" <> showCell c <> show r   <> show y <> show z
+  show (KeySubsetZSelected a s) = "c" <> showAxis a <> showSM s
+  show (KeyCustomZMember a c)   = "d" <> showAxis a <> showCM c
+  show (KeyCustomRow a z c)     = "e" <> showAxis a <> show z   <> showCM c
+
+instance showIsRowKey :: Show IsRowKey where
+  show RowKey                   = "f"
+  show NoRowKey                 = "g"
+
+instance showYLocation :: Show YLocation where
+  show YLocClosed               = "h"
+  show (YLocCustom a c)         = "i" <> showAxis a <> showCM c
+
+instance showZLocation :: Show ZLocation where
+  show ZLocClosed               = "j"
+  show (ZLocCustom a c)         = "k" <> showAxis a <> showCM c
+  show (ZLocSubset a s)         = "l" <> showAxis a <> showSM s
 
 showCell :: CellId -> String
-showCell c = "l" <> show c
+showCell c                      = "m" <> show c
 
 showAxis :: AxisId -> String
-showAxis a = "m" <> show a
+showAxis a                      = "n" <> show a
 
-showCustomM :: CustomMemberId -> String
-showCustomM cm = "n<" <> cm <> ">"
+showCM :: CustomMemberId -> String
+showCM c                        = "o<" <> c <> ">"
 
-showSubsetM :: SubsetMemberId -> String
-showSubsetM sm = "o" <> show sm
+showSM :: SubsetMemberId -> String
+showSM s                        = "p" <> show s
 
 -- Eq
 
@@ -76,41 +91,59 @@ instance ordKey :: Ord Key where
 -- Read
 
 parseKeyF :: String -> F Key
-parseKeyF str = case runParser pKey str of
+parseKeyF str = case runParser key str of
   Left err -> Left $ JSONError $ "Failed parsing key: " <> show err
   Right a -> Right a
 
-pKey :: Parser Key
-pKey =
-      string "a" *> (KeyHeaderFact      <$> pCellId)
-  <|> string "b" *> (KeyPlainFact       <$> pCellId)
-  <|> string "c" *> (KeySubsetZFact     <$> pCellId <*> pAxisId <*> pSubsetMemberId)
-  <|> string "d" *> (KeyCustomZFact     <$> pCellId <*> pAxisId <*> pCustomMemberId)
-  <|> string "e" *> (KeyCustomYFact     <$> pCellId <*> pAxisId <*> pCustomMemberId)
-  <|> string "f" *> (KeyCustomYZFact    <$> pCellId <*> pAxisId <*> pCustomMemberId <*> pAxisId <*> pCustomMemberId)
-  <|> string "g" *> (KeyMemberYFact     <$> pCellId <*> pAxisId <*> pCustomMemberId)
-  <|> string "h" *> (KeyMemberYZFact    <$> pCellId <*> pAxisId <*> pCustomMemberId <*> pAxisId <*> pCustomMemberId)
-  <|> string "i" *> (KeyCustomYOrdinate <$> pAxisId <*> pCustomMemberId)
-  <|> string "j" *> (KeyCustomZMember   <$> pAxisId <*> pCustomMemberId)
-  <|> string "k" *> (KeySubsetZSelected <$> pAxisId <*> pSubsetMemberId)
+key :: Parser Key
+key =
+      string "a" *> (KeyHeaderFact      <$> cellId)
+  <|> string "b" *> (KeyFact            <$> cellId <*> rowKey <*> yLocation <*> zLocation)
+  <|> string "c" *> (KeySubsetZSelected <$> axisId <*> subsetMemberId)
+  <|> string "d" *> (KeyCustomZMember   <$> axisId <*> customMemberId)
+  <|> string "e" *> (KeyCustomRow       <$> axisId <*> zLocation <*> customMemberId)
   <?> "Key"
 
-pCellId :: Parser CellId
-pCellId = string "l" *> pInt
+rowKey :: Parser IsRowKey
+rowKey =
+      string "f" *> pure RowKey
+  <|> string "g" *> pure NoRowKey
+  <?> "RowKey"
 
-pAxisId :: Parser AxisId
-pAxisId = string "m" *> pInt
+yLocation :: Parser YLocation
+yLocation =
+      string "h" *> pure YLocClosed
+  <|> string "i" *> (YLocCustom <$> axisId <*> customMemberId)
+  <?> "YLocation"
 
-pCustomMemberId :: Parser CustomMemberId
-pCustomMemberId = string "n" *> (between (string "<") (string ">") pHex)
+zLocation :: Parser ZLocation
+zLocation =
+      string "j" *> pure ZLocClosed
+  <|> string "k" *> (ZLocCustom <$> axisId <*> customMemberId)
+  <|> string "l" *> (ZLocSubset <$> axisId <*> subsetMemberId)
+  <?> "ZLocation"
 
-pSubsetMemberId :: Parser SubsetMemberId
-pSubsetMemberId = string "o" *> pInt
+cellId :: Parser CellId
+cellId =
+      string "m" *> integer
+
+axisId :: Parser AxisId
+axisId =
+      string "n" *> integer
+
+customMemberId :: Parser CustomMemberId
+customMemberId =
+      string "o" *> string "<" *> hex <* string ">"
+
+subsetMemberId :: Parser SubsetMemberId
+subsetMemberId =
+      string "p" *> integer
 
 -- Generic parse stuff
 
 pDigit :: Parser Int
-pDigit = (string "0" *> pure 0)
+pDigit =
+        (string "0" *> pure 0)
     <|> (string "1" *> pure 1)
     <|> (string "2" *> pure 2)
     <|> (string "3" *> pure 3)
@@ -121,9 +154,9 @@ pDigit = (string "0" *> pure 0)
     <|> (string "8" *> pure 8)
     <|> (string "9" *> pure 9)
 
-pHex :: Parser String
-pHex = fromCharArray <<< fromList <$> (many1 $ oneOf $ toCharArray "0123456789abcdef")
+hex :: Parser String
+hex = fromCharArray <<< fromList <$> (many1 $ oneOf $ toCharArray "0123456789abcdef")
 
-pInt :: Parser Int
-pInt = foldl addDigit 0 <$> many1 pDigit
+integer :: Parser Int
+integer = foldl addDigit 0 <$> many1 pDigit
   where addDigit num d = 10 * num + d
