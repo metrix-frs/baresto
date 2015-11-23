@@ -50,6 +50,7 @@ type CellId             = Int
 
 type CustomMemberId     = String
 type SubsetMemberId     = Int
+type RowKey             = String
 
 type XBRLCode           = String
 type Label              = String

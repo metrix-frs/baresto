@@ -147,13 +147,17 @@ renderHole (Hole h) = H.div [ cls "hole" ]
   , H.br_
   , H.span [ cls "holecoords" ]
     [ case h.holeCoords of
-        HCPlain (Tuple _ xOrd) (Tuple _ yOrd) (Tuple _ zOrd) ->
-          H.text $ joinWith "," (["r" <> yOrd, "c" <> xOrd] <> if zOrd /= "" then ["s" <> zOrd] else [])
-        HCSubsetZ (Tuple _ xOrd) (Tuple _ yOrd) sm ->
-          H.text $ "r" <> yOrd <> "c" <> xOrd <> "s" <> (show sm)
-        HCCustomY (Tuple _ xOrd) (Tuple cmi cmc) ->
-          H.text $ "r" <> cmi <> "c" <> xOrd
-        HCCustomZ (Tuple _ xOrd) (Tuple _ yOrd) (Tuple cmi cm) ->
-          H.text $ "r" <> yOrd <> "c" <> xOrd <> "s" <> cmi
+        HoleCoords x y z ->
+          let xStr = case x of
+                HCX i ord              -> "c" <> ord
+              yStr = case y of
+                HCYClosed i ord        -> "r" <> ord
+                HCYCustom cmId rowKeys -> cmId
+              zStr = case z of
+                HCZSingleton           -> ""
+                HCZClosed i ord        -> "s" <> ord
+                HCZCustom cmId cm      -> cmId
+                HCZSubset smId sm      -> show smId
+          in  H.text (xStr <> yStr <> zStr)
     ]
   ]
