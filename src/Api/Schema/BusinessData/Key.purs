@@ -83,9 +83,15 @@ showSM s                        = "p" <> show s
 instance eqKey :: Eq Key where
   eq = eq `on` show
 
+instance eqZLocation :: Eq ZLocation where
+  eq = eq `on` show
+
 -- Ord
 
 instance ordKey :: Ord Key where
+  compare = compare `on` show
+
+instance ordZLocation :: Ord ZLocation where
   compare = compare `on` show
 
 -- Read

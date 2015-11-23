@@ -1,25 +1,29 @@
 module Lib.BusinessData
-( CustomMemberStore()
-, SubsetMemberStore()
+( CustomYMemberStore()
+, CustomZMemberStore()
+, SubsetZMemberStore()
 , SubsetMember()
 , CustomMember()
 , BusinessData()
 , emptyBusinessData
 , _BusinessData
 , _snapshot
-, _customMembers
-, _subsetMembers
+, _customYMembers
+, _customZMembers
+, _subsetZMembers
 , Edit(..)
 , invertUpdate
 , editToUpdate
 , applyUpdate
 , doesSheetExist
+, sheetToZLocation
 , gridHeight
 , getCellTable
 , getFactTable
-, getCustomMembers
-, getSubsetMembers
-, isSubsetMemberSelected
+, getCustomYMembers
+, getCustomZMembers
+, getSubsetZMembers
+, isSubsetZMemberSelected
 ) where
 
 import Prelude
@@ -61,13 +65,15 @@ import Utils (maxInt, getIndices)
 type CustomMember = Tuple CustomMemberId String
 type SubsetMember = Tuple SubsetMemberId String
 
-type CustomMemberStore = M.Map AxisId (Array CustomMember)
-type SubsetMemberStore = M.Map AxisId (Array SubsetMember)
+type CustomYMemberStore = M.Map (Tuple AxisId ZLocation) (Array CustomMember)
+type CustomZMemberStore = M.Map AxisId (Array CustomMember)
+type SubsetZMemberStore = M.Map AxisId (Array SubsetMember)
 
 newtype BusinessData = BusinessData
-  { snapshot          :: M.Map Key String
-  , customMembers     :: CustomMemberStore
-  , subsetMembers     :: SubsetMemberStore
+  { snapshot       :: M.Map Key String
+  , customYMembers :: CustomYMemberStore
+  , customZMembers :: CustomZMemberStore
+  , subsetZMembers :: SubsetZMemberStore
   }
 
 _BusinessData :: LensP BusinessData _
@@ -76,30 +82,34 @@ _BusinessData = lens (\(BusinessData r) -> r) (\_ r -> BusinessData r)
 _snapshot :: LensP BusinessData (M.Map Key String)
 _snapshot = _BusinessData .. lens _.snapshot _{ snapshot = _ }
 
-_customMembers :: LensP BusinessData CustomMemberStore
-_customMembers = _BusinessData .. lens _.customMembers _{ customMembers = _ }
+_customYMembers :: LensP BusinessData CustomYMemberStore
+_customYMembers = _BusinessData .. lens _.customYMembers _{ customYMembers = _ }
 
-_subsetMembers :: LensP BusinessData SubsetMemberStore
-_subsetMembers = _BusinessData .. lens _.subsetMembers _{ subsetMembers = _ }
+_customZMembers :: LensP BusinessData CustomZMemberStore
+_customZMembers = _BusinessData .. lens _.customZMembers _{ customZMembers = _ }
+
+_subsetZMembers :: LensP BusinessData SubsetZMemberStore
+_subsetZMembers = _BusinessData .. lens _.subsetZMembers _{ subsetZMembers = _ }
 
 emptyBusinessData :: BusinessData
 emptyBusinessData = BusinessData
-  { snapshot:      M.empty
-  , customMembers: M.empty
-  , subsetMembers: M.empty
+  { snapshot:       M.empty
+  , customYMembers: M.empty
+  , customZMembers: M.empty
+  , subsetZMembers: M.empty
   }
 
 -- Update
 
 data Edit
   = SetFacts              Table (Array (Tuple Coord String))
-  | NewCustomYOrdinate    AxisId CustomMemberId
-  | NewCustomZMember      AxisId CustomMemberId String
-  | RenameCustomZMember   AxisId Int            String
-  | DeleteCustomYOrdinate AxisId Int
-  | DeleteCustomZMember   AxisId Int
-  | SelectSubsetZMember   AxisId SubsetMemberId
-  | DeselectSubsetZMember AxisId SubsetMemberId
+  | NewCustomRow          AxisId ZLocation CustomMemberId
+  | NewCustomZMember      AxisId           CustomMemberId String
+  | RenameCustomZMember   AxisId           Int            String
+  | DeleteCustomRow       AxisId ZLocation Int
+  | DeleteCustomZMember   AxisId           Int
+  | SelectSubsetZMember   AxisId           SubsetMemberId
+  | DeselectSubsetZMember AxisId           SubsetMemberId
 
 invertUpdate :: Update -> Update
 invertUpdate (Update m) = Update $ foldl invert M.empty $ M.toList m
@@ -115,18 +125,18 @@ editToUpdate bde bd = case bde of
     in  if m == M.empty
           then Nothing
           else Just $ Update m
-  NewCustomYOrdinate axId cm ->
-    single (KeyCustomYOrdinate axId cm) (Just "customY")
+  NewCustomRow axId zLoc cm ->
+    single (KeyCustomRow axId zLoc cm) (Just "customY")
   NewCustomZMember axId cm name ->
     single (KeyCustomZMember axId cm) (Just name)
   RenameCustomZMember axId index name -> do
-    (Tuple cm _) <- getCustomMembers axId bd !! index
+    (Tuple cm _) <- getCustomZMembers axId bd !! index
     single (KeyCustomZMember axId cm) (Just name)
-  DeleteCustomYOrdinate axId index -> do
-    (Tuple cm _) <- getCustomMembers axId bd !! index
-    single (KeyCustomYOrdinate axId cm) Nothing
+  DeleteCustomRow axId zLoc index -> do
+    (Tuple cm _) <- getCustomYMembers axId zLoc bd !! index
+    single (KeyCustomRow axId zLoc cm) Nothing
   DeleteCustomZMember axId index -> do
-    (Tuple cm _) <- getCustomMembers axId bd !! index
+    (Tuple cm _) <- getCustomZMembers axId bd !! index
     single (KeyCustomZMember axId cm) Nothing
   SelectSubsetZMember axId sm ->
     single (KeySubsetZSelected axId sm) (Just "selected")
@@ -169,14 +179,14 @@ applyUpdate (Update m) bd' = foldl go bd' $ M.toList m
     go bd (Tuple key (Tuple old new)) = bd # execState do
       _snapshot .. at key .= new
       case key of
-        KeyCustomYOrdinate axId cm ->
-          _customMembers .. at axId .. non [] %= case new of
+        KeyCustomRow axId zLoc cm ->
+          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case new of
             Just newVal ->
               flip snoc (Tuple cm newVal)
             Nothing ->
               filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
         KeyCustomZMember axId cm ->
-          _customMembers .. at axId .. non [] %= case Tuple old new of
+          _customZMembers .. at axId .. non [] %= case Tuple old new of
             Tuple (Just _) (Just newVal) ->
               map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' newVal) else (Tuple cm' val))
             Tuple Nothing (Just newVal) ->
@@ -186,7 +196,7 @@ applyUpdate (Update m) bd' = foldl go bd' $ M.toList m
             Tuple Nothing Nothing ->
               id
         KeySubsetZSelected axId sm ->
-          _subsetMembers .. at axId .. non [] %= case new of
+          _subsetZMembers .. at axId .. non [] %= case new of
             Just newVal ->
               flip snoc (Tuple sm newVal)
             Nothing ->
@@ -195,38 +205,48 @@ applyUpdate (Update m) bd' = foldl go bd' $ M.toList m
 
 -- Interface
 
-doesSheetExist :: Table -> BusinessData -> S -> Boolean
-doesSheetExist (Table tbl) bd (S s) =
+doesSheetExist :: S -> Table -> BusinessData -> Boolean
+doesSheetExist (S s) (Table tbl) bd =
   case tbl.tableZAxis of
-    ZAxisCustom axisId _   -> isJust $ (getCustomMembers axisId bd) !! s
-    ZAxisSubset axisId _ _ -> isJust $ (getSubsetMembers axisId bd) !! s
+    ZAxisCustom axisId _   -> isJust $ (getCustomZMembers axisId bd) !! s
+    ZAxisSubset axisId _ _ -> isJust $ (getSubsetZMembers axisId bd) !! s
     ZAxisClosed _ ords     -> isJust $ ords !! s
     ZAxisSingleton         -> s == 0
 
-gridHeight :: Table -> BusinessData -> Int
-gridHeight (Table tbl) bd =
+sheetToZLocation :: S -> Table -> BusinessData -> Maybe ZLocation
+sheetToZLocation (S s) (Table tbl) bd = case tbl.tableZAxis of
+  ZAxisSingleton       -> pure ZLocClosed
+  ZAxisClosed _ _      -> pure ZLocClosed
+  ZAxisCustom axId _   -> do
+    (Tuple cmId _) <- getCustomZMembers axId bd !! s
+    pure $ ZLocCustom axId cmId
+  ZAxisSubset axId _ _ -> do
+    (Tuple smId _) <- getSubsetZMembers axId bd !! s
+    pure $ ZLocSubset axId smId
+
+gridHeight :: S -> Table -> BusinessData -> Maybe Int
+gridHeight s table@(Table tbl) bd = do
+  zLoc <- sheetToZLocation s table bd
   case tbl.tableYAxis of
-    YAxisClosed _ ords -> length ords
-    YAxisCustom axId _ -> length $ getCustomMembers axId bd
+    YAxisClosed _ ords -> pure $ length ords
+    YAxisCustom axId _ -> pure $ length $ getCustomYMembers axId zLoc bd
 
 getCellTable :: S -> Table -> BusinessData -> Maybe (Array (Array Cell))
-getCellTable s table@(Table tbl) bd =
-    if doesSheetExist table bd s
-      then Just $ case tbl.tableYAxis of
-        YAxisClosed _ ords -> row <$> getIndices ords
-        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers axId bd)
-      else Nothing
+getCellTable s table@(Table tbl) bd = do
+    zLoc <- sheetToZLocation s table bd
+    pure $ case tbl.tableYAxis of
+      YAxisClosed _ ords -> row <$> getIndices ords
+      YAxisCustom axId _ -> row <$> getIndices (getCustomYMembers axId zLoc bd)
   where
     row r = cell r <$> getIndices tbl.tableXOrdinates
     cell r c = fromMaybe NoCell $ cellLookup (Coord (C c) (R r) s) table
 
 getFactTable :: S -> Table -> BusinessData -> Maybe (Array (Array String))
-getFactTable s table@(Table tbl) bd =
-    if doesSheetExist table bd s
-      then Just $ case tbl.tableYAxis of
-        YAxisClosed _ ords -> row <$> getIndices ords
-        YAxisCustom axId _ -> row <$> getIndices (getCustomMembers axId bd)
-      else Nothing
+getFactTable s table@(Table tbl) bd = do
+    zLoc <- sheetToZLocation s table bd
+    pure $ case tbl.tableYAxis of
+      YAxisClosed _ ords -> row <$> getIndices ords
+      YAxisCustom axId _ -> row <$> getIndices (getCustomYMembers axId zLoc bd)
   where
     row r = cell r <$> getIndices tbl.tableXOrdinates
     cell r c = fromMaybe "" $ getFact (Coord (C c) (R r) s) table bd
@@ -249,51 +269,42 @@ getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
     case cellLookup coord table of
       Just (FactCell cellId _)  -> if tbl.tableIsHeader
                                      then Just $ KeyHeaderFact cellId
-                                     else go cellId false
-      Just (YMemberCell cellId) -> go cellId true
+                                     else go cellId NoRowKey
+      Just (YMemberCell cellId) -> go cellId RowKey
       _                         -> Nothing
   where
-    go :: CellId -> Boolean -> Maybe Key
-    go cellId isMemberFact = case Tuple tbl.tableYAxis tbl.tableZAxis of
-        Tuple (YAxisClosed _ _) (ZAxisCustom axisId _) ->
-          (getCustomMembers axisId bd) !! s
-            <#> \(Tuple memId _) -> KeyCustomZFact cellId axisId memId
-        Tuple (YAxisClosed _ _) (ZAxisSubset axisId _ _) ->
-          (getSubsetMembers axisId bd) !! s
-            <#> \(Tuple memId _) -> KeySubsetZFact cellId axisId memId
-        Tuple (YAxisClosed _ _) (ZAxisSingleton)
-          -> Just $ KeyPlainFact cellId
-        Tuple (YAxisClosed _ _) (ZAxisClosed _ _)
-          -> Just $ KeyPlainFact cellId
-        Tuple (YAxisCustom axId _) (ZAxisSingleton) ->
-          customY axId
-        Tuple (YAxisCustom axId _) (ZAxisClosed _ _) ->
-          customY axId
-        Tuple (YAxisCustom axYId _) (ZAxisCustom axZId _) -> do
-          (Tuple memYId _) <- getCustomMembers axYId bd !! r
-          (Tuple memZId _) <- getCustomMembers axZId bd !! s
-          Just $ if isMemberFact
-            then KeyMemberYZFact cellId axYId memYId axZId memZId
-            else KeyCustomYZFact cellId axYId memYId axZId memZId
-        _ ->
-          -- unsupported combination of y and z axis
-          Nothing
-      where
-        customY axId = (getCustomMembers axId bd) !! r
-          <#> \(Tuple memId _) -> if isMemberFact
-                                    then KeyMemberYFact cellId axId memId
-                                    else KeyCustomYFact cellId axId memId
+    go :: CellId -> IsRowKey -> Maybe Key
+    go cellId isRowKey = do
+      zLoc <- case tbl.tableZAxis of
+        ZAxisSingleton       -> pure ZLocClosed
+        ZAxisClosed _ _      -> pure ZLocClosed
+        ZAxisCustom axId _   -> do
+          (Tuple cmId _) <- getCustomZMembers axId bd !! s
+          pure $ ZLocCustom axId cmId
+        ZAxisSubset axId _ _ -> do
+          (Tuple smId _) <- getSubsetZMembers axId bd !! s
+          pure $ ZLocSubset axId smId
+      yLoc <- case tbl.tableYAxis of
+        YAxisClosed _ _      -> pure YLocClosed
+        YAxisCustom axId _   -> do
+          (Tuple cmId _) <- getCustomYMembers axId zLoc bd !! s
+          pure $ YLocCustom axId cmId
+      pure $ KeyFact cellId isRowKey yLoc zLoc
 
-getCustomMembers :: AxisId -> BusinessData -> Array CustomMember
-getCustomMembers axId bd =
-  fromMaybe [] $ bd ^. _customMembers .. at axId
+getCustomYMembers :: AxisId -> ZLocation -> BusinessData -> Array CustomMember
+getCustomYMembers axId zLoc bd =
+  fromMaybe [] $ bd ^. _customYMembers .. at (Tuple axId zLoc)
 
-getSubsetMembers :: AxisId -> BusinessData -> Array SubsetMember
-getSubsetMembers axId bd =
-  fromMaybe [] $ bd ^. _subsetMembers .. at axId
+getCustomZMembers :: AxisId -> BusinessData -> Array CustomMember
+getCustomZMembers axId bd =
+  fromMaybe [] $ bd ^. _customZMembers .. at axId
 
-isSubsetMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
-isSubsetMemberSelected axId memId bd =
+getSubsetZMembers :: AxisId -> BusinessData -> Array SubsetMember
+getSubsetZMembers axId bd =
+  fromMaybe [] $ bd ^. _subsetZMembers .. at axId
+
+isSubsetZMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
+isSubsetZMemberSelected axId memId bd =
   isJust $ getBDValue (KeySubsetZSelected axId memId) bd
 
 -- Internal helper
