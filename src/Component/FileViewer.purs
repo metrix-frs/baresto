@@ -188,11 +188,11 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                            , initialState: Hot.initialState }
                     else H.text "No sheets to display. Add member or select member for the z-Axis."
                   _ -> H.div_ []
-              , H.div [ cls "bd-debug" ]
-                [ case st.fileData of
-                    Just fd -> debugBusinessData fd.businessData
-                    Nothing -> H.div_ []
-                ]
+              -- , H.div [ cls "bd-debug" ]
+              --   [ case st.fileData of
+              --       Just fd -> debugBusinessData fd.businessData
+              --       Nothing -> H.div_ []
+              --   ]
               ]
             ]
           ]
@@ -301,6 +301,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                 modify $ _fileData .. _Just %~ _{ lastUpdateId = conf.updateConfUpdateId
                                                 , lastSaved = conf.updateConfCreated }
                 query' cpValidation ValidationSlot $ action $ V.SetUpdateId conf.updateConfUpdateId
+                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId conf.updateConfUpdateId
       post
       postAgent queue
 
