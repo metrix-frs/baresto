@@ -216,8 +216,10 @@ doesSheetExist (S s) (Table tbl) bd =
 
 sheetToZLocation :: S -> Table -> BusinessData -> Maybe ZLocation
 sheetToZLocation (S s) (Table tbl) bd = case tbl.tableZAxis of
-  ZAxisSingleton       -> pure ZLocClosed
-  ZAxisClosed _ _      -> pure ZLocClosed
+  ZAxisSingleton       -> pure ZLocSingle
+  ZAxisClosed _ ords   -> do
+    (Ordinate ord) <- ords !! s
+    pure $ ZLocClosed (ord.ordinateId)
   ZAxisCustom axId _   -> do
     (Tuple cmId _) <- getCustomZMembers axId bd !! s
     pure $ ZLocCustom axId cmId
@@ -276,19 +278,11 @@ getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
   where
     go :: CellId -> IsRowKey -> Maybe Key
     go cellId isRowKey = do
-      zLoc <- case tbl.tableZAxis of
-        ZAxisSingleton       -> pure ZLocClosed
-        ZAxisClosed _ _      -> pure ZLocClosed
-        ZAxisCustom axId _   -> do
-          (Tuple cmId _) <- getCustomZMembers axId bd !! s
-          pure $ ZLocCustom axId cmId
-        ZAxisSubset axId _ _ -> do
-          (Tuple smId _) <- getSubsetZMembers axId bd !! s
-          pure $ ZLocSubset axId smId
+      zLoc <- sheetToZLocation (S s) table bd
       yLoc <- case tbl.tableYAxis of
         YAxisClosed _ _      -> pure YLocClosed
         YAxisCustom axId _   -> do
-          (Tuple cmId _) <- getCustomYMembers axId zLoc bd !! s
+          (Tuple cmId _) <- getCustomYMembers axId zLoc bd !! r
           pure $ YLocCustom axId cmId
       pure $ KeyFact cellId isRowKey yLoc zLoc
 

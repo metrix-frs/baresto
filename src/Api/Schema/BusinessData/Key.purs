@@ -42,7 +42,8 @@ data YLocation
   | YLocCustom AxisId CustomMemberId
 
 data ZLocation
-  = ZLocClosed
+  = ZLocSingle
+  | ZLocClosed OrdinateId
   | ZLocCustom AxisId CustomMemberId
   | ZLocSubset AxisId SubsetMemberId
 
@@ -54,29 +55,33 @@ instance showKey :: Show Key where
   show (KeyCustomRow a z c)     = "e" <> showAxis a <> show z   <> showCM c
 
 instance showIsRowKey :: Show IsRowKey where
-  show RowKey                   = "f"
-  show NoRowKey                 = "g"
+  show (RowKey)                 = "f"
+  show (NoRowKey)               = "g"
 
 instance showYLocation :: Show YLocation where
-  show YLocClosed               = "h"
+  show (YLocClosed)             = "h"
   show (YLocCustom a c)         = "i" <> showAxis a <> showCM c
 
 instance showZLocation :: Show ZLocation where
-  show ZLocClosed               = "j"
-  show (ZLocCustom a c)         = "k" <> showAxis a <> showCM c
-  show (ZLocSubset a s)         = "l" <> showAxis a <> showSM s
+  show (ZLocSingle)             = "j"
+  show (ZLocClosed o)           = "k" <> showOrd o
+  show (ZLocCustom a c)         = "l" <> showAxis a <> showCM c
+  show (ZLocSubset a s)         = "m" <> showAxis a <> showSM s
 
 showCell :: CellId -> String
-showCell c                      = "m" <> show c
+showCell c                      = "n" <> show c
 
 showAxis :: AxisId -> String
-showAxis a                      = "n" <> show a
+showAxis a                      = "o" <> show a
 
 showCM :: CustomMemberId -> String
-showCM c                        = "o<" <> c <> ">"
+showCM c                        = "p<" <> c <> ">"
 
 showSM :: SubsetMemberId -> String
-showSM s                        = "p" <> show s
+showSM s                        = "q" <> show s
+
+showOrd :: OrdinateId -> String
+showOrd o                       = "r" <> show o
 
 -- Eq
 
@@ -124,26 +129,31 @@ yLocation =
 
 zLocation :: Parser ZLocation
 zLocation =
-      string "j" *> pure ZLocClosed
-  <|> string "k" *> (ZLocCustom <$> axisId <*> customMemberId)
-  <|> string "l" *> (ZLocSubset <$> axisId <*> subsetMemberId)
+      string "j" *> pure ZLocSingle
+  <|> string "k" *> (ZLocClosed <$> ordinateId)
+  <|> string "l" *> (ZLocCustom <$> axisId <*> customMemberId)
+  <|> string "m" *> (ZLocSubset <$> axisId <*> subsetMemberId)
   <?> "ZLocation"
 
 cellId :: Parser CellId
 cellId =
-      string "m" *> integer
+      string "n" *> integer
 
 axisId :: Parser AxisId
 axisId =
-      string "n" *> integer
+      string "o" *> integer
 
 customMemberId :: Parser CustomMemberId
 customMemberId =
-      string "o" *> string "<" *> hex <* string ">"
+      string "p" *> string "<" *> hex <* string ">"
 
 subsetMemberId :: Parser SubsetMemberId
 subsetMemberId =
-      string "p" *> integer
+      string "q" *> integer
+
+ordinateId :: Parser OrdinateId
+ordinateId =
+      string "r" *> integer
 
 -- Generic parse stuff
 

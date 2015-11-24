@@ -188,12 +188,14 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                            , initialState: Hot.initialState }
                     else H.text "No sheets to display. Add member or select member for the z-Axis."
                   _ -> H.div_ []
+              , H.div [ cls "bd-debug" ]
+                [ case st.fileData of
+                    Just fd -> debugBusinessData fd.businessData
+                    Nothing -> H.div_ []
+                ]
               ]
             ]
           ]
-        , case st.fileData of
-            Just fd -> debugBusinessData fd.businessData
-            Nothing -> H.div_ []
         ]
       where
         hasSheets table bd = doesSheetExist (S 0) table bd
@@ -504,7 +506,6 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
 debugBusinessData :: BusinessData -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 debugBusinessData bd = H.div_
     [ H.table_ $ bdEntry <$> (fromList $ M.toList (bd ^. _snapshot))
-    , H.table_ []
     ]
   where
     bdEntry (Tuple key val) = H.tr_
