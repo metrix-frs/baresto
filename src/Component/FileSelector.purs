@@ -232,27 +232,23 @@ selector = parentComponent' render eval peek
 renderXbrlImportResponse :: Maybe (ServerResponse XbrlImportConf) -> ComponentHTMLP
 renderXbrlImportResponse resp = case resp of
     Nothing -> H.div_ []
-    Just (ServerSuccess (XbrlImportConf conf)) -> H.div [ cls "modal" ]
-      [ modal "Import XBRL"
-        [ H.p_ [ H.text "XBRL file successfully imported!" ]
-        , H.h2_ [ H.text "Warnings:" ]
-        , H.ul_ $ warning <$> conf.warnings
-        ]
-        [ H.button
-          [ E.onClick $ E.input_ UploadXbrlCloseModal ]
-          [ H.text "Close" ]
-        , H.button
-          [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.moduleId conf.updateId) ]
-          [ H.text "Open File" ]
-        ]
+    Just (ServerSuccess (XbrlImportConf conf)) -> modal "Import XBRL"
+      [ H.p_ [ H.text "XBRL file successfully imported!" ]
+      , H.h2_ [ H.text "Warnings:" ]
+      , H.ul_ $ warning <$> conf.warnings
       ]
-    Just (ServerError err) -> H.div [ cls "modal" ]
-      [ modal err.title
-        [ H.p_ [ H.text err.body ] ]
-        [ H.button
-          [ E.onClick $ E.input_ UploadXbrlCloseModal ]
-          [ H.text "Close" ]
-        ]
+      [ H.button
+        [ E.onClick $ E.input_ UploadXbrlCloseModal ]
+        [ H.text "Close" ]
+      , H.button
+        [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.moduleId conf.updateId) ]
+        [ H.text "Open File" ]
+      ]
+    Just (ServerError err) -> modal err.title
+      [ H.p_ [ H.text err.body ] ]
+      [ H.button
+        [ E.onClick $ E.input_ UploadXbrlCloseModal ]
+        [ H.text "Close" ]
       ]
   where
     warning (Warning w) = H.li_

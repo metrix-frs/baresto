@@ -48,8 +48,8 @@ data Query a
   = ToggleOpen a
   | Go Location a
   | UploadCsv a
-  | UploadCsvCancel a
   | UploadCsvConfirm UpdateGet a
+  | UploadCsvClose a
   | SetLastUpdateId UpdateId a
 
 fileMenu :: Component State Query Metrix
@@ -78,9 +78,10 @@ fileMenu = component render eval
 
     eval (UploadCsv next) = do
       mFiles <- liftEff' $ getInputFileList "csvFile"
+      updateId <- gets _.lastUpdateId
       case mFiles of
         Nothing -> pure unit
-        Just files -> apiCall (uploadCsv files) \resp ->
+        Just files -> apiCall (uploadCsv updateId files) \resp ->
           modify $ _{ csvImportResponse = Just resp }
       pure next
 
@@ -92,11 +93,8 @@ fileMenu = component render eval
               }
       pure next
 
-    eval (UploadCsvCancel next) = do
-      modify _{ open = false
-              , location = LocationHome
-              , csvImportResponse = Nothing
-              }
+    eval (UploadCsvClose next) = do
+      modify _{ csvImportResponse = Nothing }
       pure next
 
     eval (SetLastUpdateId updateId next) = do
@@ -145,22 +143,24 @@ renderMenu st = H.div [ cls "menu-content" ] $
         ]
       Just resp -> case resp of
         ServerSuccess (CsvImportConf conf) ->
-          [ H.p_ [ H.text "Csv successfully imported. The following warnings were issued:" ]
-          , H.ul_ $ renderCsvWarning <$> conf.warnings
-          , H.p_ [ H.text "Do you want to apply the imported changes to the current file?" ]
-          , H.button
-            [ E.onClick $ E.input_ UploadCsvCancel ]
-            [ H.text "No, discard changes" ]
-          , H.button
-            [ E.onClick $ E.input_ (UploadCsvConfirm conf.changes) ]
-            [ H.text "Yes, apply changes" ]
+          [ modal "Import CSV"
+            [ H.p_ [ H.text "Csv successfully imported!" ]
+            , H.h2_ [ H.text "Warnings:" ]
+            , H.ul_ $ renderCsvWarning <$> conf.warnings
+            ]
+            [ H.button
+              [ E.onClick $ E.input_ (UploadCsvConfirm conf.update) ]
+              [ H.text "Ok" ]
+            ]
           ]
         ServerError err ->
-          [ H.h2_ [ H.text err.title ]
-          , H.p_ [ H.text err.body ]
-          , H.button
-            [ E.onClick $ E.input_ UploadCsvCancel ]
-            [ H.text "Ok" ]
+          [ modal err.title
+            [ H.p_ [ H.text err.body ]
+            ]
+            [ H.button
+              [ E.onClick $ E.input_ UploadCsvClose ]
+              [ H.text "Ok" ]
+            ]
           ]
     LocationTags ->
       [ H.button
@@ -173,6 +173,7 @@ renderCsvWarning :: Warning -> ComponentHTML Query
 renderCsvWarning (Warning w) = H.li_
   [ H.b_ [ H.text "Message: " ]
   , H.text w.message
+  , H.br_
   , H.b_ [ H.text "Context: " ]
   , H.text w.context
   ]

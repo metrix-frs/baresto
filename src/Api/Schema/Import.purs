@@ -40,14 +40,14 @@ instance isForeignXbrlImportConf :: IsForeign XbrlImportConf where
 
 newtype CsvImportConf = CsvImportConf
   { warnings :: Array Warning
-  , changes :: UpdateGet
+  , update   :: UpdateGet
   }
 
 instance isForeignCsvImportConf :: IsForeign CsvImportConf where
   read json = do
     conf <- { warnings: _
-            , changes: _
+            , update: _
             }
       <$> readProp "warnings" json
-      <*> readProp "changes" json
+      <*> readProp "update" json
     pure $ CsvImportConf conf

@@ -105,9 +105,9 @@ uploadXbrl :: forall eff. FileList -> Aff (Effects eff) (ServerResponse XbrlImpo
 uploadXbrl files = getJsonResponse "Could not upload XBRL file." $
   uploadFiles (prefix <> "xbrl/import") files
 
-uploadCsv :: forall eff. FileList -> Aff (Effects eff) (ServerResponse CsvImportConf)
-uploadCsv files = getJsonResponse "Could not upload CSV file." $
-  uploadFiles (prefix <> "csv/import") files
+uploadCsv :: forall eff. UpdateId -> FileList -> Aff (Effects eff) (ServerResponse CsvImportConf)
+uploadCsv lastUpdateId files = getJsonResponse "Could not upload CSV file." $
+  uploadFiles (prefix <> "csv/import/" <> show lastUpdateId) files
 
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
 postUpdate upd = getJsonResponse "Could not send update." $
