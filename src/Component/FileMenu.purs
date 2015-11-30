@@ -123,6 +123,13 @@ renderMenu st = H.div [ cls "menu-content" ] $
             ]
             [ H.text "Export XBRL" ]
           ]
+        , H.li_
+          [ H.a
+            [ P.href $ "/api/v0.1/csv/create/" <> show st.lastUpdateId
+            , P.target "_blank"
+            ]
+            [ H.text "Export CSV" ]
+          ]
         ]
       ]
     LocationImportCsv -> case st.csvImportResponse of
