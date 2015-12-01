@@ -69,7 +69,7 @@ getTable modId tableId = getJsonResponse "Could not fetch table." $
 
 getHeader :: forall eff. Aff (Effects eff) Table
 getHeader = getJsonResponse "Could not fetch header." $
-  get $ prefix <> "template/header/DE"
+  get $ prefix <> "table/header/DE"
 
 -- Api.Module
 

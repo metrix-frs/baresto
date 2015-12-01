@@ -219,6 +219,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               firstTempl <- head (firstGroup ^. _templates)
               firstTbl   <- head (firstTempl ^. _templateTables)
               pure { id: firstTbl ^. _tableEntryId
+                   , header: false
                    , code: firstTbl ^. _tableEntryCode
                    , label: firstTempl ^. _templateLabel
                    }
@@ -361,8 +362,14 @@ viewer propModId propUpdateId = parentComponent' render eval peek
         _ -> pure unit
 
       peek' cpModuleBrowser child \s q -> case q of
-        MB.SelectTable tSelect _ ->
-          loadTable tSelect.id
+        MB.SelectTable tSelect _ -> if tSelect.header
+          then  apiCallParent getHeader \table -> do
+                  modify $ _tableData .~ Just { table: table
+                                              , selectedSheet: S 0
+                                              , sheetConfiguratorOpen: false
+                                              }
+                  rebuildHot
+          else  loadTable tSelect.id
         _ -> pure unit
 
       peek' cpMenu child \s q -> case q of

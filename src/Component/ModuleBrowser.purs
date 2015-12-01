@@ -28,8 +28,17 @@ import Api.Schema.Module
 
 type TableSelect =
   { id :: TableId
+  , header :: Boolean
   , code :: String
   , label :: String
+  }
+
+headerSelect :: TableSelect
+headerSelect =
+  { id: 0
+  , header: true
+  , code: "Header DE"
+  , label: ""
   }
 
 type ModuleBrowserInfo =
@@ -127,11 +136,27 @@ renderModuleBrowser info = H.div_ $
     ] <> if info.open
            then [ H.div [ cls "modules" ]
                   [ H.ul_ $
-                      concat $ renderTemplateGroup <$> (info.mod ^. _templateGroups)
+                      [renderHeader] <>
+                      (concat $ renderTemplateGroup <$> (info.mod ^. _templateGroups))
                   ]
                 ]
            else []
   where
+    renderHeader :: ComponentHTML Query
+    renderHeader = H.li [ cls $ "table" <> if selected then " selected" else "" ]
+      [ H.span
+        [ cls "label"
+        , E.onClick $ E.input_ $ SelectTable headerSelect
+        ]
+        [ H.span [ cls "octicon octicon-browser" ] []
+        , H.text "German Header"
+        ]
+      ]
+      where
+        selected = case info.selectedTable of
+          Just sel -> sel.header
+          Nothing -> false
+
     renderTemplateGroup :: TemplateGroup -> Array (ComponentHTML Query)
     renderTemplateGroup g =
         [ H.li [ cls "group" ]
@@ -169,6 +194,7 @@ renderModuleBrowser info = H.div_ $
           [ H.span
             [ cls "label"
             , E.onClick $ E.input_ $ SelectTable { id: tbl ^. _tableEntryId
+                                                 , header: false
                                                  , code: tbl ^. _tableEntryCode
                                                  , label: t ^. _templateLabel
                                                  }
@@ -177,18 +203,19 @@ renderModuleBrowser info = H.div_ $
             , H.text (tbl ^. _tableEntryCode)
             ]
           ]
-        selected tbl= case info.selectedTable of
-          Nothing -> false
+        selected tbl = case info.selectedTable of
           Just sel -> (tbl ^. _tableEntryId) == sel.id
+          Nothing -> false
 
 --
 
 flattenTables :: Module -> Array TableSelect
-flattenTables mod     = concat $ goGroup <$> (mod ^. _templateGroups)
+flattenTables mod     = [headerSelect] <> (concat $ goGroup <$> (mod ^. _templateGroups))
   where goGroup g     = concat $ goTemplate <$> (g ^. _templates)
         goTemplate t  = goTable (t ^. _templateLabel) <$> (t ^. _templateTables)
         goTable lbl t =
           { id: t ^. _tableEntryId
+          , header: false
           , code: t ^. _tableEntryCode
           , label: lbl
           }
