@@ -298,11 +298,11 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               Left err -> do
                 modify $ _fileData .. _Just %~ _{ lastSaved = "error" }
                 post
-              Right (UpdateConfirmation conf) -> do
-                modify $ _fileData .. _Just %~ _{ lastUpdateId = conf.updateConfUpdateId
-                                                , lastSaved = conf.updateConfCreated }
-                query' cpValidation ValidationSlot $ action $ V.SetUpdateId conf.updateConfUpdateId
-                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId conf.updateConfUpdateId
+              Right (UpdateDesc desc) -> do
+                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
+                                                , lastSaved = desc.updateDescCreated }
+                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
       post
       postAgent queue
 

@@ -56,3 +56,10 @@ getJsonResponse msg affjax = do
            Left e -> throwError $ error $ "JSON decode error: " <> show e
            Right x -> pure x
     else throwError $ error msg
+
+getUnitResponse :: forall eff. String -> Affjax eff String -> Aff (ajax :: AJAX | eff) Unit
+getUnitResponse msg affjax = do
+  res <- affjax
+  if succeeded res.status
+    then pure unit
+    else throwError $ error msg

@@ -63,7 +63,7 @@ instance encodeJsonUpdatePost :: EncodeJson UpdatePost where
                            ~> "update" := p.updatePostUpdate
                            ~> jsonEmptyObject
 
-data UpdateGet = UpdateGet
+newtype UpdateGet = UpdateGet
   { updateGetId       :: UpdateId
   , updateGetCreated  :: UTCTime
   , updateGetParentId :: Maybe UpdateId
@@ -83,16 +83,39 @@ instance isForeignUpdateGet :: IsForeign UpdateGet where
       <*> readProp "update" json
     pure $ UpdateGet upd
 
-data UpdateConfirmation = UpdateConfirmation
-  { updateConfUpdateId :: UpdateId
-  , updateConfCreated  :: UTCTime
+newtype UpdateDesc = UpdateDesc
+  { updateDescUpdateId :: UpdateId
+  , updateDescCreated  :: UTCTime
+  , updateDescAuthor   :: String
+  , updateDescTags     :: Array TagDesc
   }
 
-instance isForeignUpdateConfirmation :: IsForeign UpdateConfirmation where
+instance isForeignUpdateDesc :: IsForeign UpdateDesc where
   read json = do
-    conf <- { updateConfUpdateId: _
-            , updateConfCreated: _
+    desc <- { updateDescUpdateId: _
+            , updateDescCreated: _
+            , updateDescAuthor: _
+            , updateDescTags: _
             }
       <$> readProp "updateId" json
       <*> readProp "created" json
-    pure $ UpdateConfirmation conf
+      <*> readProp "author" json
+      <*> readProp "tags" json
+    pure $ UpdateDesc desc
+
+newtype TagDesc = TagDesc
+  { tagDescTagId    :: TagId
+  , tagDescUpdateId :: UpdateId
+  , tagDescTagName  :: String
+  }
+
+instance isForeignTagDesc :: IsForeign TagDesc where
+  read json = do
+    desc <- { tagDescTagId: _
+            , tagDescUpdateId: _
+            , tagDescTagName: _
+            }
+      <$> readProp "tagId" json
+      <*> readProp "updateId" json
+      <*> readProp "name" json
+    pure $ TagDesc desc

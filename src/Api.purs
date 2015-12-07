@@ -79,27 +79,55 @@ getModule modId = getJsonResponse "Could not load templates of module." $
 
 -- Api.BusinessData
 
-getUpdateSnapshot :: forall eff. UpdateId -> Aff (Effects eff) UpdateGet
-getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
-  get $ prefix <> "businessdata/update/snapshot/" <> show updateId
-
 newFile :: forall eff. ModuleId -> String -> Aff (Effects eff) UpdateGet
 newFile modId name = getJsonResponse "Could not create file." $
   get $ prefix <> "businessdata/file/new/" <> show modId <> "/" <> name
 
 deleteFile :: forall eff. FileId -> Aff (Effects eff) Unit
-deleteFile fileId = do
-  res <- get $ prefix <> "businessdata/file/delete/" <> show fileId
-  if succeeded res.status
-    then pure (res.response :: String) *> pure unit
-    else throwError $ error "Error deleting file."
+deleteFile fileId = getUnitResponse "Error deleting file." $
+  get $ prefix <> "businessdata/file/delete/" <> show fileId
 
 renameFile :: forall eff. FileId -> String -> Aff (Effects eff) Unit
-renameFile fileId newName = do
-  res <- get $ prefix <> "businessdata/file/rename/" <> show fileId <> "/" <> newName
-  if succeeded res.status
-    then pure (res.response :: String) *> pure unit
-    else throwError $ error "Error renaming file."
+renameFile fileId newName = getUnitResponse "Error renaming file." $
+  get $ prefix <> "businessdata/file/rename/" <> show fileId <> "/" <> newName
+
+getFileOrphans :: forall eff. FileId -> Aff (Effects eff) (Array UpdateDesc)
+getFileOrphans fileId = getJsonResponse "Could not get auto saves." $
+  get $ prefix <> "businessdata/file/orphans/" <> show fileId
+
+getFileTags :: forall eff. FileId -> Aff (Effects eff) (Array TagDesc)
+getFileTags fileId = getJsonResponse "Could not get file tags." $
+  get $ prefix <> "businessdata/file/tags/" <> show fileId
+
+--
+
+newTag :: forall eff. UpdateId -> String -> Aff (Effects eff) Unit
+newTag updateId name = getUnitResponse "Could not create tag." $
+  get $ prefix <> "businessdata/tag/new/" <> show updateId <> "/" <> name
+
+deleteTag :: forall eff. TagId -> Aff (Effects eff) Unit
+deleteTag tagId = getUnitResponse "Could not delete tag." $
+  get $ prefix <> "businessdata/tag/delete/" <> show tagId
+
+renameTag :: forall eff. TagId -> String -> Aff (Effects eff) Unit
+renameTag tagId newName = getUnitResponse "Could not rename tag." $
+  get $ prefix <> "businessdata/tag/rename/" <> show tagId <> "/" <> newName
+
+--
+
+getUpdateSnapshot :: forall eff. UpdateId -> Aff (Effects eff) UpdateGet
+getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
+  get $ prefix <> "businessdata/update/snapshot/" <> show updateId
+
+postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateDesc
+postUpdate upd = getJsonResponse "Could not send update." $
+  postJson (prefix <> "businessdata/update") upd
+
+getUpdatePast :: forall eff. UpdateId -> Aff (Effects eff) (Array UpdateDesc)
+getUpdatePast updateId = getJsonResponse "Could not get revisions." $
+  get $ prefix <> "businessdata/update/past/" <> show updateId
+
+--
 
 uploadXbrl :: forall eff. FileList -> Aff (Effects eff) (ServerResponse XbrlImportConf)
 uploadXbrl files = getJsonResponse "Could not upload XBRL file." $
@@ -108,10 +136,6 @@ uploadXbrl files = getJsonResponse "Could not upload XBRL file." $
 uploadCsv :: forall eff. UpdateId -> FileList -> Aff (Effects eff) (ServerResponse CsvImportConf)
 uploadCsv lastUpdateId files = getJsonResponse "Could not upload CSV file." $
   uploadFiles (prefix <> "csv/import/" <> show lastUpdateId) files
-
-postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateConfirmation
-postUpdate upd = getJsonResponse "Could not send update." $
-  postJson (prefix <> "businessdata/update") upd
 
 -- Api.Selector
 
@@ -136,11 +160,8 @@ login customerId pw = getJsonResponse "Could not login." $
   get $ prefix <> "auth/login/?customerId=" <> customerId <> "&password=" <> pw
 
 logout :: forall eff. Aff (Effects eff) Unit
-logout = do
-  res <- get $ prefix <> "auth/logout"
-  if succeeded res.status
-    then pure (res.response :: String) *> pure unit
-    else throwError $ error "Error logging out."
+logout = getUnitResponse "Error logging out." $
+  get $ prefix <> "auth/logout"
 
 loginStatus :: forall eff. Aff (Effects eff) LoginStatus
 loginStatus = getJsonResponse "Could not get login status." $
