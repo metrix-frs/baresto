@@ -223,7 +223,7 @@ selector = parentComponent' render eval peek
 
     peek :: Peek (ChildF FileSlot F.Query) State F.State Query F.Query Metrix FileSlot
     peek (ChildF (FileSlot fileId) q) = case q of
-      F.DeleteYes _ ->
+      F.DeleteFileYes _ ->
         apiCallParent (deleteFile fileId) \_ -> do
           modify $ _Just .. _files %~ filter (\(File f) -> f.fileId /= fileId)
           pure unit

@@ -43,7 +43,3 @@ instance isForeignFile :: IsForeign File where
       <*> readProp "created" json
       <*> readProp "lastUpdateId" json
     pure $ File file
-
-newtype Tag = Tag
-  { tagId :: TagId
-  }

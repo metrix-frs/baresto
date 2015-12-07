@@ -127,6 +127,10 @@ getUpdatePast :: forall eff. UpdateId -> Aff (Effects eff) (Array UpdateDesc)
 getUpdatePast updateId = getJsonResponse "Could not get revisions." $
   get $ prefix <> "businessdata/update/past/" <> show updateId
 
+pruneOrphan :: forall eff. UpdateId -> Aff (Effects eff) Unit
+pruneOrphan updateId = getUnitResponse "Could not delete orphan." $
+  get $ prefix <> "businessdata/update/prune/" <> show updateId
+
 --
 
 uploadXbrl :: forall eff. FileList -> Aff (Effects eff) (ServerResponse XbrlImportConf)
