@@ -3,6 +3,7 @@ module Component.FileMenu where
 import Prelude
 
 import Data.Maybe
+import Data.Array (snoc)
 
 import Optic.Core
 
@@ -24,12 +25,13 @@ import Utils
 data Location
   = LocationHome
   | LocationImportCsv
-  | LocationTags
+  | LocationPast (Array UpdateDesc)
 
 type State =
   { open :: Boolean
   , location :: Location
   , csvImportResponse :: Maybe (ServerResponse CsvImportConf)
+  , newTagName :: String
   , lastUpdateId :: UpdateId
   }
 
@@ -41,15 +43,21 @@ initialState updateId =
   { open: false
   , location: LocationHome
   , csvImportResponse: Nothing
+  , newTagName: ""
   , lastUpdateId: updateId
   }
 
 data Query a
   = ToggleOpen a
-  | Go Location a
+  | GoHome a
+  | GoImportCsv a
+  | GoPast a
   | UploadCsv a
   | UploadCsvConfirm UpdateGet a
   | UploadCsvClose a
+  | NewTagSetName String a
+  | NewTagCreate a
+  | OpenUpdate UpdateId a
   | SetLastUpdateId UpdateId a
 
 fileMenu :: Component State Query Metrix
@@ -72,8 +80,18 @@ fileMenu = component render eval
       modify $ _open %~ (not :: Boolean -> Boolean)
       pure next
 
-    eval (Go location next) = do
-      modify $ _{ location = location }
+    eval (GoHome next) = do
+      modify $ _{ location = LocationHome }
+      pure next
+
+    eval (GoImportCsv next) = do
+      modify $ _{ location = LocationImportCsv }
+      pure next
+
+    eval (GoPast next) = do
+      updateId <- gets _.lastUpdateId
+      apiCall (getUpdatePast updateId) \past ->
+        modify $ _{ location = LocationPast past }
       pure next
 
     eval (UploadCsv next) = do
@@ -97,6 +115,32 @@ fileMenu = component render eval
       modify _{ csvImportResponse = Nothing }
       pure next
 
+    eval (NewTagSetName name next) = do
+      modify _{ newTagName = name }
+      pure next
+
+    eval (NewTagCreate next) = do
+      st <- get
+      if st.newTagName /= ""
+        then apiCall (newTag st.lastUpdateId st.newTagName) \tag ->
+              case st.location of
+                LocationPast past -> do
+                  let go (UpdateDesc upd) = UpdateDesc $
+                        if upd.updateDescUpdateId == st.lastUpdateId
+                          then upd { updateDescTags = snoc upd.updateDescTags tag }
+                          else upd
+                  modify $ _{ location = LocationPast (go <$> past) }
+        else pure unit
+      pure next
+
+    -- peeked by FileViewer
+    eval (OpenUpdate updateId next) = do
+      modify _{ open = false
+              , location = LocationHome
+              , lastUpdateId = updateId
+              }
+      pure next
+
     eval (SetLastUpdateId updateId next) = do
       modify $ _{ lastUpdateId = updateId }
       pure next
@@ -107,12 +151,12 @@ renderMenu st = H.div [ cls "menu-content" ] $
     LocationHome ->
       [ H.ul_
         [ H.li
-          [ E.onClick $ E.input_ (Go LocationImportCsv) ]
+          [ E.onClick $ E.input_ GoImportCsv ]
           [ H.span [ cls "octicon octicon-repo-push" ] []
           , H.text "Import CSV"
           ]
         , H.li
-          [ E.onClick $ E.input_ (Go LocationTags) ]
+          [ E.onClick $ E.input_ GoPast ]
           [ H.span [ cls "octicon octicon-git-commit" ] []
           , H.text "Tags"
           ]
@@ -135,7 +179,7 @@ renderMenu st = H.div [ cls "menu-content" ] $
     LocationImportCsv -> case st.csvImportResponse of
       Nothing ->
         [ H.button
-          [ E.onClick $ E.input_ (Go LocationHome) ]
+          [ E.onClick $ E.input_ GoHome ]
           [ H.text "Back" ]
         , H.text "Import CSV"
         , H.input
@@ -169,11 +213,12 @@ renderMenu st = H.div [ cls "menu-content" ] $
               [ H.text "Ok" ]
             ]
           ]
-    LocationTags ->
+    LocationPast past ->
       [ H.button
-        [ E.onClick $ E.input_ (Go LocationHome) ]
+        [ E.onClick $ E.input_ GoHome ]
         [ H.text "Back" ]
       , H.text "Tags"
+      , H.ul_ $ renderUpdate <$> past
       ]
 
 renderCsvWarning :: Warning -> ComponentHTML Query
@@ -184,3 +229,15 @@ renderCsvWarning (Warning w) = H.li_
   , H.b_ [ H.text "Context: " ]
   , H.text w.context
   ]
+
+renderUpdate :: UpdateDesc -> ComponentHTML Query
+renderUpdate (UpdateDesc upd) = H.li_
+    [ H.span
+      [ E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId) ]
+      [ H.text upd.updateDescCreated ]
+    , H.div_ $ renderTag <$> upd.updateDescTags
+    ]
+  where
+    renderTag (TagDesc tag) = H.span [ cls "tag" ]
+      [ H.text tag.tagDescTagName ]
+

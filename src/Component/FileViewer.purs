@@ -286,24 +286,26 @@ viewer propModId propUpdateId = parentComponent' render eval peek
 
     -- TODO not stack-safe? Try to get a `MonadRec` instance and use `forever`
     postAgent :: AVar Update -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    postAgent queue = withFileData \fd -> do
+    postAgent queue = do
       update <- liftH $ liftAff' $ takeVar queue
-      let payload = UpdatePost
-            { updatePostParentId: fd.lastUpdateId
-            , updatePostUpdate: update
-            }
-      let post = do
-            result <- liftH $ liftAff' $ attempt $ postUpdate payload
-            case result of
-              Left err -> do
-                modify $ _fileData .. _Just %~ _{ lastSaved = "error" }
-                post
-              Right (UpdateDesc desc) -> do
-                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                , lastSaved = desc.updateDescCreated }
-                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
-                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
-      post
+      withFileData \fd -> do
+        let payload = UpdatePost
+              { updatePostParentId: fd.lastUpdateId
+              , updatePostUpdate: update
+              }
+        let post = do
+              result <- liftH $ liftAff' $ attempt $ postUpdate payload
+              case result of
+                Left err -> do
+                  modify $ _fileData .. _Just %~ _{ lastSaved = "error" }
+                  post
+                Right (UpdateDesc desc) -> do
+                  modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
+                                                  , lastSaved = desc.updateDescCreated }
+                  query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+                  query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
+        post
+        pure unit
       postAgent queue
 
     processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
@@ -381,6 +383,16 @@ viewer propModId propUpdateId = parentComponent' render eval peek
           query' cpValidation ValidationSlot $ action $ V.SetUpdateId u.updateGetId
           query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
           rebuildHot
+
+        Menu.OpenUpdate updateId _ ->
+          apiCallParent (getUpdateSnapshot updateId) \(UpdateGet upd) -> do
+            modify $ _fileData .. _Just %~
+               _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
+                , lastUpdateId = upd.updateGetId
+                , lastSaved = upd.updateGetCreated
+                }
+            query' cpValidation ValidationSlot $ action $ V.SetUpdateId upd.updateGetId
+            rebuildHot
 
         _ -> pure unit
 

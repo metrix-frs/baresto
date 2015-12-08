@@ -107,6 +107,7 @@ newtype TagDesc = TagDesc
   { tagDescTagId    :: TagId
   , tagDescUpdateId :: UpdateId
   , tagDescTagName  :: String
+  , tagDescCreated  :: UTCTime
   }
 
 instance isForeignTagDesc :: IsForeign TagDesc where
@@ -114,8 +115,10 @@ instance isForeignTagDesc :: IsForeign TagDesc where
     desc <- { tagDescTagId: _
             , tagDescUpdateId: _
             , tagDescTagName: _
+            , tagDescCreated: _
             }
       <$> readProp "tagId" json
       <*> readProp "updateId" json
       <*> readProp "name" json
+      <*> readProp "created" json
     pure $ TagDesc desc

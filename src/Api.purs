@@ -101,8 +101,8 @@ getFileTags fileId = getJsonResponse "Could not get file tags." $
 
 --
 
-newTag :: forall eff. UpdateId -> String -> Aff (Effects eff) Unit
-newTag updateId name = getUnitResponse "Could not create tag." $
+newTag :: forall eff. UpdateId -> String -> Aff (Effects eff) TagDesc
+newTag updateId name = getJsonResponse "Could not create tag." $
   get $ prefix <> "businessdata/tag/new/" <> show updateId <> "/" <> name
 
 deleteTag :: forall eff. TagId -> Aff (Effects eff) Unit
