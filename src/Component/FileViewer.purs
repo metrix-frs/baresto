@@ -107,6 +107,7 @@ _sheetConfiguratorOpen = lens _.sheetConfiguratorOpen _{ sheetConfiguratorOpen =
 type State =
   { fileData  :: Maybe FileData
   , tableData :: Maybe TableData
+  , validated :: Boolean
   }
 
 _fileData :: LensP State (Maybe FileData)
@@ -119,6 +120,7 @@ initialState :: State
 initialState =
   { fileData: Nothing
   , tableData: Nothing
+  , validated: false
   }
 
 -- TODO: use this in slot as soon as psc #1443 is fixed
@@ -288,10 +290,12 @@ viewer propModId propUpdateId = parentComponent' render eval peek
     postAgent :: AVar Update -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     postAgent queue = do
       update <- liftH $ liftAff' $ takeVar queue
+      validated <- gets _.validated
       withFileData \fd -> do
         let payload = UpdatePost
               { updatePostParentId: fd.lastUpdateId
               , updatePostUpdate: update
+              , updatePostValidationType: if validated then VTUpdate else VTWhole
               }
         let post = do
               result <- liftH $ liftAff' $ attempt $ postUpdate payload
@@ -299,11 +303,14 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                 Left err -> do
                   modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
                   post
-                Right (UpdateDesc desc) -> do
-                  modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                  , lastSaved = Just desc.updateDescCreated }
-                  query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
-                  query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
+                Right (UpdatePostResult res) -> case res.uprUpdateDesc of
+                  UpdateDesc desc -> do
+                    modify $ _{ validated = true }
+                    modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
+                                                    , lastSaved = Just desc.updateDescCreated }
+                    query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+                    query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
+                    query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
         post
         pure unit
       postAgent queue

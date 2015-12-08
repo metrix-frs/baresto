@@ -1,14 +1,41 @@
-module Api.Schema.Finding where
+module Api.Schema.Validation where
 
 import Prelude
 
+import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Tuple
 import           Data.Foreign
 import           Data.Foreign.Class
+import           Data.Foreign.Keys
 import           Data.Foreign.NullOrUndefined
+import           Data.Traversable (traverse)
+import           Data.List (toList)
 
-import Types
+import           Types
+
+newtype ValidationResult = ValidationResult
+  { vrDpmFindings    :: M.Map Int (Array Finding)
+  , vrHeaderFindings :: Maybe (Array Finding)
+  }
+
+emptyValidationResult :: ValidationResult
+emptyValidationResult = ValidationResult
+  { vrDpmFindings: M.empty
+  , vrHeaderFindings: Nothing
+  }
+
+instance isForeignValidationResult :: IsForeign ValidationResult where
+  read json = do
+    dpm <- readProp "dpm" json
+    ks <- keys dpm
+    let mkPair k = Tuple <$> readInt (toForeign k) <*> readProp k dpm
+    kvs <- traverse mkPair ks
+    header <- runNullOrUndefined <$> readProp "header" json
+    pure $ ValidationResult
+      { vrDpmFindings: M.fromList $ toList kvs
+      , vrHeaderFindings: header
+      }
 
 newtype Finding = Finding
   { finCode :: String

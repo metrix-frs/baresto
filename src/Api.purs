@@ -30,7 +30,7 @@ import Api.Schema.Module
 import Api.Schema.BusinessData
 import Api.Schema.Auth
 import Api.Schema.Table
-import Api.Schema.Finding
+import Api.Schema.Validation
 import Api.Schema.Import
 
 import qualified Component.Spinner as Spinner
@@ -119,7 +119,7 @@ getUpdateSnapshot :: forall eff. UpdateId -> Aff (Effects eff) UpdateGet
 getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
   get $ prefix <> "businessdata/update/snapshot/" <> show updateId
 
-postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdateDesc
+postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdatePostResult
 postUpdate upd = getJsonResponse "Could not send update." $
   postJson (prefix <> "businessdata/update") upd
 
@@ -153,7 +153,7 @@ listFiles = getJsonResponse "Could not get files." $
 
 -- Api.Validate
 
-validate :: forall eff. UpdateId -> Aff (Effects eff) (Array Finding)
+validate :: forall eff. UpdateId -> Aff (Effects eff) ValidationResult
 validate updateId = getJsonResponse "Could not validate." $
   get $ prefix <> "validate/byUpdateId/" <> show updateId
 

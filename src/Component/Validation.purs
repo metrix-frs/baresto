@@ -21,28 +21,34 @@ import Types
 import Utils
 
 import Api
-import Api.Schema.Finding
+import Api.Schema.Validation
+
+import Lib.Validation
 
 import Component.Validation.Finding
 
 type State =
   { open :: Boolean
-  , findings :: Array Finding
   , updateId :: UpdateId
+  , results :: ValidationResult
   }
 
 initialState :: UpdateId -> State
 initialState updateId =
   { open: false
-  , findings: []
   , updateId: updateId
+  , results: emptyValidationResult
   }
+
+_results :: LensP State ValidationResult
+_results = lens _.results _{ results = _ }
 
 data Query a
   = Open a
   | Close a
   | SetUpdateId UpdateId a
-  | Validate a
+  | Patch ValidationResult a
+  | ValidateAll a
 
 validation :: Component State Query Metrix
 validation = component render eval
@@ -58,11 +64,11 @@ validation = component render eval
         , H.br_
         , H.br_
         , H.button
-          [ E.onClick $ E.input_ Validate ]
+          [ E.onClick $ E.input_ ValidateAll ]
           [ H.span [ cls "octicon octicon-checklist" ] []
           ]
         , H.div [ cls "validation-content" ]
-          [ H.ul_ $ renderFinding <$> st.findings
+          [ H.ul_ $ renderFinding <$> (flattenValidationResult st.results)
           ]
         ]
       else H.div
@@ -90,12 +96,16 @@ validation = component render eval
       modify _{ updateId = updateId }
       pure next
 
-    eval (Validate next) = do
+    eval (Patch patch next) = do
+      modify $ _results %~ patchValidationResult patch
+      pure next
+
+    eval (ValidateAll next) = do
       runValidation
       pure next
 
     runValidation :: ComponentDSL State Query Metrix Unit
     runValidation = do
       updateId <- gets _.updateId
-      apiCall (validate updateId) \findings ->
-        modify _{ findings = findings }
+      apiCall (validate updateId) \results ->
+        modify _{ results = results }

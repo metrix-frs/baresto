@@ -14,7 +14,7 @@ import qualified Halogen.HTML.Indexed as H
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
-import Api.Schema.Finding
+import Api.Schema.Validation
 import Utils (cls)
 
 renderFinding :: forall f. Finding -> ComponentHTML f

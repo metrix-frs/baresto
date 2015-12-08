@@ -15,11 +15,12 @@ import           Data.List (toList)
 
 import Optic.Core
 
-import Data.Argonaut.Core (jsonEmptyObject)
+import Data.Argonaut.Core (jsonEmptyObject, fromString)
 import Data.Argonaut.Encode
 import Data.Argonaut.Combinators ((:=), (~>))
 
 import Types
+import Api.Schema.Validation
 import Api.Schema.BusinessData.Key
 
 
@@ -53,15 +54,41 @@ instance encodeJsonChange :: EncodeJson Change where
 
 --
 
+data ValidationType
+  = VTNone
+  | VTWhole
+  | VTUpdate
+
+instance encodeJsonValidationType :: EncodeJson ValidationType where
+  encodeJson VTNone   = fromString "none"
+  encodeJson VTWhole  = fromString "whole"
+  encodeJson VTUpdate = fromString "update"
+
 newtype UpdatePost = UpdatePost
-  { updatePostParentId :: UpdateId
-  , updatePostUpdate   :: Update
+  { updatePostParentId       :: UpdateId
+  , updatePostUpdate         :: Update
+  , updatePostValidationType :: ValidationType
   }
 
 instance encodeJsonUpdatePost :: EncodeJson UpdatePost where
-  encodeJson (UpdatePost p) = "parentId" := p.updatePostParentId
-                           ~> "update" := p.updatePostUpdate
+  encodeJson (UpdatePost p) = "parentId"       := p.updatePostParentId
+                           ~> "update"         := p.updatePostUpdate
+                           ~> "validationType" := p.updatePostValidationType
                            ~> jsonEmptyObject
+
+newtype UpdatePostResult = UpdatePostResult
+  { uprUpdateDesc       :: UpdateDesc
+  , uprValidationResult :: ValidationResult
+  }
+
+instance isForeignUpdatePostResult :: IsForeign UpdatePostResult where
+  read json = do
+    upr <- { uprUpdateDesc: _
+           , uprValidationResult: _
+           }
+      <$> readProp "updateDesc" json
+      <*> readProp "validationResult" json
+    pure $ UpdatePostResult upr
 
 newtype UpdateGet = UpdateGet
   { updateGetId       :: UpdateId
