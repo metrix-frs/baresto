@@ -104,7 +104,7 @@ file = component render eval
         , H.text (st.file ^. _fileLabel)
         ]
       , H.div [ cls "details" ] $
-        [ H.text $ "Created: " <> (st.file ^. _fileCreated)
+        [ H.text $ "Created: " <> show (st.file ^. _fileCreated)
         , H.button
           [ E.onClick $ E.input_ DeleteFile ]
           [ H.text "Delete" ]
@@ -214,7 +214,7 @@ file = component render eval
     renderOrphan st (UpdateDesc upd) = H.li_ $
       [ H.span
         [ E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) upd.updateDescUpdateId ]
-        [ H.text upd.updateDescCreated
+        [ H.text $ show upd.updateDescCreated
         ]
       , H.button
         [ E.onClick $ E.input_ $ DeleteOrphan upd.updateDescUpdateId ]

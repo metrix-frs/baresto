@@ -23,6 +23,7 @@
     "purescript-string-parsers": "rubenmoor/purescript-string-parsers#master",
     "purescript-random": "0.2.2",
     "purescript-globals": "0.2.0",
+    "purescript-datetime": "0.9.1",
     "purescript-handsontable": "master"
   },
   "resolutions": {

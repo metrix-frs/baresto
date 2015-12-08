@@ -88,7 +88,7 @@ type FileData =
   { businessData  :: BusinessData
   , moduleId      :: ModuleId
   , lastUpdateId  :: UpdateId
-  , lastSaved     :: UTCTime
+  , lastSaved     :: Maybe UTCTime
   , queue         :: AVar Update
   }
 
@@ -208,7 +208,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                     { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
                     , moduleId: propModId
                     , lastUpdateId: upd.updateGetId
-                    , lastSaved: upd.updateGetCreated
+                    , lastSaved: Just upd.updateGetCreated
                     , queue: queue
                     }
                   }
@@ -297,11 +297,11 @@ viewer propModId propUpdateId = parentComponent' render eval peek
               result <- liftH $ liftAff' $ attempt $ postUpdate payload
               case result of
                 Left err -> do
-                  modify $ _fileData .. _Just %~ _{ lastSaved = "error" }
+                  modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
                   post
                 Right (UpdateDesc desc) -> do
                   modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                  , lastSaved = desc.updateDescCreated }
+                                                  , lastSaved = Just desc.updateDescCreated }
                   query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
                   query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
         post
@@ -378,7 +378,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
         Menu.UploadCsvConfirm (UpdateGet u) _ -> do
           modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
           modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId
-                                          , lastSaved = u.updateGetCreated
+                                          , lastSaved = Just u.updateGetCreated
                                           }
           query' cpValidation ValidationSlot $ action $ V.SetUpdateId u.updateGetId
           query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
@@ -389,7 +389,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
             modify $ _fileData .. _Just %~
                _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
                 , lastUpdateId = upd.updateGetId
-                , lastSaved = upd.updateGetCreated
+                , lastSaved = Just upd.updateGetCreated
                 }
             query' cpValidation ValidationSlot $ action $ V.SetUpdateId upd.updateGetId
             rebuildHot

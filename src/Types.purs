@@ -1,5 +1,7 @@
 module Types where
 
+import Prelude
+
 import Control.Monad.Eff.Console (CONSOLE())
 import Control.Monad.Eff.Exception (EXCEPTION())
 import Control.Monad.Eff.Random (RANDOM())
@@ -7,6 +9,13 @@ import Control.Monad.Eff.Ref (REF())
 
 import Control.Monad.Aff (Aff())
 import Control.Monad.Aff.AVar (AVAR())
+
+import Data.Date
+import Data.Date.UTC
+import Data.Maybe
+import Data.Either
+import Data.Foreign
+import Data.Foreign.Class
 
 import Network.HTTP.Affjax (AJAX())
 
@@ -56,4 +65,17 @@ type XBRLCode           = String
 type Label              = String
 type XBRLCodeSet        = Array (Tuple XBRLCode Label)
 
-type UTCTime            = String
+newtype UTCTime = UTCTime Date
+
+instance isForeignUTCTime :: IsForeign UTCTime where
+  read json = do
+    mDate <- fromString <$> read json
+    case mDate of
+      Just date -> pure $ UTCTime date
+      Nothing -> Left $ JSONError "Could not read date."
+
+-- TODO: think about way of running this effectful function in eff monad
+foreign import showDate :: Date -> String
+
+instance showUTCTime :: Show UTCTime where
+  show (UTCTime date) = showDate date

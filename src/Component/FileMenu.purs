@@ -130,6 +130,7 @@ fileMenu = component render eval
                           then upd { updateDescTags = snoc upd.updateDescTags tag }
                           else upd
                   modify $ _{ location = LocationPast (go <$> past) }
+                _ -> pure unit
         else pure unit
       pure next
 
@@ -234,7 +235,7 @@ renderUpdate :: UpdateDesc -> ComponentHTML Query
 renderUpdate (UpdateDesc upd) = H.li_
     [ H.span
       [ E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId) ]
-      [ H.text upd.updateDescCreated ]
+      [ H.text $ show upd.updateDescCreated ]
     , H.div_ $ renderTag <$> upd.updateDescTags
     ]
   where
