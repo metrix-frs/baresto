@@ -90,70 +90,136 @@ file = component render eval
   where
 
     render :: Render State Query
-    render st = case st.file of
-      File f -> H.li
-        [ cls "file"
-        , P.initializer \_ -> action Init
-        ] $
-        [ H.div
-          [ cls "label"
-          , E.onClick (E.input_ (Open f.fileModuleId f.fileLastUpdateId))
-          ]
-          [ H.span
-            [ cls "octicon octicon-file-text"
-            ] []
-          , H.text f.fileLabel
-          ]
-        , H.div [ cls "details" ] $
-          [ H.text $ "Created: " <> f.fileCreated
-          , H.button
-            [ E.onClick $ E.input_ DeleteFile ]
-            [ H.text "Delete" ]
-          ] <> (
-            if st.tagsOpen
-              then
-                [ H.button
-                  [ E.onClick $ E.input_ TagsClose ]
-                  [ H.text "Close tags" ]
-                ]
-              else
-                [ H.button
-                  [ E.onClick $ E.input_ TagsOpen ]
-                  [ H.text "Open tags" ]
-                ]
-          ) <> (
-            case st.deleteConfirm of
-              DFile ->
-                [ modal "Delete File"
-                  [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
-                  [ H.button
-                    [ E.onClick $ E.input_ DeleteNo ]
-                    [ H.text "No" ]
-                  , H.button
-                    [ E.onClick $ E.input_ DeleteFileYes ]
-                    [ H.text "Yes" ]
-                  ]
-                ]
-              _ ->
-                [ ]
-          ) <> (
-            case st.renaming of
-              RFile name ->
-                [ H.input
-                  [ E.onValueChange $ E.input RenameFileSetNewName
-                  , P.value name
-                  ]
-                , H.button
-                  [ E.onClick $ E.input_ RenameFileDone ]
-                  [ H.text "Ok" ]
-                ]
-              _ ->
-                [ H.button
-                  [ E.onClick $ E.input_ RenameFileStart ]
-                  [ H.text "Rename" ]
-                ]
-          )
+    render st = H.li
+      [ cls "file"
+      , P.initializer \_ -> action Init
+      ] $
+      [ H.div
+        [ cls "label"
+        , E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) (st.file ^. _fileLastUpdateId)
         ]
+        [ H.span
+          [ cls "octicon octicon-file-text"
+          ] []
+        , H.text (st.file ^. _fileLabel)
+        ]
+      , H.div [ cls "details" ] $
+        [ H.text $ "Created: " <> (st.file ^. _fileCreated)
+        , H.button
+          [ E.onClick $ E.input_ DeleteFile ]
+          [ H.text "Delete" ]
+        ] <> (
+          if st.tagsOpen
+            then
+              [ H.button
+                [ E.onClick $ E.input_ TagsClose ]
+                [ H.text "Close tags" ]
+              ]
+            else
+              [ H.button
+                [ E.onClick $ E.input_ TagsOpen ]
+                [ H.text "Open tags" ]
+              ]
+        ) <> (
+          case st.deleteConfirm of
+            DFile ->
+              [ modal "Delete File"
+                [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
+                [ H.button
+                  [ E.onClick $ E.input_ DeleteNo ]
+                  [ H.text "No" ]
+                , H.button
+                  [ E.onClick $ E.input_ DeleteFileYes ]
+                  [ H.text "Yes" ]
+                ]
+              ]
+            DTag _ ->
+              [ modal "Delete Tag"
+                [ H.p_ [ H.text "Are you sure you want to delete this tag?" ] ]
+                [ H.button
+                  [ E.onClick $ E.input_ DeleteNo ]
+                  [ H.text "No" ]
+                , H.button
+                  [ E.onClick $ E.input_ DeleteTagYes ]
+                  [ H.text "Yes" ]
+                ]
+              ]
+            DOrphan _ ->
+              [ modal "Delete Autosave"
+                [ H.p_ [ H.text "Really delete? All data will be lost and there is no way to recover!" ] ]
+                [ H.button
+                  [ E.onClick $ E.input_ DeleteNo ]
+                  [ H.text "No" ]
+                , H.button
+                  [ E.onClick $ E.input_ DeleteOrphanYes ]
+                  [ H.text "Yes" ]
+                ]
+              ]
+            _ ->
+              [ ]
+        ) <> (
+          case st.renaming of
+            RFile name ->
+              [ H.input
+                [ E.onValueChange $ E.input RenameFileSetNewName
+                , P.value name
+                ]
+              , H.button
+                [ E.onClick $ E.input_ RenameFileDone ]
+                [ H.text "Ok" ]
+              ]
+            _ ->
+              [ H.button
+                [ E.onClick $ E.input_ RenameFileStart ]
+                [ H.text "Rename" ]
+              ]
+        )
+      ] <> (
+        if st.tagsOpen
+          then
+            [ H.ul_ $ (renderTag st <$> st.tags) <> (renderOrphan st <$> st.orphans)
+            ]
+          else
+            []
+      )
+
+    renderTag :: State -> TagDesc -> ComponentHTML Query
+    renderTag st (TagDesc tag) = H.li_ $
+      [ H.span
+        [ E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) tag.tagDescUpdateId ]
+        [ H.text tag.tagDescTagName
+        ]
+      , H.button
+        [ E.onClick $ E.input_ $ DeleteTag tag.tagDescTagId ]
+        [ H.text "Delete" ]
+      ] <> (
+        case st.renaming of
+          RTag tagId name | tagId == tag.tagDescTagId ->
+            [ H.input
+              [ E.onValueChange $ E.input RenameTagSetNewName
+              , P.value name
+              ]
+            , H.button
+              [ E.onClick $ E.input_ RenameTagDone ]
+              [ H.text "Ok" ]
+            ]
+          _ ->
+            [ H.button
+              [ E.onClick $ E.input_ $ RenameTagStart tag.tagDescTagId ]
+              [ H.text "Rename" ]
+            ]
+      )
+
+    renderOrphan :: State -> UpdateDesc -> ComponentHTML Query
+    renderOrphan st (UpdateDesc upd) = H.li_ $
+      [ H.span
+        [ E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) upd.updateDescUpdateId ]
+        [ H.text upd.updateDescCreated
+        ]
+      , H.button
+        [ E.onClick $ E.input_ $ DeleteOrphan upd.updateDescUpdateId ]
+        [ H.text "Delete" ]
+      ]
 
     eval :: Eval Query State Query Metrix
     eval (Init next) = do
@@ -240,6 +306,7 @@ file = component render eval
                 then t { tagDescTagName = newName }
                 else t
           modify $ _tags %~ map rename
+          modify $ _{ renaming = RNone }
         _ -> pure unit
       pure next
 
