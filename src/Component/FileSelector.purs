@@ -397,10 +397,11 @@ renderFiles st = H.div [ cls "panel-filelist" ]
           ]
         ] <> (renderFile <$> files)
       where
-          in  H.slot (FileSlot f.fileId) \_ ->
-                { component: F.file
-                , initialState: F.initialState fileInfo
-                }
+        renderFile file@(File f) =
+          H.slot (FileSlot f.fileId) \_ ->
+            { component: F.file
+            , initialState: F.initialState file
+            }
 
 --
 

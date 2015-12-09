@@ -91,6 +91,14 @@ renameFile :: forall eff. FileId -> String -> Aff (Effects eff) Unit
 renameFile fileId newName = getUnitResponse "Error renaming file." $
   get $ prefix <> "businessdata/file/rename/" <> show fileId <> "/" <> newName
 
+listFiles :: forall eff. Aff (Effects eff) (Array File)
+listFiles = getJsonResponse "Could not get files." $
+  get $ prefix <> "businessdata/file/all"
+
+getFileDetails :: FileId -> forall eff. Aff (Effects eff) File
+getFileDetails fileId = getJsonResponse "Could not get file details." $
+  get $ prefix <> "businessdata/file/details/" <> show fileId
+
 getFileOrphans :: forall eff. FileId -> Aff (Effects eff) (Array UpdateDesc)
 getFileOrphans fileId = getJsonResponse "Could not get auto saves." $
   get $ prefix <> "businessdata/file/orphans/" <> show fileId
@@ -146,10 +154,6 @@ uploadCsv lastUpdateId files = getJsonResponse "Could not upload CSV file." $
 listFrameworks :: forall eff. Aff (Effects eff) (Array Framework)
 listFrameworks = getJsonResponse "Could not get frameworks." $
   get $ prefix <> "selector/frameworks"
-
-listFiles :: forall eff. Aff (Effects eff) (Array File)
-listFiles = getJsonResponse "Could not get files." $
-  get $ prefix <> "selector/files"
 
 -- Api.Validate
 
