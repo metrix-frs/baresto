@@ -154,10 +154,10 @@ renderHole (Hole h) = H.div [ cls "hole" ]
                 HCYClosed i ord        -> "r" <> ord
                 HCYCustom cmId rowKeys -> cmId
               zStr = case z of
-                HCZSingleton           -> ""
-                HCZClosed i ord        -> "s" <> ord
-                HCZCustom cmId cm      -> cmId
-                HCZSubset smId sm      -> show smId
-          in  H.text (xStr <> yStr <> zStr)
+                HCZSingleton           -> Nothing
+                HCZClosed i ord        -> Just $ "s" <> ord
+                HCZCustom cmId cm      -> Just $ cmId
+                HCZSubset smId sm      -> Just $ show smId
+          in  H.text ("(" <> yStr <> ", " <> xStr <> (maybe "" (", " <>) zStr) <> ")")
     ]
   ]

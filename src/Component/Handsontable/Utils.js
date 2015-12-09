@@ -14,7 +14,7 @@ exports.attachClickHandler = function(selector) {
       attach(callback);
       setTimeout(function() {
         attach(callback);
-      }, 500);
+      }, 1000);
     };
   };
 };

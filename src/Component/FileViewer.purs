@@ -384,7 +384,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
           modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId
                                           , lastSaved = Just u.updateGetCreated
                                           }
-          query' cpValidation ValidationSlot $ action $ V.SetUpdateId u.updateGetId
+          query' cpValidation ValidationSlot $ action $ V.ValidateAll u.updateGetId
           query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
           rebuildHot
 
@@ -395,7 +395,7 @@ viewer propModId propUpdateId = parentComponent' render eval peek
                 , lastUpdateId = upd.updateGetId
                 , lastSaved = Just upd.updateGetCreated
                 }
-            query' cpValidation ValidationSlot $ action $ V.SetUpdateId upd.updateGetId
+            query' cpValidation ValidationSlot $ action $ V.ValidateAll upd.updateGetId
             rebuildHot
 
         _ -> pure unit
