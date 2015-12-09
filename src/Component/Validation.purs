@@ -44,11 +44,12 @@ _results :: LensP State ValidationResult
 _results = lens _.results _{ results = _ }
 
 data Query a
-  = Open a
+  = Init a
+  | Open a
   | Close a
   | SetUpdateId UpdateId a
   | Patch ValidationResult a
-  | ValidateAll a
+  | ValidateAll UpdateId a
 
 validation :: Component State Query Metrix
 validation = component render eval
@@ -57,14 +58,15 @@ validation = component render eval
     render :: Render State Query
     render st = if st.open
       then H.div
-        [ cls "validation-open" ]
+        [ cls "validation-open"
+        , P.initializer $ \_ -> action $ Init ]
         [ H.button
           [ E.onClick $ E.input_ Close ]
           [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
         , H.br_
         , H.br_
         , H.button
-          [ E.onClick $ E.input_ ValidateAll ]
+          [ E.onClick $ E.input_ $ ValidateAll st.updateId ]
           [ H.span [ cls "octicon octicon-checklist" ] []
           ]
         , H.div [ cls "validation-content" ]
@@ -83,9 +85,14 @@ validation = component render eval
     htmlProblem x = H.li_ ([H.br_ :: ComponentHTML f, H.text "hl" ] <> [H.li_ [], H.br_])
 
     eval :: Eval Query State Query Metrix
+    eval (Init next) = do
+      updateId <- gets _.updateId
+      apiCall (validate updateId) \results ->
+        modify _{ results = results }
+      pure next
+
     eval (Open next) = do
       modify _{ open = true }
-      runValidation
       pure next
 
     eval (Close next) = do
@@ -100,12 +107,8 @@ validation = component render eval
       modify $ _results %~ patchValidationResult patch
       pure next
 
-    eval (ValidateAll next) = do
-      runValidation
-      pure next
-
-    runValidation :: ComponentDSL State Query Metrix Unit
-    runValidation = do
-      updateId <- gets _.updateId
+    eval (ValidateAll updateId next) = do
+      modify _{ updateId = updateId }
       apiCall (validate updateId) \results ->
         modify _{ results = results }
+      pure next

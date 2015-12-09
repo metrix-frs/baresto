@@ -2,7 +2,8 @@ module Api.Schema.Validation where
 
 import Prelude
 
-import qualified Data.Map as M
+import           Data.Either
+import qualified Data.StrMap as SM
 import           Data.Maybe
 import           Data.Tuple
 import           Data.Foreign
@@ -15,25 +16,30 @@ import           Data.List (toList)
 import           Types
 
 newtype ValidationResult = ValidationResult
-  { vrDpmFindings    :: M.Map Int (Array Finding)
+  { vrDpmFindings    :: SM.StrMap (Array Finding)
   , vrHeaderFindings :: Maybe (Array Finding)
   }
 
 emptyValidationResult :: ValidationResult
 emptyValidationResult = ValidationResult
-  { vrDpmFindings: M.empty
+  { vrDpmFindings: SM.empty
   , vrHeaderFindings: Nothing
   }
 
+newtype RuleMap = RuleMap (SM.StrMap (Array Finding))
+
+instance isForeignRuleMap :: IsForeign RuleMap where
+  read json = do
+    (obj :: SM.StrMap Foreign) <- unsafeReadTagged "Object" json
+    -- TODO: report purescript-maps StrMap functions traverse, union, foldM not stack-safe
+    pure $ RuleMap $ obj <#> \val -> either (const []) id (read val)
+
 instance isForeignValidationResult :: IsForeign ValidationResult where
   read json = do
-    dpm <- readProp "dpm" json
-    ks <- keys dpm
-    let mkPair k = Tuple <$> readInt (toForeign k) <*> readProp k dpm
-    kvs <- traverse mkPair ks
+    (RuleMap dpm) <- readProp "dpm" json
     header <- runNullOrUndefined <$> readProp "header" json
     pure $ ValidationResult
-      { vrDpmFindings: M.fromList $ toList kvs
+      { vrDpmFindings: dpm
       , vrHeaderFindings: header
       }
 
