@@ -56,29 +56,32 @@ validation = component render eval
   where
 
     render :: Render State Query
-    render st = if st.open
-      then H.div
-        [ cls "validation-open"
-        , P.initializer $ \_ -> action $ Init ]
-        [ H.button
-          [ E.onClick $ E.input_ Close ]
-          [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
-        , H.br_
-        , H.br_
-        , H.button
-          [ E.onClick $ E.input_ $ ValidateAll st.updateId ]
-          [ H.span [ cls "octicon octicon-checklist" ] []
-          ]
-        , H.div [ cls "validation-content" ]
-          [ H.ul_ $ renderFinding <$> (flattenValidationResult st.results)
-          ]
-        ]
-      else H.div
-        [ cls "validation-closed"]
-        [ H.button
-          [ E.onClick $ E.input_ Open ]
-          [ H.span [ cls "octicon octicon-chevron-up" ] [] ]
-        ]
+    render st = H.div
+      [ P.initializer $ \_ -> action $ Init
+      ]
+      [ if st.open
+          then H.div
+            [ cls "validation-open" ]
+            [ H.button
+              [ E.onClick $ E.input_ Close ]
+              [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
+            , H.br_
+            , H.br_
+            , H.button
+              [ E.onClick $ E.input_ $ ValidateAll st.updateId ]
+              [ H.span [ cls "octicon octicon-checklist" ] []
+              ]
+            , H.div [ cls "validation-content" ]
+              [ H.ul_ $ renderFinding <$> (flattenValidationResult st.results)
+              ]
+            ]
+          else H.div
+            [ cls "validation-closed" ]
+            [ H.button
+              [ E.onClick $ E.input_ Open ]
+              [ H.span [ cls "octicon octicon-chevron-up" ] [] ]
+            ]
+      ]
 
     -- TODO: report purescript-halogen issue about type inference
     htmlProblem :: forall f. Int -> ComponentHTML f

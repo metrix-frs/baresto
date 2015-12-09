@@ -11,6 +11,7 @@ import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Foldable
 import           Data.Tuple
+import           Data.List (toList)
 import           Data.Functor.Coproduct (Coproduct())
 import           Data.Generic (Generic, gEq, gCompare)
 
@@ -47,7 +48,7 @@ instance ordFileSlot :: Ord FileSlot where compare = gCompare
 data SelectedNode
   = SelectedNone
   | SelectedFramework FrameworkId
-  | SelectedTaxonomy TaxonomyId
+  | SelectedTaxonomy FrameworkId TaxonomyId
   | SelectedConceptualModule TaxonomyId ConceptualModuleId
   | SelectedModule ModuleId
 
@@ -55,7 +56,7 @@ type StateInfo =
   { files :: Array File
   , frameworks :: Array Framework
   , openFramework :: M.Map FrameworkId Boolean
-  , openTaxonomy :: M.Map TaxonomyId Boolean
+  , selectedTaxonomy :: M.Map FrameworkId TaxonomyId
   , openConceptualModule :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean
   , selectedNode :: SelectedNode
   , newFileName :: String
@@ -70,8 +71,8 @@ _files = lens _.files _{ files = _ }
 _openFramework :: LensP StateInfo (M.Map FrameworkId Boolean)
 _openFramework = lens _.openFramework _{ openFramework = _ }
 
-_openTaxonomy :: LensP StateInfo (M.Map TaxonomyId Boolean)
-_openTaxonomy = lens _.openTaxonomy _{ openTaxonomy = _ }
+_selectedTaxonomy :: LensP StateInfo (M.Map FrameworkId TaxonomyId)
+_selectedTaxonomy = lens _.selectedTaxonomy _{ selectedTaxonomy = _ }
 
 _openConceptualModule :: LensP StateInfo (M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
 _openConceptualModule = lens _.openConceptualModule _{ openConceptualModule = _ }
@@ -92,12 +93,13 @@ data Query a
   | UploadXbrlOpenFile ModuleId UpdateId a
   | SetNewFileName String a
   | CreateFile ModuleId String a
-  | SelectFramework FrameworkId a
-  | SelectTaxonomy TaxonomyId a
-  | SelectConceptualModule TaxonomyId ConceptualModuleId a
-  | SelectModule ModuleId a
+  | ClickAll a
+  | ClickFramework FrameworkId a
+  | ClickTaxonomy FrameworkId TaxonomyId a
+  | ClickConceptualModule TaxonomyId ConceptualModuleId a
+  | ClickModule ModuleId a
   | ToggleFrameworkOpen FrameworkId a
-  | ToggleTaxonomyOpen TaxonomyId a
+  | SelectTaxonomy FrameworkId TaxonomyId a
   | ToggleConceptualModuleOpen TaxonomyId ConceptualModuleId a
 
 type StateP = InstalledState State F.State Query F.Query Metrix FileSlot
@@ -156,11 +158,13 @@ selector = parentComponent' render eval peek
     eval (Init next) = do
       apiCallParent listFiles \files -> do
         apiCallParent listFrameworks \frameworks -> do
+          let taxMap = frameworks <#> \(Framework f) ->
+                Tuple f.frameworkId $ maybe 0 (view _taxonomyId) (last f.taxonomies)
           modify $ const $ Just
             { files: files
             , frameworks: frameworks
             , openFramework: (M.empty :: M.Map FrameworkId Boolean)
-            , openTaxonomy: (M.empty :: M.Map TaxonomyId Boolean)
+            , selectedTaxonomy: M.fromList $ toList taxMap
             , openConceptualModule: (M.empty :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
             , selectedNode: SelectedNone
             , newFileName: ""
@@ -193,19 +197,23 @@ selector = parentComponent' render eval peek
     eval (CreateFile _ _ next) =
       pure next
 
-    eval (SelectFramework f next) = do
+    eval (ClickAll next) = do
+      modify $ _Just .. _selectedNode .~ SelectedNone
+      pure next
+
+    eval (ClickFramework f next) = do
       modify $ _Just .. _selectedNode .~ SelectedFramework f
       pure next
 
-    eval (SelectTaxonomy t next) = do
-      modify $ _Just .. _selectedNode .~ SelectedTaxonomy t
+    eval (ClickTaxonomy f t next) = do
+      modify $ _Just .. _selectedNode .~ SelectedTaxonomy f t
       pure next
 
-    eval (SelectConceptualModule t c next) = do
+    eval (ClickConceptualModule t c next) = do
       modify $ _Just .. _selectedNode .~ SelectedConceptualModule t c
       pure next
 
-    eval (SelectModule m next) = do
+    eval (ClickModule m next) = do
       modify $ _Just .. _selectedNode .~ SelectedModule m
       pure next
 
@@ -213,8 +221,9 @@ selector = parentComponent' render eval peek
       modify $ _Just .. _openFramework .. at f .. non true %~ (not :: Boolean -> Boolean)
       pure next
 
-    eval (ToggleTaxonomyOpen t next) = do
-      modify $ _Just .. _openTaxonomy .. at t .. non true %~ (not :: Boolean -> Boolean)
+    eval (SelectTaxonomy f t next) = do
+      modify $ _Just .. _selectedTaxonomy .. at f .~ Just t
+      modify $ _Just .. _selectedNode .~ SelectedTaxonomy f t
       pure next
 
     eval (ToggleConceptualModuleOpen t c next) = do
@@ -262,10 +271,24 @@ renderXbrlImportResponse resp = case resp of
 renderFrameworks :: StateInfo -> ComponentHTMLP
 renderFrameworks st = H.div [ cls "panel-frameworklist" ]
     [ H.div [ cls "frame" ]
-      [ H.ul [ cls "frameworks" ] $ concat $ renderFramework <$> st.frameworks
+      [ H.ul [ cls "frameworks" ] $
+        [ H.li
+          [ cls $ if selectedAll then "selected" else "" ]
+          [ H.span
+            [ cls "label"
+            , E.onClick $ E.input_ $ ClickAll
+            ]
+            [ H.text "All"
+            ]
+          ]
+        ] <> (concat $ renderFramework <$> st.frameworks)
       ]
     ]
   where
+    selectedAll = case st.selectedNode of
+      SelectedNone -> true
+      _            -> false
+
     renderFramework :: Framework -> Array ComponentHTMLP
     renderFramework (Framework f) =
         [ H.li
@@ -276,39 +299,47 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
             ] []
           , H.span
             [ cls "label"
-            , E.onClick $ E.input_ (SelectFramework f.frameworkId)
+            , E.onClick $ E.input_ (ClickFramework f.frameworkId)
             ]
             [ H.text f.frameworkLabel
             ]
+          , H.select
+            [ E.onValueChange $ E.input $ SelectTaxonomy f.frameworkId <<< readId
+            ] $ taxonomyOption <$> f.taxonomies
           ]
-        ] <> if open then concat $ renderTaxonomy <$> f.taxonomies else []
+        ] <> if open then maybe [] (renderTaxonomy f.frameworkId) currentTaxonomy else []
       where
         open = fromMaybe true $ M.lookup f.frameworkId st.openFramework
         selected = case st.selectedNode of
           SelectedFramework fId -> fId == f.frameworkId
           _                     -> false
 
-    renderTaxonomy :: Taxonomy -> Array ComponentHTMLP
-    renderTaxonomy (Taxonomy t) =
+        currentTaxonomyId = fromMaybe 0 $ M.lookup f.frameworkId st.selectedTaxonomy
+        currentTaxonomy = find (\(Taxonomy t) -> t.taxonomyId == currentTaxonomyId) f.taxonomies
+
+        taxonomyOption (Taxonomy t) = H.option
+          [ P.selected $ t.taxonomyId == currentTaxonomyId
+          , P.value $ show t.taxonomyId
+          ]
+          [ H.text t.taxonomyLabel
+          ]
+
+    renderTaxonomy :: FrameworkId -> Taxonomy -> Array ComponentHTMLP
+    renderTaxonomy frameworkId (Taxonomy t) =
         [ H.li
           [ cls $ "taxonomy" <> if selected then " selected" else "" ]
           [ H.span
-            [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
-            , E.onClick $ E.input_ (ToggleTaxonomyOpen t.taxonomyId)
-            ] []
-          , H.span
             [ cls "label"
-            , E.onClick $ E.input_ (SelectTaxonomy t.taxonomyId)
+            , E.onClick $ E.input_ (ClickTaxonomy frameworkId t.taxonomyId)
             ]
             [ H.text t.taxonomyLabel
             ]
           ]
-        ] <> if open then concat $ renderConceptualModule t.taxonomyId <$> t.conceptualModules else []
+        ] <> (concat $ renderConceptualModule t.taxonomyId <$> t.conceptualModules)
       where
-        open = fromMaybe true $ M.lookup t.taxonomyId st.openTaxonomy
         selected = case st.selectedNode of
-          SelectedTaxonomy tId -> tId == t.taxonomyId
-          _                    -> false
+          SelectedTaxonomy fId _ -> fId == frameworkId
+          _                      -> false
 
     renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array ComponentHTMLP
     renderConceptualModule tId (ConceptualModule c) =
@@ -320,7 +351,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
             ] []
           , H.span
             [ cls "label"
-            , E.onClick $ E.input_ (SelectConceptualModule tId c.conceptId)
+            , E.onClick $ E.input_ (ClickConceptualModule tId c.conceptId)
             ]
             [ H.text c.conceptLabel
             ]
@@ -340,7 +371,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           ] []
         , H.span
           [ cls "label"
-          , E.onClick $ E.input_ (SelectModule m.moduleEntryId)
+          , E.onClick $ E.input_ (ClickModule m.moduleEntryId)
           ]
           [ H.text m.moduleEntryLabel
           ]
@@ -382,7 +413,7 @@ getModules st = execWriter $
             tell [m]
           SelectedFramework fId ->
             when (fId == f.frameworkId) $ tell [m]
-          SelectedTaxonomy tId ->
+          SelectedTaxonomy _ tId ->
             when (tId == t.taxonomyId) $ tell [m]
           SelectedConceptualModule tId cId ->
             when (tId == t.taxonomyId && cId == c.conceptId) $ tell [m]
