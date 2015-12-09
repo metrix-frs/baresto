@@ -388,47 +388,55 @@ renderFiles st = H.div [ cls "panel-filelist" ]
       ]
     ]
   where
-    mod (Tuple (ModuleEntry m) files) =
-      [ H.li [ cls "module" ]
-        [ H.span
-          [ cls $ "octicon octicon-package"
-          ] []
-        , H.text $ m.moduleEntryLabel
-        ]
-      ] <> (renderFile <$> files)
-    renderFile file@(File f) = H.slot (FileSlot f.fileId) \_ ->
-      { component: F.file
-      , initialState: F.initialState file
-      }
+    mod (ModWithFiles taxLabel (ModuleEntry m) files) =
+        [ H.li [ cls "module" ]
+          [ H.span
+            [ cls $ "octicon octicon-package"
+            ] []
+          , H.text $ taxLabel <> " — " <> m.moduleEntryLabel
+          ]
+        ] <> (renderFile <$> files)
+      where
+          in  H.slot (FileSlot f.fileId) \_ ->
+                { component: F.file
+                , initialState: F.initialState fileInfo
+                }
 
 --
 
-getModules :: StateInfo -> Array ModuleEntry
+getModules :: StateInfo -> Array (Tuple String ModuleEntry)
 getModules st = execWriter $
   for_ st.frameworks \(Framework f) ->
     for_ f.taxonomies \(Taxonomy t) ->
       for_ t.conceptualModules \(ConceptualModule c) ->
-        for_ c.moduleEntries \(m@(ModuleEntry m')) -> case st.selectedNode of
-          SelectedNone ->
-            tell [m]
-          SelectedFramework fId ->
-            when (fId == f.frameworkId) $ tell [m]
-          SelectedTaxonomy _ tId ->
-            when (tId == t.taxonomyId) $ tell [m]
-          SelectedConceptualModule tId cId ->
-            when (tId == t.taxonomyId && cId == c.conceptId) $ tell [m]
-          SelectedModule mId ->
-            when (mId == m'.moduleEntryId) $ tell [m]
+        for_ c.moduleEntries \(m@(ModuleEntry m')) ->
+          let add = tell [Tuple t.taxonomyLabel m]
+          in  case st.selectedNode of
+                SelectedNone ->
+                  add
+                SelectedFramework fId ->
+                  when (fId == f.frameworkId) $ add
+                SelectedTaxonomy _ tId ->
+                  when (tId == t.taxonomyId) $ add
+                SelectedConceptualModule tId cId ->
+                  when (tId == t.taxonomyId && cId == c.conceptId) $ add
+                SelectedModule mId ->
+                  when (mId == m'.moduleEntryId) $ add
 
-arrangeFiles :: StateInfo -> Array (Tuple ModuleEntry (Array File))
+data ModWithFiles = ModWithFiles String ModuleEntry (Array File)
+
+_modFiles :: LensP ModWithFiles (Array File)
+_modFiles = lens (\(ModWithFiles _ _ fs) -> fs) (\(ModWithFiles t m _) fs -> ModWithFiles t m fs)
+
+arrangeFiles :: StateInfo -> Array ModWithFiles
 arrangeFiles st = pruneEmpty <<< fromList <<< M.values <<< sortFiles <<< makeMap <<< getModules $ st
   where
-    makeMap = foldr (\(mod@(ModuleEntry m)) -> M.insert m.moduleEntryId (Tuple mod [])) M.empty
+    makeMap = foldr (\(Tuple tax (mod@(ModuleEntry m))) -> M.insert m.moduleEntryId (ModWithFiles tax mod [])) M.empty
 
     sortFiles modEntries = foldl go modEntries st.files
-    go m file@(File f) = m # at' f.fileModuleId .. _Just .. _2 %~ flip snoc file
+    go m file@(File f) = m # at' f.fileModuleId .. _Just .. _modFiles %~ flip snoc file
 
-    pruneEmpty = filter (\(Tuple _ files) -> length files /= 0)
+    pruneEmpty = filter (\(ModWithFiles _ _ files) -> length files /= 0)
 
     at' :: forall k v. (Ord k) => k -> LensP (M.Map k v) (Maybe v)
     at' k = at k
