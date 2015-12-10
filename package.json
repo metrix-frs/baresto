@@ -1,7 +1,10 @@
 {
   "name": "lobster",
-  "version": "0.0.0",
-  "author": "Moritz Drexl",
+  "version": "0.3.0",
+  "authors": [
+    "Moritz Drexl <m.drexl@metrix-frs.de>",
+    "Ruben Moor <r.moor@metrix-frs.de>"
+  ],
   "dependencies": {
     "virtual-dom": "2.0.1"
   },

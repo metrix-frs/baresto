@@ -1,8 +1,9 @@
 {
   "name": "lobster",
-  "version": "0.0.0",
+  "version": "0.3.0",
   "authors": [
-    "Moritz Drexl <mdrexl@fastmail.fm>"
+    "Moritz Drexl <m.drexl@metrix-frs.de>",
+    "Ruben Moor <r.moor@metrix-frs.de>"
   ],
   "ignore": [
     "**/.*",

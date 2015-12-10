@@ -21,12 +21,15 @@ import qualified Halogen.HTML.Events.Indexed as E
 import qualified Component.Spinner as Spinner
 import qualified Component.ErrorBox as ErrorBox
 import qualified Component.Body as Body
+import           Component.Common (modal)
 
 import Api
 import Api.Schema.Auth
 
 import Utils
 import Types
+
+import Version (versionStr)
 
 --
 
@@ -73,6 +76,7 @@ type State =
   , authError :: Maybe String
   , customerId :: String
   , licenseKey :: String
+  , aboutOpen :: Boolean
   }
 
 initialState :: State
@@ -81,6 +85,7 @@ initialState =
   , authError: Nothing
   , customerId: ""
   , licenseKey: ""
+  , aboutOpen: false
   }
 
 data Query a
@@ -88,6 +93,8 @@ data Query a
   | Authenticate a
   | SetCustomerId String a
   | SetLicenseKey String a
+  | AboutOpen a
+  | AboutClose a
   | LogOut a
 
 type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
@@ -97,27 +104,29 @@ app :: Component StateP QueryP Metrix
 app = parentComponent render eval
   where
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render st = H.div [ cls "app" ]
+    render st = H.div [ cls "app" ] $
       [ H.slot' cpErrorBox ErrorBoxSlot \_ ->
         { component: ErrorBox.errorBox, initialState: ErrorBox.initialState }
-      -- TODO: about box?
       , H.div [ cls "status" ] $
         [ H.slot' cpSpinner SpinnerSlot \_ ->
           { component: Spinner.spinner, initialState: Spinner.initialState }
-        ] <>  case st.authStatus of
-                Authenticated cId ->
-                  [ H.div [ cls "menu" ]
-                    [ H.button
-                      [ E.onClick (E.input_ $ LogOut) ]
-                      [ H.span [ cls "octicon octicon-sign-out" ] []
-                      , H.text "Logout" ]
-                    ]
-                  , H.div [ cls "license" ]
-                    [ H.text $ "Using license for customer: " <> cId ]
-                  ]
-                _ ->
-                  []
-          -- TODO: about button together with logout in menu?
+        , H.div [ cls "menu" ] $
+          ( case st.authStatus of
+              Authenticated cId ->
+                [ H.text $ "Using license for customer: " <> cId
+                , H.button
+                  [ E.onClick (E.input_ $ LogOut) ]
+                  [ H.span [ cls "octicon octicon-sign-out" ] []
+                  , H.text "Logout" ]
+                ]
+              _ ->
+                []
+          ) <>
+          [ H.button
+            [ E.onClick $ E.input_ AboutOpen ]
+            [ H.text "About" ]
+          ]
+        ]
       , case st.authStatus of
           Authenticated _ ->
             H.slot' cpBody BodySlot \_ ->
@@ -126,7 +135,29 @@ app = parentComponent render eval
             renderAuthForm st.customerId st.licenseKey st.authError
           CheckingLicense -> H.div_
             [ H.text "Checking license..." ]
-      ]
+      ] <> (
+        if st.aboutOpen
+          then
+            [ modal "About"
+              [ H.p_ [ H.b_ [ H.text $ "Metrix Suite " <> versionStr ] ]
+              , H.p_ [ H.text "This is an early alpha release, bugs may occur." ]
+              , H.p_ [ H.text "For feedback, contact us at "
+                     , H.a [ P.href "mailto:info@metrix-frs.de" ]
+                           [ H.text "info@metrix-frs.de" ]
+                     , H.text " or visit "
+                     , H.a [ P.href "http://www.metrix-frs.de" ]
+                           [ H.text "metrix-frs.de" ]
+                     , H.text "."
+                     ]
+              ]
+              [ H.button
+                [ E.onClick $ E.input_ AboutClose ]
+                [ H.text "Close" ]
+              ]
+            ]
+          else
+            []
+      )
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Boot next) = do
@@ -152,6 +183,14 @@ app = parentComponent render eval
 
     eval (SetLicenseKey key next) = do
       modify _{ licenseKey = key }
+      pure next
+
+    eval (AboutOpen next) = do
+      modify _{ aboutOpen = true }
+      pure next
+
+    eval (AboutClose next) = do
+      modify _{ aboutOpen = false }
       pure next
 
     eval (LogOut next) = do
