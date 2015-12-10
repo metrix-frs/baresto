@@ -10,10 +10,10 @@ import Optic.Core
 import Types
 
 newtype File = File
-  { fileId :: FileId
-  , fileModuleId :: ModuleId
-  , fileLabel :: String
-  , fileCreated :: UTCTime
+  { fileId           :: FileId
+  , fileModuleId     :: ModuleId
+  , fileLabel        :: String
+  , fileCreated      :: UTCTime
   , fileLastUpdateId :: UpdateId
   }
 
@@ -49,3 +49,32 @@ instance isForeignFile :: IsForeign File where
       <*> readProp "created" json
       <*> readProp "lastUpdateId" json
     pure $ File file
+
+newtype FileDesc = FileDesc
+  { fileDescId           :: FileId
+  , fileDescLabel        :: String
+  , fileDescModId        :: ModuleId
+  , fileDescModLabel     :: String
+  , fileDescTaxLabel     :: String
+  , fileDescCreated      :: UTCTime
+  , fileDescLastUpdateId :: UpdateId
+  }
+
+instance isForeignFileDesc :: IsForeign FileDesc where
+  read json = do
+    file <- { fileDescId: _
+            , fileDescLabel: _
+            , fileDescModId: _
+            , fileDescModLabel: _
+            , fileDescTaxLabel: _
+            , fileDescCreated: _
+            , fileDescLastUpdateId: _
+            }
+      <$> readProp "id" json
+      <*> readProp "label" json
+      <*> readProp "moduleId" json
+      <*> readProp "moduleLabel" json
+      <*> readProp "taxonomyLabel" json
+      <*> readProp "created" json
+      <*> readProp "lastUpdateId" json
+    pure $ FileDesc file

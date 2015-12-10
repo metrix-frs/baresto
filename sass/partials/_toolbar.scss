@@ -104,3 +104,10 @@
   right: $modulebrowser-width;
   width: 500px;
 }
+
+.tool-fileinfo {
+  @include tool();
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}

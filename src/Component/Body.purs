@@ -28,7 +28,7 @@ derive instance genericSelectorSlot :: Generic SelectorSlot
 instance eqSelectorSlot :: Eq SelectorSlot where eq = gEq
 instance ordSelectorSlot :: Ord SelectorSlot where compare = gCompare
 
-data ViewerSlot = ViewerSlot ModuleId FileId
+data ViewerSlot = ViewerSlot FileId
 
 derive instance genericViewerSlot :: Generic ViewerSlot
 instance eqViewerSlot :: Eq ViewerSlot where eq = gEq
@@ -48,7 +48,7 @@ cpViewer = cpR
 
 data CurrentView
   = FileSelector
-  | FileViewer ModuleId UpdateId
+  | FileViewer UpdateId
 
 type State =
   { currentView :: CurrentView
@@ -77,9 +77,9 @@ body = parentComponent' render eval peek
         [ H.slot' cpSelector SelectorSlot \_ ->
           { component: FS.selector, initialState: installedState FS.initialState }
         ]
-      FileViewer modId updateId ->
-        [ H.slot' cpViewer (ViewerSlot modId updateId) \_ ->
-          { component: FV.viewer modId updateId, initialState: installedState FV.initialState }
+      FileViewer updateId ->
+        [ H.slot' cpViewer (ViewerSlot updateId) \_ ->
+          { component: FV.viewer updateId, initialState: installedState FV.initialState }
         ]
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
@@ -94,13 +94,13 @@ body = parentComponent' render eval peek
         peekSelector q = case q of
           FS.CreateFile modId name _ ->
             apiCallParent (newFile modId name) \(UpdateGet u) ->
-              modify _{ currentView = FileViewer modId u.updateGetId }
-          FS.UploadXbrlOpenFile modId updateId _ ->
-            modify _{ currentView = FileViewer modId updateId }
+              modify _{ currentView = FileViewer u.updateGetId }
+          FS.UploadXbrlOpenFile updateId _ ->
+            modify _{ currentView = FileViewer updateId }
           _ -> pure unit
         peekFile (ChildF _ q) = case q of
-          F.Open modId updateId _ ->
-            modify _{ currentView = FileViewer modId updateId }
+          F.Open updateId _ ->
+            modify _{ currentView = FileViewer updateId }
           _ -> pure unit
         peekViewer q = case q of
           FV.CloseFile _ ->

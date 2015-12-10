@@ -95,10 +95,6 @@ listFiles :: forall eff. Aff (Effects eff) (Array File)
 listFiles = getJsonResponse "Could not get files." $
   get $ prefix <> "businessdata/file/all"
 
-getFileDetails :: FileId -> forall eff. Aff (Effects eff) File
-getFileDetails fileId = getJsonResponse "Could not get file details." $
-  get $ prefix <> "businessdata/file/details/" <> show fileId
-
 getFileOrphans :: forall eff. FileId -> Aff (Effects eff) (Array UpdateDesc)
 getFileOrphans fileId = getJsonResponse "Could not get auto saves." $
   get $ prefix <> "businessdata/file/orphans/" <> show fileId
@@ -130,6 +126,10 @@ getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
 postUpdate :: forall eff. UpdatePost -> Aff (Effects eff) UpdatePostResult
 postUpdate upd = getJsonResponse "Could not send update." $
   postJson (prefix <> "businessdata/update") upd
+
+getFileDetails :: UpdateId -> forall eff. Aff (Effects eff) FileDesc
+getFileDetails updateId = getJsonResponse "Could not get file details." $
+  get $ prefix <> "businessdata/update/file/" <> show updateId
 
 getUpdatePast :: forall eff. UpdateId -> Aff (Effects eff) (Array UpdateDesc)
 getUpdatePast updateId = getJsonResponse "Could not get revisions." $

@@ -90,7 +90,7 @@ data Query a
   = Init a
   | UploadXbrl a
   | UploadXbrlCloseModal a
-  | UploadXbrlOpenFile ModuleId UpdateId a
+  | UploadXbrlOpenFile UpdateId a
   | SetNewFileName String a
   | CreateFile ModuleId String a
   | ClickAll a
@@ -181,7 +181,7 @@ selector = parentComponent' render eval peek
           modify $ _Just %~ _{ xbrlImportResponse = Just resp }
       pure next
 
-    eval (UploadXbrlOpenFile _ _ next) =
+    eval (UploadXbrlOpenFile _ next) =
       pure next
 
     eval (UploadXbrlCloseModal next) = do
@@ -250,7 +250,7 @@ renderXbrlImportResponse resp = case resp of
         [ E.onClick $ E.input_ UploadXbrlCloseModal ]
         [ H.text "Close" ]
       , H.button
-        [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.moduleId conf.updateId) ]
+        [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.updateId) ]
         [ H.text "Open File" ]
       ]
     Just (ServerError err) -> modal err.title

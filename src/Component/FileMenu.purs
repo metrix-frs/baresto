@@ -130,6 +130,7 @@ fileMenu = component render eval
                           then upd { updateDescTags = snoc upd.updateDescTags tag }
                           else upd
                   modify $ _{ location = LocationPast (go <$> past) }
+                  modify $ _{ newTagName = "" }
                 _ -> pure unit
         else pure unit
       pure next
@@ -219,6 +220,14 @@ renderMenu st = H.div [ cls "menu-content" ] $
         [ E.onClick $ E.input_ GoHome ]
         [ H.text "Back" ]
       , H.text "Tags"
+      , H.br_
+      , H.input
+        [ E.onValueChange $ E.input NewTagSetName
+        , P.value st.newTagName
+        ]
+      , H.button
+        [ E.onClick $ E.input_ NewTagCreate ]
+        [ H.text "Create Tag" ]
       , H.ul_ $ renderUpdate <$> past
       ]
 

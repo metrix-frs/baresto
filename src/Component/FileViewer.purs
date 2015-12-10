@@ -32,6 +32,7 @@ import Optic.Monad.Setter
 import Optic.Refractor.Prism
 
 import Api
+import Api.Schema.File
 import Api.Schema.Table
 import Api.Schema.Module
 import Api.Schema.BusinessData
@@ -86,6 +87,7 @@ cpMenu = cpR :> cpR :> cpR
 
 type FileData =
   { businessData  :: BusinessData
+  , fileDesc      :: FileDesc
   , moduleId      :: ModuleId
   , lastUpdateId  :: UpdateId
   , lastSaved     :: Maybe UTCTime
@@ -121,12 +123,6 @@ initialState =
   , tableData: Nothing
   }
 
--- TODO: use this in slot as soon as psc #1443 is fixed
-type Props =
-  { moduleId :: ModuleId
-  , updateId :: UpdateId
-  }
-
 data Query a
   = Init a
   | CloseFile a
@@ -141,8 +137,8 @@ data Query a
 type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
-viewer :: ModuleId -> UpdateId -> Component StateP QueryP Metrix
-viewer propModId propUpdateId = parentComponent' render eval peek
+viewer :: UpdateId -> Component StateP QueryP Metrix
+viewer propUpdateId = parentComponent' render eval peek
   where
 
     render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
@@ -171,7 +167,15 @@ viewer propModId propUpdateId = parentComponent' render eval peek
           , H.div [ cls "tool-sheets" ]
             [ viewSheetSelector st
             ]
-          , H.div [ cls "toolsep-right" ] []
+          , case st.fileData of
+              Just fd -> case fd.fileDesc of
+                FileDesc fd ->
+                  H.div [ cls "tool-fileinfo" ]
+                  [ H.text fd.fileDescLabel
+                  , H.br_
+                  , H.text $ fd.fileDescTaxLabel <> " — " <> fd.fileDescModLabel
+                  ]
+              Nothing -> H.div_ []
           ]
         , case st.fileData of
             Just fd -> H.slot' cpValidation ValidationSlot \_ ->
@@ -203,32 +207,34 @@ viewer propModId propUpdateId = parentComponent' render eval peek
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
       queue <- liftH $ liftAff' makeVar
-      apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) -> do
-        modify $ _{ fileData = Just
-                    { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
-                    , moduleId: propModId
-                    , lastUpdateId: upd.updateGetId
-                    , lastSaved: Just upd.updateGetCreated
-                    , queue: queue
+      apiCallParent (getFileDetails propUpdateId) \(fileDesc@(FileDesc fd)) -> do
+        apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) ->
+          modify $ _{ fileData = Just
+                      { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
+                      , fileDesc: fileDesc
+                      , moduleId: fd.fileDescModId
+                      , lastUpdateId: upd.updateGetId
+                      , lastSaved: Just upd.updateGetCreated
+                      , queue: queue
+                      }
                     }
-                  }
-      apiCallParent (getModule propModId) \mod -> do
-        query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot mod
-        let mTableSelect = do
-              firstGroup <- head (mod ^. _templateGroups)
-              firstTempl <- head (firstGroup ^. _templates)
-              firstTbl   <- head (firstTempl ^. _templateTables)
-              pure { id: firstTbl ^. _tableEntryId
-                   , header: false
-                   , code: firstTbl ^. _tableEntryCode
-                   , label: firstTempl ^. _templateLabel
-                   }
-        case mTableSelect of
-          Just tableSelect -> do
-            loadTable tableSelect.id
-            query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
-            pure unit
-          Nothing -> pure unit
+        apiCallParent (getModule fd.fileDescModId) \mod -> do
+          query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot mod
+          let mTableSelect = do
+                firstGroup <- head (mod ^. _templateGroups)
+                firstTempl <- head (firstGroup ^. _templates)
+                firstTbl   <- head (firstTempl ^. _templateTables)
+                pure { id: firstTbl ^. _tableEntryId
+                     , header: false
+                     , code: firstTbl ^. _tableEntryCode
+                     , label: firstTempl ^. _templateLabel
+                     }
+          case mTableSelect of
+            Just tableSelect -> do
+              loadTable tableSelect.id
+              query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
+              pure unit
+            Nothing -> pure unit
       postAgent queue
       pure next
 

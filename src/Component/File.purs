@@ -68,7 +68,7 @@ initialState f =
 
 data Query a
   = Init a
-  | Open ModuleId UpdateId a
+  | Open UpdateId a
   | DeleteFile a
   | DeleteFileYes a
   | DeleteTag TagId a
@@ -96,7 +96,7 @@ file = component render eval
       ] $
       [ H.div
         [ cls "label"
-        , E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) (st.file ^. _fileLastUpdateId)
+        , E.onClick $ E.input_ $ Open (st.file ^. _fileLastUpdateId)
         ]
         [ H.span
           [ cls "octicon octicon-file-text"
@@ -186,7 +186,7 @@ file = component render eval
     renderTag :: State -> TagDesc -> ComponentHTML Query
     renderTag st (TagDesc tag) = H.li_ $
       [ H.span
-        [ E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) tag.tagDescUpdateId ]
+        [ E.onClick $ E.input_ $ Open tag.tagDescUpdateId ]
         [ H.text tag.tagDescTagName
         ]
       , H.button
@@ -213,7 +213,7 @@ file = component render eval
     renderOrphan :: State -> UpdateDesc -> ComponentHTML Query
     renderOrphan st (UpdateDesc upd) = H.li_ $
       [ H.span
-        [ E.onClick $ E.input_ $ Open (st.file ^. _fileModuleId) upd.updateDescUpdateId ]
+        [ E.onClick $ E.input_ $ Open upd.updateDescUpdateId ]
         [ H.text $ show upd.updateDescCreated
         ]
       , H.button
@@ -225,7 +225,8 @@ file = component render eval
     eval (Init next) = do
       pure next
 
-    eval (Open _ _ next) = do
+    -- peeked by Body
+    eval (Open _ next) = do
       pure next
 
     eval (DeleteFile next) = do
