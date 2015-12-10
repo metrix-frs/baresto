@@ -28,7 +28,7 @@ import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Events.Indexed as E
 
 import qualified Component.File as F
-import           Component.Common (modal)
+import           Component.Common (modal, toolButton)
 
 import Api
 import Api.Schema
@@ -114,35 +114,44 @@ selector = parentComponent' render eval peek
     render st = H.div [ cls "container" ] $
       -- TODO report halogen issue about initializer
       [ H.span [ P.initializer \_ -> action Init ] []
-      , H.div [ cls "toolbar" ]
-        [ H.div [ cls "tool-importxbrl" ]
-          [ H.input
+      , H.div [ cls "toolbar" ] $
+        [ H.div [ cls "tool tooldim-choose-file" ]
+          [ H.p_
+            [ H.text "XBRL file to import:" ]
+          , H.input
             [ P.inputType P.InputFile
             , P.id_ "xbrlFile"
             ]
-          , H.button
-            [ E.onClick $ E.input_ UploadXbrl ]
-            [ H.span [ cls "octicon octicon-arrow-up" ] []
-            , H.text "Import XBRL"
-            ]
           ]
-        , H.div [ cls "toolsep-left" ] []
-        , H.div [ cls "tool-newfile" ] $ case st of
+        , toolButton "Import" "octicon octicon-arrow-up" "import" UploadXbrl
+        , H.div [ cls "toolsep tooldim-sep-xbrl" ] []
+        , H.div [ cls "toolsep tooldim-sep-create" ] []
+        ] <> (
+          case st of
             Just st' -> case st'.selectedNode of
               SelectedModule mId ->
-                [ H.input
-                  [ E.onValueChange $ E.input SetNewFileName
-                  , P.value st'.newFileName
+                [ H.div [ cls "tool tooldim-name-file" ]
+                  [ H.p_
+                    [ H.text "Name for new file:"
+                    ]
+                  , H.input
+                    [ E.onValueChange $ E.input SetNewFileName
+                    , P.value st'.newFileName
+                    ]
                   ]
-                , H.button
-                  [ E.onClick $ E.input_ (CreateFile mId st'.newFileName) ]
-                  [ H.text "Create" ]
+                , toolButton "Create" "octicon octicon-file-text" "create"
+                             (CreateFile mId st'.newFileName)
                 ]
               _ ->
-                [ H.text "Please select a module to create a new file." ]
-            Nothing -> []
-        , H.div [ cls "toolsep-left" ] []
-        ]
+                [ H.div [ cls "tool tooldim-name-file" ]
+                  [ H.p_
+                    [ H.text "Select a module to create a new file." ]
+                  ]
+                , H.div [ cls "tool tooldim-create" ] []
+                ]
+            _ ->
+              []
+        )
       , H.div [ cls "content" ] $ case st of
           Just st' ->
             [ renderFrameworks st'

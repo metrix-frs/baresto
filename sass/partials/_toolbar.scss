@@ -1,113 +1,208 @@
 .toolbar {
+  position: relative;
   width: 100%;
   height: $toolbar-height;
   background-color: $metrix-blue;
   border-bottom: 1px solid darken($metrix-blue, 5%);
+  background-image: url("../img/toolbar-background.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-@mixin toolsep() {
-  height: $toolbar-height;
+.tool {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  z-index: 1004;
+  background-color: $metrix-blue;
+  p {
+    margin: -1px 0px -2px 1px;
+  }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.toolsep {
+  @extend .tool;
   width: 0px;
   border-right: 1px solid lighten($metrix-blue, 5%);
   border-left: 1px solid darken($metrix-blue, 10%);
 }
 
-.toolsep-left {
-  @include toolsep();
-  float: left;
-}
-
-.toolsep-right {
-  @include toolsep();
-  float: right;
-}
-
-@mixin toolsep-abs() {
-  @include toolsep();
-  z-index: 1004;
-  position: absolute;
-  top: 0px;
-}
-
-.toolsep-mb-right {
-  @include toolsep-abs();
-  right: 2 * $toolbar-height;
-}
-
-.toolsep-mb-left {
-  @include toolsep-abs();
-  right: $modulebrowser-width - 1;
-}
-
-@mixin tool() {
-  height: $toolbar-height;
-  background-color: $metrix-blue;
-}
-
-@mixin clickable() {
+.toolbutton {
+  @extend .tool;
   cursor: pointer;
+  color: #4D595D;
   &:hover {
     background-color: lighten($metrix-blue, 5%);
+    color: $metrix-darkgray;
+  }
+  .icon {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translate(-50%,0px);
+    font-size: 26px;
+    line-height: 26px;
+  }
+  .label {
+    position: absolute;
+    bottom: 4px;
+    line-height: 9px;
+    font-size: 9px;
+    left: 50%;
+    transform: translate(-50%,0px);
+    text-transform: uppercase;
   }
 }
 
-.tool-newfile {
-  @include tool();
-  height: $toolbar-height - 20px;
-  float: left;
-  width: 300px;
-  padding: 10px;
-}
+// --
 
-.tool-importxbrl {
-  @include tool();
-  height: $toolbar-height - 20px;
-  float: left;
-  width: 400px;
-  padding: 10px;
-}
-
-.tool-modulebrowser {
-  @include tool();
-  right: 2 * $toolbar-height + 2;
-  width: $modulebrowser-width - 2 * $toolbar-height - 3;
-}
-
-@mixin tool-action() {
-  @include tool();
-  @include clickable();
-  width: $toolbar-height;
-  text-align: center;
-  line-height: $toolbar-height;
-  z-index: 1004;
-  position: absolute;
-  top: 0px;
-  .mega-octicon {
-    vertical-align: middle;
+.tooldim-choose-file {
+  width: $toolwidth-choose-file;
+  left: 0px;
+  padding: 3px;
+  input {
+    width: $toolwidth-choose-file - 6px;
   }
 }
 
-.tool-close {
-  @include tool-action();
+.tooldim-import {
+  width: $toolwidth-import;
+  left: $toolwidth-choose-file;
+}
+
+.tooldim-sep-xbrl {
+  left: $toolwidth-choose-file
+      + $toolwidth-import;
+}
+
+.tooldim-name-file {
+  width: $toolwidth-name-file;
+  left: $toolwidth-choose-file
+      + $toolwidth-import
+      + $toolsep-width;
+  padding: 3px;
+  input {
+    width: $toolwidth-name-file - 6px;
+  }
+}
+
+.tooldim-create {
+  width: $toolwidth-create;
+  left: $toolwidth-choose-file
+      + $toolwidth-import
+      + $toolsep-width
+      + $toolwidth-name-file;
+}
+
+.tooldim-sep-create  {
+  left: $toolwidth-choose-file
+      + $toolwidth-import
+      + $toolsep-width
+      + $toolwidth-name-file
+      + $toolwidth-create;
+}
+
+// --
+
+.tooldim-close {
+  width: $toolwidth-close;
   right: 0px;
 }
 
-.tool-menu {
-  @include tool-action();
-  right: $toolbar-height;
+.tooldim-sep-close {
+  right: $toolwidth-close;
 }
 
-.tool-sheets {
-  @include tool();
-  position: absolute;
-  top: 0px;
-  right: $modulebrowser-width;
-  width: 500px;
+.tooldim-menu {
+  width: $toolwidth-menu;
+  right: $toolwidth-close
+       + $toolsep-width;
 }
 
-.tool-fileinfo {
-  @include tool();
+.tooldim-sep-menu {
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu;
+}
+
+.tooldim-mb {
   position: absolute;
   top: 0px;
+  bottom: 0px;
+  width: $toolwidth-mb;
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu
+       + $toolsep-width;
+}
+
+.tooldim-sep-mb {
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu
+       + $toolsep-width
+       + $toolwidth-mb;
+}
+
+.tooldim-sheets {
+  width: $toolwidth-sheets;
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu
+       + $toolsep-width
+       + $toolwidth-mb
+       + $toolsep-width;
+  box-sizing: border-box;
+  padding: 3px;
+  .tooldim-conf {
+    right: 0px;
+    width: $toolwidth-conf;
+  }
+}
+
+.tooldim-sep-sheets {
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu
+       + $toolsep-width
+       + $toolwidth-mb
+       + $toolsep-width
+       + $toolwidth-sheets;
+}
+
+// --
+
+.tooldim-fileinfo {
+  right: $toolwidth-close
+       + $toolsep-width
+       + $toolwidth-menu
+       + $toolsep-width
+       + $toolwidth-mb
+       + $toolsep-width
+       + $toolwidth-sheets
+       + $toolsep-width;
   left: 0px;
+  overflow: hidden;
+  .name {
+    float: left;
+    padding-left: 3px;
+    margin-right: 10px;
+    p {
+      line-height: $toolbar-height;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 20pt;
+      font-weight: bold;
+      margin: 0px;
+    }
+  }
+  .module {
+    float: left;
+    padding: 3px;
+  }
 }

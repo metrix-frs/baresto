@@ -73,9 +73,7 @@ moduleBrowser = component render eval
   where
 
     render :: Render State Query
-    render st = H.div
-      [ cls "tool-modulebrowser"
-      ]
+    render st = H.div_
       [ case st of
           Nothing -> H.text ""
           Just mbInfo -> renderModuleBrowser mbInfo
@@ -104,7 +102,8 @@ moduleBrowser = component render eval
       pure next
 
 renderModuleBrowser :: ModuleBrowserInfo -> ComponentHTML Query
-renderModuleBrowser info = H.div_ $
+renderModuleBrowser info = H.div
+    [ cls "tooldim-mb" ] $
     [ H.div
       [ cls "module-control"
       ] case info.selectedTable of
@@ -115,19 +114,19 @@ renderModuleBrowser info = H.div_ $
                 prev = goRelativeModuloLen tSelect (\i -> i - 1) (flattenTables info.mod)
             in
             [ H.div
-              [ cls "nav-button"
+              [ cls "toolbutton left nav-button"
               , E.onClick $ E.input_ $ SelectTable prev
               ]
               [ H.span [ cls "mega-octicon octicon-triangle-left" ] []
               ]
             , H.div
-              [ cls "current"
+              [ cls "toolbutton current"
               , E.onClick $ E.input_ ToggleOpen
               ]
               [ H.p_ [ H.text tSelect.code ]
               ]
             , H.div
-              [ cls "nav-button"
+              [ cls "toolbutton right nav-button"
               , E.onClick $ E.input_ $ SelectTable next
               ]
               [ H.span [ cls "mega-octicon octicon-triangle-right" ] []

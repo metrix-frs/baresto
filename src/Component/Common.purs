@@ -20,3 +20,16 @@ modal title body controls =
     [ H.div [ cls "controls" ] controls
     ]
   ]
+
+toolButton :: forall p f. String -> String -> String -> Action f -> HTML p f
+toolButton name icon dimClass action =
+  H.div
+  [ cls $ "toolbutton tooldim-" <> dimClass
+  , E.onClick $ E.input_ action ]
+  [ H.span
+    [ cls $ "icon " <> icon
+    ] []
+  , H.div
+    [ cls "label" ]
+    [ H.text name ]
+  ]

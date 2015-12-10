@@ -66,11 +66,7 @@ fileMenu = component render eval
 
     render :: Render State Query
     render st = H.div_ $
-      [ H.div
-        [ cls "tool-menu"
-        , E.onClick $ E.input_ ToggleOpen ]
-        [ H.span [ cls "mega-octicon octicon-three-bars" ] []
-        ]
+      [ toolButton "Menu" "octicon octicon-three-bars" "menu" ToggleOpen
       ] <> if st.open
              then [ renderMenu st ]
              else []

@@ -1,17 +1,25 @@
 .module-control {
   top: 0px;
-  right: 2 * $toolbar-height + 2;
-  width: $modulebrowser-width - 2 * $toolbar-height - 3;
-  height: $toolbar-height;
+  right: 0px;
+  left: 0px;
+  bottom: 0px;
   z-index: 1001;
   position: absolute;
-  background-color: $metrix-lightblue;
+  background-color: $metrix-blue;
+
+  .left {
+    left: 0px;
+  }
+
+  .right {
+    right: 0px;
+  }
 
   .nav-button {
-    @include clickable();
-    float: left;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
     width: 32px;
-    height: 100%;
     text-align: center;
     line-height: $toolbar-height;
     .mega-octicon {
@@ -20,10 +28,11 @@
   }
 
   .current {
-    @include clickable();
-    float: left;
-    width: $modulebrowser-width - 64px - 2 * $toolbar-height - 3;
-    height: 100%;
+    position: absolute;
+    left: 32px;
+    right: 32px;
+    top: 0px;
+    bottom: 0px;
     line-height: $toolbar-height;
 
     p {
@@ -73,7 +82,7 @@
   }
 
   li.selected {
-    background-color: $metrix-lightblue;
+    background-color: $metrix-darkblue;
   }
 
   .octicon {

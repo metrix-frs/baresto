@@ -26,6 +26,7 @@ import qualified Component.ModuleBrowser as MB
 import qualified Component.Handsontable as Hot
 import qualified Component.Validation as V
 import qualified Component.FileMenu as Menu
+import           Component.Common (toolButton)
 
 import Optic.Core
 import Optic.Monad.Setter
@@ -147,12 +148,8 @@ viewer propUpdateId = parentComponent' render eval peek
         , P.initializer \_ -> action Init
         ]
         [ H.div [ cls "toolbar" ]
-          [ H.div
-            [ cls "tool-close"
-            , E.onClick $ E.input_ CloseFile
-            ]
-            [ H.span [ cls "mega-octicon octicon-x" ] []
-            ]
+          [ toolButton "Close" "octicon octicon-x" "close" CloseFile
+          , H.div [ cls "toolsep tooldim-sep-close" ] []
           , case st.fileData of
               Just fd ->
                 H.slot' cpMenu MenuSlot \_ ->
@@ -160,20 +157,28 @@ viewer propUpdateId = parentComponent' render eval peek
                 , initialState: Menu.initialState fd.lastUpdateId
                 }
               Nothing -> H.div_ []
-          , H.div [ cls "toolsep-mb-right" ] []
+          , H.div [ cls "toolsep tooldim-sep-menu" ] []
           , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
             { component: MB.moduleBrowser, initialState: MB.initialState }
-          , H.div [ cls "toolsep-mb-left" ] []
-          , H.div [ cls "tool-sheets" ]
-            [ viewSheetSelector st
-            ]
+          , H.div [ cls "toolsep tooldim-sep-mb" ] []
+          , viewSheetSelector st
+          , H.div [ cls "toolsep tooldim-sep-sheets" ] []
           , case st.fileData of
               Just fd -> case fd.fileDesc of
                 FileDesc fd ->
-                  H.div [ cls "tool-fileinfo" ]
-                  [ H.text fd.fileDescLabel
-                  , H.br_
-                  , H.text $ fd.fileDescTaxLabel <> " — " <> fd.fileDescModLabel
+                  H.div [ cls "tool tooldim-fileinfo" ]
+                  [ H.div [ cls "name" ]
+                    [ H.p_
+                      [ H.text fd.fileDescLabel ]
+                    ]
+                  , H.div [ cls "module" ]
+                    [ H.p_
+                      [ H.text fd.fileDescTaxLabel
+                      ]
+                    , H.p_
+                      [ H.text fd.fileDescModLabel
+                      ]
+                    ]
                   ]
               Nothing -> H.div_ []
           ]
@@ -436,10 +441,11 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
           else S 0
 
         customZMember (Tuple s (Tuple _ name)) = H.tr_
-          [ H.td_
+          [ H.td [ cls "small" ]
             [ H.button
               [ E.onClick $ E.input_ $ DeleteSheet s ]
-              [ H.text "-" ]
+              [ H.span [ cls "octicon octicon-dash" ] []
+              ]
             ]
           , H.td_
             [ H.input
@@ -455,7 +461,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
             -- [ H.span [ P.style $ space m.memberLevel ] []
             [ H.text m.memberLabel
             ]
-          , H.td_
+          , H.td [ cls "small" ]
             [ H.input
               [ P.inputType P.InputCheckbox
               , P.checked $ isSubsetZMemberSelected axId m.memberId fd.businessData
@@ -488,28 +494,33 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
                    ] [ H.text name ]
 
       in case td.table of
-        Table tbl -> H.div_ $ case tbl.tableZAxis of
+        Table tbl -> case tbl.tableZAxis of
           ZAxisSingleton ->
-            [ H.text "Only one sheet available." ]
+            H.div_
+            [ ]
           ZAxisClosed _ ords ->
-            [ H.text "Sheet: "
+            H.div [ cls "tool tooldim-sheets" ]
+            [ H.p_
+              [ H.text "Sheet:" ]
             , H.select [ E.onValueChange $ E.input $ selectSheet ]
                        $ closedOption <$> makeIndexed ords
             ]
           ZAxisCustom axId label ->
-            [ H.select [ E.onValueChange $ E.input $ selectSheet ]
+            H.div [ cls "tool tooldim-sheets" ] $
+            [ H.p_
+              [ H.text $ label <> ":" ]
+            , H.select [ E.onValueChange $ E.input $ selectSheet ]
                        $ customOption <$> makeIndexed (getCustomZMembers axId fd.businessData)
-            , H.button
-              [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
-              [ H.text "Configure" ]
+            , toolButton "Configure" "octicon octicon-tools" "conf" ToggleSheetConfiguratorOpen
             ] <> if td.sheetConfiguratorOpen then
                 [ H.div [ cls "sheet-configurator" ]
                   [ H.table_ $
                     [ H.tr_
-                      [ H.td_
+                      [ H.td [ cls "small" ]
                         [ H.button
                           [ E.onClick $ E.input_ $ AddSheet "" ]
-                          [ H.text "+" ]
+                          [ H.span [ cls "octicon octicon-plus" ] []
+                          ]
                         ]
                       , H.td_ [ H.text label ]
                       ]
@@ -518,18 +529,16 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
                 ]
               else []
           ZAxisSubset axId label mems ->
-            [ H.select
+            H.div [ cls "tool tooldim-sheets" ] $
+            [ H.p_
+              [ H.text $ label <> ":" ]
+            , H.select
               [ E.onValueChange $ E.input $ selectSheet ]
               $ subsetOption mems <$> makeIndexed (getSubsetZMembers axId fd.businessData)
-            , H.button
-              [ E.onClick $ E.input_ ToggleSheetConfiguratorOpen ]
-              [ H.text "Configure" ]
+            , toolButton "Configure" "octicon octicon-tools" "conf" ToggleSheetConfiguratorOpen
             ] <> if td.sheetConfiguratorOpen then
                 [ H.div [ cls "sheet-configurator" ]
-                  [ H.text $ label <> ": "
-                  , H.div [ cls "subsetMemberList" ]
-                    [ H.table_ $ subsetMember axId <$> mems ]
-                  ]
+                  [ H.table_ $ subsetMember axId <$> mems ]
                 ]
               else []
 

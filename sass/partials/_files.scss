@@ -3,8 +3,8 @@ ul.files {
   margin: 0px;
   padding: 0px;
 
-  $label-margin: 3px;
-  $left: 5px;
+  $label-margin: 5px;
+  $left: 4px;
   $indent: 16px + $label-margin;
 
   li {
@@ -21,9 +21,9 @@ ul.files {
         bottom: 0px;
         .octicon {
           margin: 2px;
-          color: #BBB;
+          color: $metrix-darkblue;
           &:hover {
-            color: #999;
+            color: lighten($metrix-darkblue, 5%);
           }
         }
       }
@@ -101,7 +101,6 @@ ul.files {
 
   .details {
     color: #999;
-    font-size: 12pt;
     position: relative;
     padding-left: $indent + $label-margin;
     margin-right: $left + $label-margin;

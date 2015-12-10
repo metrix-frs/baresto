@@ -257,7 +257,7 @@ file = component render eval
       , H.div
         [ cls "actions" ]
         [ H.span
-          [ cls "octicon octicon-x"
+          [ cls "hlabel octicon octicon-x"
           , E.onClick $ E.input_ $ DeleteOrphan upd.updateDescUpdateId
           ] []
         ]
