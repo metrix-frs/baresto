@@ -1,18 +1,23 @@
 .menu-content {
   position: absolute;
   top: $toolbar-height;
-  right: $toolbar-height;
-  width: 300px;
-  max-height: 600px;
-  overflow-y: auto;
+  right: $toolwidth-close + $toolsep-width;
+  width: 400px;
+  height: auto;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
   z-index: 10000;
   background-color: white;
+
+  input, button {
+    width: 100%;
+    box-sizing: border-box;
+  }
 
   ul {
     list-style: none;
     margin: 0px;
     padding: 0px;
+    background-color: $metrix-blue;
   }
 
   li {
@@ -20,11 +25,53 @@
     padding: 8px 15px 8px 15px;
 
     &:hover {
-      background-color: $metrix-lightblue;
+      background-color: $metrix-darkblue;
     }
 
     .octicon {
       margin-right: 10px;
+    }
+  }
+
+  .entry-content {
+    margin: 5px;
+    max-height: 700px;
+    overflow-y: auto;
+    max-height: 600px;
+  }
+
+  ul.past {
+
+    background-color: white;
+
+    li {
+      cursor: default;
+      .label {
+        cursor: pointer;
+        color: $metrix-darkgray;
+        &:hover {
+          color: black;
+        }
+      }
+      .tag {
+        background-color: $metrix-darkblue;
+        color: white;
+      }
+      &:hover {
+        background-color: white;
+      }
+    }
+
+  }
+
+  li.href {
+    padding: 0px;
+
+    a {
+      padding: 8px 15px 8px 15px;
+      text-decoration: none;
+      color: $metrix-darkgray;
+      display: block;
     }
   }
 

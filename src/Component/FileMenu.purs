@@ -149,45 +149,56 @@ renderMenu st = H.div [ cls "menu-content" ] $
     LocationHome ->
       [ H.ul_
         [ H.li
+          [ E.onClick $ E.input_ GoPast ]
+          [ H.span [ cls "octicon octicon-git-commit" ] []
+          , H.text "Version History"
+          ]
+        , H.li
           [ E.onClick $ E.input_ GoImportCsv ]
           [ H.span [ cls "octicon octicon-repo-push" ] []
           , H.text "Import CSV"
           ]
         , H.li
-          [ E.onClick $ E.input_ GoPast ]
-          [ H.span [ cls "octicon octicon-git-commit" ] []
-          , H.text "Tags"
-          ]
-        , H.li_
+          [ cls "href" ]
           [ H.a
             [ P.href $ "/api/v0.1/xbrl/create/" <> show st.lastUpdateId
             , P.target "_blank"
             ]
-            [ H.text "Export XBRL" ]
+            [ H.span [ cls "octicon octicon-file-code" ] []
+            , H.text "Export XBRL" ]
           ]
-        , H.li_
+        , H.li
+          [ cls "href" ]
           [ H.a
             [ P.href $ "/api/v0.1/csv/create/" <> show st.lastUpdateId
             , P.target "_blank"
             ]
-            [ H.text "Export CSV" ]
+            [ H.span [ cls "octicon octicon-file-symlink-file" ] []
+            , H.text "Export CSV"
+            ]
           ]
         ]
       ]
     LocationImportCsv -> case st.csvImportResponse of
       Nothing ->
-        [ H.button
-          [ E.onClick $ E.input_ GoHome ]
-          [ H.text "Back" ]
-        , H.text "Import CSV"
-        , H.input
-          [ P.inputType P.InputFile
-          , P.id_ "csvFile"
+        [ H.ul_
+          [ H.li
+            [ E.onClick $ E.input_ GoHome ]
+            [ H.span [ cls "octicon octicon-arrow-left" ] []
+            , H.text "Back"
+            ]
           ]
-        , H.button
-          [ E.onClick $ E.input_ UploadCsv ]
-          [ H.span [ cls "octicon octicon-repo-push" ] []
-          , H.text "Import CSV"
+        , H.div [ cls "entry-content" ]
+          [ H.p_ [ H.text "Import CSV" ]
+          , H.input
+            [ P.inputType P.InputFile
+            , P.id_ "csvFile"
+            ]
+          , H.button
+            [ E.onClick $ E.input_ UploadCsv ]
+            [ H.span [ cls "octicon octicon-repo-push" ] []
+            , H.text "Import CSV"
+            ]
           ]
         ]
       Just resp -> case resp of
@@ -212,19 +223,23 @@ renderMenu st = H.div [ cls "menu-content" ] $
             ]
           ]
     LocationPast past ->
-      [ H.button
-        [ E.onClick $ E.input_ GoHome ]
-        [ H.text "Back" ]
-      , H.text "Tags"
-      , H.br_
-      , H.input
-        [ E.onValueChange $ E.input NewTagSetName
-        , P.value st.newTagName
+      [ H.ul_
+          [ H.li
+            [ E.onClick $ E.input_ GoHome ]
+            [ H.span [ cls "octicon octicon-arrow-left" ] []
+            , H.text "Back"
+            ]
+          ]
+      , H.div [ cls "entry-content" ]
+        [H.input
+          [ E.onValueChange $ E.input NewTagSetName
+          , P.value st.newTagName
+          ]
+        , H.button
+          [ E.onClick $ E.input_ NewTagCreate ]
+          [ H.text "Create Tag" ]
+        , H.ul [ cls "past" ] $ renderUpdate <$> past
         ]
-      , H.button
-        [ E.onClick $ E.input_ NewTagCreate ]
-        [ H.text "Create Tag" ]
-      , H.ul_ $ renderUpdate <$> past
       ]
 
 renderCsvWarning :: Warning -> ComponentHTML Query
@@ -237,12 +252,13 @@ renderCsvWarning (Warning w) = H.li_
   ]
 
 renderUpdate :: UpdateDesc -> ComponentHTML Query
-renderUpdate (UpdateDesc upd) = H.li_
+renderUpdate (UpdateDesc upd) = H.li_ $
     [ H.span
-      [ E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId) ]
+      [ cls "label"
+      , E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId)
+      ]
       [ H.text $ show upd.updateDescCreated ]
-    , H.div_ $ renderTag <$> upd.updateDescTags
-    ]
+    ] <> (renderTag <$> upd.updateDescTags)
   where
     renderTag (TagDesc tag) = H.span [ cls "tag" ]
       [ H.text tag.tagDescTagName ]

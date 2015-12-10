@@ -4,20 +4,9 @@
   top: $statusbar-height;
   right: 0px;
   bottom: 0px;
-  background-image: url("../img/auth-background.png");
+  background-image: url("../img/auth-background.jpg");
   background-position: right bottom;
-}
-
-.splash-cube {
-  position: absolute;
-  right: 0px;
-  bottom: 0px;
-  top: 0px;
-  width: 1000px;
-  background-image: url("../img/auth-cube.png");
-  background-size: contain;
-  background-position: right bottom;
-  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .splash-auth {

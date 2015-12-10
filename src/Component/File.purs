@@ -132,7 +132,7 @@ file = component render eval
           ]
         , H.div [ cls "details" ]
           [ H.div [ cls "edited" ]
-            [ H.text $ "Last edited: " <> show "moook"
+            [ H.text $ "Last edited: " <> show (st.file ^. _fileChanged)
             ]
           , H.div [ cls "created" ]
             [ H.text $ "Created: " <> show (st.file ^. _fileCreated)
@@ -288,6 +288,9 @@ file = component render eval
         DTag tagId -> apiCall (deleteTag tagId) \_ -> do
           modify $ _{ deleteConfirm = DNone }
           modify $ _tags %~ filter (\(TagDesc t) -> t.tagDescTagId /= tagId)
+          (File f) <- gets _.file
+          apiCall (getFileOrphans f.fileId) \orphans ->
+            modify $ _{ orphans = orphans }
         _ -> pure unit
       pure next
 

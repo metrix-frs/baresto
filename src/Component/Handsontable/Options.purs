@@ -174,9 +174,9 @@ xOrdsData ords = [whiteData <> (ord <$> ords)]
 yOrdsData :: S -> Table -> BusinessData -> Data
 yOrdsData s table@(Table tbl) bd = case tbl.tableYAxis of
     YAxisClosed _ ords -> closed <$> ords
-    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\">+</button>" ]] <> (custom <$> getIndices (getCustomYMembersBySheet axId s table bd))
+    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\"><span class=\"customY octicon octicon-plus\"></span></button>" ]] <> (custom <$> getIndices (getCustomYMembersBySheet axId s table bd))
   where
-    custom i = [ "", "<button id=\"delCustomY" <> show i <> "\">&#8211;</button>" ]
+    custom i = [ "", "<button id=\"delCustomY" <> show i <> "\"><span class=\"customY octicon octicon-dash\"></span></button>" ]
     closed (Ordinate o) = if o.ordinateIsAbstract
       then [ indent o.ordinateLevel (o.ordinateCode <> " " <> o.ordinateLabel) ]
       else [ indent o.ordinateLevel o.ordinateLabel, o.ordinateCode ]

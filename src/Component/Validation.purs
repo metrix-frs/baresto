@@ -62,24 +62,22 @@ validation = component render eval
       [ if st.open
           then H.div
             [ cls "validation-open" ]
-            [ H.button
-              [ E.onClick $ E.input_ Close ]
-              [ H.span [ cls "octicon octicon-chevron-down" ] [] ]
-            , H.br_
-            , H.br_
-            , H.button
-              [ E.onClick $ E.input_ $ ValidateAll st.updateId ]
-              [ H.span [ cls "octicon octicon-checklist" ] []
-              ]
+            [ H.span
+              [ cls "octicon octicon-chevron-down"
+              , E.onClick $ E.input_ Close
+              ] []
             , H.div [ cls "validation-content" ]
               [ H.ul_ $ renderFinding <$> (flattenValidationResult st.results)
               ]
             ]
-          else H.div
-            [ cls "validation-closed" ]
-            [ H.button
-              [ E.onClick $ E.input_ Open ]
-              [ H.span [ cls "octicon octicon-chevron-up" ] [] ]
+          else H.div_
+            [ H.div
+              [ cls "validation-closed"
+              , E.onClick $ E.input_ Open
+              ]
+              [ H.span [ cls "octicon octicon-chevron-up" ] []
+              , H.text "Validation"
+              ]
             ]
       ]
 

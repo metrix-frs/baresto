@@ -1,14 +1,24 @@
 .validation-closed {
   position: fixed;
-  bottom: -5px;
-  left: 40px;
-  width: 40px;
-  height: 35px;
-  border-radius: 8px;
+  bottom: -2px;
+  left: -2px;
+  border-radius: 2px;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
-  background-color: white;
+  background-color: $metrix-blue;
   z-index: 1200;
-  text-align: center;
+  padding: 5px 5px 7px 7px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  font-size: 16px;
+  font-weight: bold;
+  color: $metrix-darkgray;
+  cursor: pointer;
+  &:hover {
+    color: black;
+    background-color: lighten($metrix-blue, 5%);
+  }
+  .octicon {
+    margin-right: 5px;
+  }
 }
 
 .validation-open {
@@ -20,6 +30,22 @@
   z-index: 1200;
   background-color: white;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
+
+  .octicon {
+    width: 16px;
+    text-align: center;
+    border-radius: 2px;
+    padding: 3px;
+    margin: 5px 0px 0px 5px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    background-color: $metrix-blue;
+    cursor: pointer;
+    color: $metrix-darkgray;
+    &:hover {
+      color: black;
+      background-color: lighten($metrix-blue, 5%);
+    }
+  }
 
   .validation-content {
     position: absolute;
@@ -37,7 +63,7 @@
 
     li {
       padding: 3px;
-      border-bottom: 1px solid darken($panel-gray, 10%);
+      border-bottom: 1px solid $panel-gray;
 
       &:hover {
         background-color: $panel-gray;
@@ -63,8 +89,8 @@
     margin: 4px;
     line-height: 16px;
     padding: 0px 4px 0px 4px;
-    border: 1px solid $metrix-lightblue;
-    border-radius: 0px;
+    border: 1px solid $metrix-blue;
+    border-radius: 2px;
     text-align: center;
     .holetable {
       color: gray;

@@ -138,7 +138,7 @@ app = parentComponent render eval
         if st.aboutOpen
           then
             [ modal "About"
-              [ H.p_ [ H.b_ [ H.text $ "Metrix Suite " <> versionStr ] ]
+              [ H.p_ [ H.b_ [ H.text $ "Metrix Baresto " <> versionStr ] ]
               , H.p_ [ H.text "This is an early alpha release, bugs may occur." ]
               , H.p_ [ H.text "For feedback, contact us at "
                      , H.a [ P.href "mailto:info@metrix-frs.de" ]
@@ -202,8 +202,7 @@ app = parentComponent render eval
 renderAuthForm :: String -> String -> Maybe String -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 renderAuthForm customerId licenseKey authError =
   H.div [ cls "splash-background" ]
-  [ H.div [ cls "splash-cube" ] []
-  , H.div [ cls "splash-auth" ]
+  [ H.div [ cls "splash-auth" ]
     [ H.div [ cls "splash-auth-logo" ] []
     , H.div [ cls "splash-auth-box" ] $
       [ H.p_ [ H.text "Please enter your customer id and license key:" ]

@@ -14,6 +14,7 @@ newtype File = File
   , fileModuleId     :: ModuleId
   , fileLabel        :: String
   , fileCreated      :: UTCTime
+  , fileChanged      :: UTCTime
   , fileLastUpdateId :: UpdateId
   }
 
@@ -32,6 +33,9 @@ _fileLabel = _File .. lens _.fileLabel _{ fileLabel = _ }
 _fileCreated :: LensP File UTCTime
 _fileCreated = _File .. lens _.fileCreated _{ fileCreated = _ }
 
+_fileChanged :: LensP File UTCTime
+_fileChanged = _File .. lens _.fileChanged _{ fileChanged = _ }
+
 _fileLastUpdateId :: LensP File UpdateId
 _fileLastUpdateId = _File .. lens _.fileLastUpdateId _{ fileLastUpdateId = _ }
 
@@ -41,12 +45,14 @@ instance isForeignFile :: IsForeign File where
             , fileModuleId: _
             , fileLabel: _
             , fileCreated: _
+            , fileChanged: _
             , fileLastUpdateId: _
             }
       <$> readProp "id" json
       <*> readProp "moduleId" json
       <*> readProp "label" json
       <*> readProp "created" json
+      <*> readProp "changed" json
       <*> readProp "lastUpdateId" json
     pure $ File file
 
