@@ -1,0 +1,57 @@
+.splash-background {
+  position: absolute;
+  left: 0px;
+  top: $statusbar-height;
+  right: 0px;
+  bottom: 0px;
+  background-image: url("../img/auth-background.png");
+  background-position: right bottom;
+}
+
+.splash-cube {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  top: 0px;
+  width: 1000px;
+  background-image: url("../img/auth-cube.png");
+  background-size: contain;
+  background-position: right bottom;
+  background-repeat: no-repeat;
+}
+
+.splash-auth {
+  position: absolute;
+  left: 20%;
+  top: 20%;
+  width: 257px;
+}
+
+.splash-auth-logo {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  right: 0px;
+  height: 110px;
+  background-image: url("../img/baresto-logo.png");
+}
+
+.splash-auth-box {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 120px;
+  background-color: white;
+  padding: 10px;
+  box-shadow: 1px 1px 8px 0px rgba(0.7, 0.7, 0.7, 0.3);
+
+  p {
+    margin: 0px;
+  }
+
+  input, button {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 15px 0px 0px 0px;
+  }
+}

@@ -273,7 +273,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
     [ H.div [ cls "frame" ]
       [ H.ul [ cls "frameworks" ] $
         [ H.li
-          [ cls $ if selectedAll then "selected" else "" ]
+          [ cls $ "all" <> if selectedAll then " selected" else "" ]
           [ H.span
             [ cls "label"
             , E.onClick $ E.input_ $ ClickAll
@@ -290,7 +290,7 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
       _            -> false
 
     renderFramework :: Framework -> Array ComponentHTMLP
-    renderFramework (Framework f) =
+    renderFramework framework@(Framework f) =
         [ H.li
           [ cls $ "framework" <> if selected then " selected" else "" ]
           [ H.span
@@ -303,16 +303,39 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
             ]
             [ H.text f.frameworkLabel
             ]
-          , H.select
-            [ E.onValueChange $ E.input $ SelectTaxonomy f.frameworkId <<< readId
-            ] $ taxonomyOption <$> f.taxonomies
           ]
-        ] <> if open then maybe [] (renderTaxonomy f.frameworkId) currentTaxonomy else []
+        ] <> if open then renderTaxonomies framework else []
       where
         open = fromMaybe true $ M.lookup f.frameworkId st.openFramework
         selected = case st.selectedNode of
           SelectedFramework fId -> fId == f.frameworkId
           _                     -> false
+
+    renderTaxonomies :: Framework -> Array ComponentHTMLP
+    renderTaxonomies (Framework f) =
+        [ H.li
+          [ cls $ "taxonomy" <> if selected then " selected" else "" ]
+          [ H.span
+            [ cls "label"
+            , E.onClick $ E.input_ (ClickTaxonomy f.frameworkId currentTaxonomyId)
+            ]
+            [ H.text "Taxonomy: "
+            , H.select
+              [ E.onValueChange $ E.input $ SelectTaxonomy f.frameworkId <<< readId
+              ] $ taxonomyOption <$> f.taxonomies
+            ]
+          ]
+        ] <> (
+          case currentTaxonomy of
+            Just (Taxonomy t) ->
+              concat $ renderConceptualModule t.taxonomyId <$> t.conceptualModules
+            Nothing ->
+              []
+        )
+      where
+        selected = case st.selectedNode of
+          SelectedTaxonomy fId _ -> fId == f.frameworkId
+          _                      -> false
 
         currentTaxonomyId = fromMaybe 0 $ M.lookup f.frameworkId st.selectedTaxonomy
         currentTaxonomy = find (\(Taxonomy t) -> t.taxonomyId == currentTaxonomyId) f.taxonomies
@@ -323,23 +346,6 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           ]
           [ H.text t.taxonomyLabel
           ]
-
-    renderTaxonomy :: FrameworkId -> Taxonomy -> Array ComponentHTMLP
-    renderTaxonomy frameworkId (Taxonomy t) =
-        [ H.li
-          [ cls $ "taxonomy" <> if selected then " selected" else "" ]
-          [ H.span
-            [ cls "label"
-            , E.onClick $ E.input_ (ClickTaxonomy frameworkId t.taxonomyId)
-            ]
-            [ H.text t.taxonomyLabel
-            ]
-          ]
-        ] <> (concat $ renderConceptualModule t.taxonomyId <$> t.conceptualModules)
-      where
-        selected = case st.selectedNode of
-          SelectedTaxonomy fId _ -> fId == frameworkId
-          _                      -> false
 
     renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array ComponentHTMLP
     renderConceptualModule tId (ConceptualModule c) =
@@ -391,9 +397,13 @@ renderFiles st = H.div [ cls "panel-filelist" ]
     mod (ModWithFiles taxLabel (ModuleEntry m) files) =
         [ H.li [ cls "module" ]
           [ H.span
-            [ cls $ "octicon octicon-package"
+            [ cls "label octicon octicon-package"
             ] []
-          , H.text $ taxLabel <> " — " <> m.moduleEntryLabel
+          , H.span
+            [ cls "label"
+            ]
+            [ H.text $ taxLabel <> " — " <> m.moduleEntryLabel
+            ]
           ]
         ] <> (renderFile <$> files)
       where

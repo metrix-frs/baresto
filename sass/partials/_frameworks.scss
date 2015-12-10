@@ -3,30 +3,42 @@ ul.frameworks {
   margin: 0px;
   padding: 0px;
 
+  $left: 4px;
+  $label-margin: 5px;
+  $indent: 16px + $label-margin;
+
   li {
     padding-top: 2px;
+    padding-bottom: 1px;
     background-color: white;
+    border-bottom: 1px solid $panel-gray;
+  }
+
+  li.all {
+    padding-left: $left;
+    font-weight: bold;
   }
 
   li.framework {
-    padding-left: 5px;
+    padding-left: $left;
     font-weight: bold;
   }
 
   li.taxonomy {
-    padding-left: 20px;
+    padding-left: $left + $indent;
   }
 
   li.conceptualModule {
-    padding-left: 40px;
+    padding-left: $left + $indent;
+    background-color: $metrix-lightblue;
   }
 
   li.module {
-    padding-left: 60px;
+    padding-left: $left + 2 * $indent;
   }
 
   li.selected {
-    background-color: $metrix-lightblue;
+    background-color: $metrix-darkblue;
   }
 
   .octicon {
@@ -38,7 +50,7 @@ ul.frameworks {
   .label {
     cursor: pointer;
     color: $metrix-darkgray;
-    margin-left: 3px;
+    margin-left: $label-margin;
 
     &:hover {
       color: black;

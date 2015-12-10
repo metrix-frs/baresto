@@ -90,37 +90,55 @@ file = component render eval
   where
 
     render :: Render State Query
-    render st = H.li
-      [ cls "file"
-      , P.initializer \_ -> action Init
-      ] $
-      [ H.div
-        [ cls "label"
-        , E.onClick $ E.input_ $ Open (st.file ^. _fileLastUpdateId)
-        ]
+    render st = H.div_ $
+      [ H.li
+        [ cls "file"
+        , P.initializer \_ -> action Init
+        ] $
         [ H.span
-          [ cls "octicon octicon-file-text"
+          [ cls $ "hlabel octicon octicon-chevron-" <> if st.tagsOpen then "down" else "right"
+          , E.onClick $ E.input_ $ if st.tagsOpen then TagsClose else TagsOpen
           ] []
-        , H.text (st.file ^. _fileLabel)
-        ]
-      , H.div [ cls "details" ] $
-        [ H.text $ "Created: " <> show (st.file ^. _fileCreated)
-        , H.button
-          [ E.onClick $ E.input_ DeleteFile ]
-          [ H.text "Delete" ]
         ] <> (
-          if st.tagsOpen
-            then
-              [ H.button
-                [ E.onClick $ E.input_ TagsClose ]
-                [ H.text "Close tags" ]
+          case st.renaming of
+            RFile name ->
+              [ H.input
+                [ E.onValueChange $ E.input RenameFileSetNewName
+                , P.value name
+                ]
+              , H.button
+                [ E.onClick $ E.input_ RenameFileDone ]
+                [ H.text "Ok" ]
               ]
-            else
-              [ H.button
-                [ E.onClick $ E.input_ TagsOpen ]
-                [ H.text "Open tags" ]
+            _ ->
+              [ H.span
+                [ cls "hlabel"
+                , E.onClick $ E.input_ $ Open (st.file ^. _fileLastUpdateId)
+                ]
+                [ H.text (st.file ^. _fileLabel)
+                ]
               ]
-        ) <> (
+        ) <>
+        [ H.div
+          [ cls "actions" ]
+          [ H.span
+            [ cls "hlabel octicon octicon-pencil"
+            , E.onClick $ E.input_ RenameFileStart
+            ] []
+          , H.span
+            [ cls "hlabel octicon octicon-x"
+            , E.onClick $ E.input_ DeleteFile
+            ] []
+          ]
+        , H.div [ cls "details" ]
+          [ H.div [ cls "edited" ]
+            [ H.text $ "Last edited: " <> show "moook"
+            ]
+          , H.div [ cls "created" ]
+            [ H.text $ "Created: " <> show (st.file ^. _fileCreated)
+            ]
+          ]
+        ] <> (
           case st.deleteConfirm of
             DFile ->
               [ modal "Delete File"
@@ -157,43 +175,45 @@ file = component render eval
               ]
             _ ->
               [ ]
-        ) <> (
-          case st.renaming of
-            RFile name ->
-              [ H.input
-                [ E.onValueChange $ E.input RenameFileSetNewName
-                , P.value name
-                ]
-              , H.button
-                [ E.onClick $ E.input_ RenameFileDone ]
-                [ H.text "Ok" ]
-              ]
-            _ ->
-              [ H.button
-                [ E.onClick $ E.input_ RenameFileStart ]
-                [ H.text "Rename" ]
-              ]
         )
       ] <> (
         if st.tagsOpen
           then
-            [ H.ul_ $ (renderTag st <$> st.tags) <> (renderOrphan st <$> st.orphans)
-            ]
+            [ H.li
+              [ cls "tag-title" ]
+              [ H.span
+                [ cls "label octicon octicon-tag" ]
+                []
+              , H.span
+                [ cls "label" ]
+                [ H.text "Tags"
+                ]
+              ]
+            ] <> (renderTag st <$> st.tags) <>
+            [ H.li
+              [ cls "orphan-title" ]
+              [ H.span
+                [ cls "label octicon octicon-watch" ]
+                []
+              , H.span
+                [ cls "label" ]
+                [ H.text "Autosaves"
+                ]
+              ]
+            ] <> (renderOrphan st <$> st.orphans)
           else
             []
-      )
+      ) <>
+      [ H.li
+        [ cls "sep"
+        ] []
+      ]
 
     renderTag :: State -> TagDesc -> ComponentHTML Query
-    renderTag st (TagDesc tag) = H.li_ $
-      [ H.span
-        [ E.onClick $ E.input_ $ Open tag.tagDescUpdateId ]
-        [ H.text tag.tagDescTagName
-        ]
-      , H.button
-        [ E.onClick $ E.input_ $ DeleteTag tag.tagDescTagId ]
-        [ H.text "Delete" ]
-      ] <> (
-        case st.renaming of
+    renderTag st (TagDesc tag) =
+      H.li
+      [ cls "tag" ] $
+      ( case st.renaming of
           RTag tagId name | tagId == tag.tagDescTagId ->
             [ H.input
               [ E.onValueChange $ E.input RenameTagSetNewName
@@ -204,21 +224,43 @@ file = component render eval
               [ H.text "Ok" ]
             ]
           _ ->
-            [ H.button
-              [ E.onClick $ E.input_ $ RenameTagStart tag.tagDescTagId ]
-              [ H.text "Rename" ]
+            [ H.span
+              [ cls "hlabel"
+              , E.onClick $ E.input_ $ Open tag.tagDescUpdateId
+              ]
+              [ H.text tag.tagDescTagName ]
             ]
-      )
+      ) <>
+      [ H.div
+        [ cls "actions" ]
+        [ H.span
+          [ cls "hlabel octicon octicon-pencil"
+          , E.onClick $ E.input_ $ RenameTagStart tag.tagDescTagId
+          ] []
+        , H.span
+          [ cls "hlabel octicon octicon-x"
+          , E.onClick $ E.input_ $ DeleteTag tag.tagDescTagId
+          ] []
+        ]
+      ]
 
     renderOrphan :: State -> UpdateDesc -> ComponentHTML Query
-    renderOrphan st (UpdateDesc upd) = H.li_ $
+    renderOrphan st (UpdateDesc upd) =
+      H.li
+      [ cls "orphan" ]
       [ H.span
-        [ E.onClick $ E.input_ $ Open upd.updateDescUpdateId ]
+        [ cls "hlabel"
+        , E.onClick $ E.input_ $ Open upd.updateDescUpdateId
+        ]
         [ H.text $ show upd.updateDescCreated
         ]
-      , H.button
-        [ E.onClick $ E.input_ $ DeleteOrphan upd.updateDescUpdateId ]
-        [ H.text "Delete" ]
+      , H.div
+        [ cls "actions" ]
+        [ H.span
+          [ cls "octicon octicon-x"
+          , E.onClick $ E.input_ $ DeleteOrphan upd.updateDescUpdateId
+          ] []
+        ]
       ]
 
     eval :: Eval Query State Query Metrix

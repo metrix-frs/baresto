@@ -133,8 +133,7 @@ app = parentComponent render eval
             { component: Body.body, initialState: installedState Body.initialState }
           LoggedOut ->
             renderAuthForm st.customerId st.licenseKey st.authError
-          CheckingLicense -> H.div_
-            [ H.text "Checking license..." ]
+          CheckingLicense -> H.div_ []
       ] <> (
         if st.aboutOpen
           then
@@ -201,35 +200,33 @@ app = parentComponent render eval
       pure next
 
 renderAuthForm :: String -> String -> Maybe String -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
-renderAuthForm customerId licenseKey authError = H.div_
-  [ H.table_
-    [ H.tr_
-      [ H.td_
-        [ H.text "ID:"
+renderAuthForm customerId licenseKey authError =
+  H.div [ cls "splash-background" ]
+  [ H.div [ cls "splash-cube" ] []
+  , H.div [ cls "splash-auth" ]
+    [ H.div [ cls "splash-auth-logo" ] []
+    , H.div [ cls "splash-auth-box" ] $
+      [ H.p_ [ H.text "Please enter your customer id and license key:" ]
+      , H.input
+        [ E.onValueChange $ E.input SetCustomerId
+        , P.value customerId
+        , P.placeholder "ID"
         ]
-      , H.td_
-        [ H.input
-          [ E.onValueChange $ E.input SetCustomerId
-          , P.value customerId
-          ]
+      , H.input
+        [ E.onValueChange $ E.input SetLicenseKey
+        , P.value licenseKey
+        , P.placeholder "License Key"
         ]
-      ]
-    , H.tr_
-      [ H.td_
-        [ H.text "License key:"
-        ]
-      , H.td_
-        [ H.input
-          [ E.onValueChange $ E.input SetLicenseKey
-          , P.value licenseKey
-          ]
-        ]
-      ]
+      , H.button
+        [ E.onClick (E.input_ Authenticate) ]
+        [ H.text "Authenticate" ]
+      ] <> (
+        case authError of
+          Just err ->
+            [ H.p_ [ H.text $ "Auth error: " <> err ]
+            ]
+          Nothing ->
+            []
+      )
     ]
-  , H.button
-    [ E.onClick (E.input_ Authenticate) ]
-    [ H.text "Authenticate" ]
-  , H.text $ case authError of
-      Just err -> "Error: " <> err
-      Nothing -> ""
   ]

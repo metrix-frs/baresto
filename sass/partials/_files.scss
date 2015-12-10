@@ -3,42 +3,119 @@ ul.files {
   margin: 0px;
   padding: 0px;
 
+  $label-margin: 3px;
+  $left: 5px;
+  $indent: 16px + $label-margin;
+
   li {
     padding-top: 2px;
-    border-bottom: 1px solid #BBB;
+    padding-bottom: 1px;
+    position: relative;
+
+    &:hover {
+      .actions {
+        display: block;
+        position: absolute;
+        right: $label-margin;
+        top: 2px;
+        bottom: 0px;
+        .octicon {
+          margin: 2px;
+          color: #BBB;
+          &:hover {
+            color: #999;
+          }
+        }
+      }
+    }
+
+    .actions {
+      display: none;
+    }
+
   }
 
   li.module {
-    padding-left: 5px;
+    padding-left: $left;
     background-color: #DDD;
+    border-bottom: 1px solid #BBB;
   }
 
   li.file {
-    padding-left: 25px;
+    padding-left: $left;
+    .hlabel {
+      font-weight: bold;
+    }
+  }
+
+  li.tag-title {
+    border-top: 1px solid $panel-gray;
+    padding-left: $left + $indent;
+    .label {
+      font-weight: bold;
+    }
+  }
+
+  li.tag {
+    border-top: 1px solid $panel-gray;
+    padding-left: $left + 2 * $indent;
+  }
+
+  li.orphan-title {
+    border-top: 1px solid $panel-gray;
+    padding-left: $left + $indent;
+    .label {
+      font-weight: bold;
+    }
+  }
+
+  li.orphan {
+    border-top: 1px solid $panel-gray;
+    padding-left: $left + 2 * $indent;
+  }
+
+  li.sep {
+    height: 1px;
+    background-color: #BBB;
+    padding: 0px;
   }
 
   .octicon {
     width: 16px;
     text-align: center;
-    margin-right: 5px;
   }
 
   .label {
+    margin-left: $label-margin;
+  }
+
+  .hlabel {
+    @extend .label;
     cursor: pointer;
     color: $metrix-darkgray;
-    font-weight: bold;
 
     &:hover {
       color: black;
     }
-
   }
 
   .details {
     color: #999;
     font-size: 12pt;
-    padding-left: 19px;
-    padding-bottom: 3px;
+    position: relative;
+    padding-left: $indent + $label-margin;
+    margin-right: $left + $label-margin;
+    margin-top: 2px;
+
+    .edited {
+
+    }
+
+    .created {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+    }
   }
 
 }
