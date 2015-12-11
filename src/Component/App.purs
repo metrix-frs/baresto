@@ -110,21 +110,28 @@ app = parentComponent render eval
       , H.div [ cls "status" ] $
         [ H.slot' cpSpinner SpinnerSlot \_ ->
           { component: Spinner.spinner, initialState: Spinner.initialState }
-        , H.div [ cls "menu" ] $
-          ( case st.authStatus of
+        , case st.authStatus of
+            Authenticated _ -> H.div [ cls "status-baresto" ] []
+            _               -> H.div [ cls "status-metrix" ] []
+        , case st.authStatus of
+            Authenticated cId -> H.div [ cls "license" ]
+              [ H.text $ "Using license for customer: " <> cId ]
+            _ -> H.div_ []
+        , H.div [ cls "menu" ]
+          [ case st.authStatus of
               Authenticated cId ->
-                [ H.text $ "Using license for customer: " <> cId
-                , H.button
-                  [ E.onClick (E.input_ $ LogOut) ]
-                  [ H.span [ cls "octicon octicon-sign-out" ] []
-                  , H.text "Logout" ]
+                H.button
+                [ E.onClick (E.input_ $ LogOut) ]
+                [ H.span [ cls "octicon octicon-sign-out" ] []
+                , H.text "Logout"
                 ]
               _ ->
-                []
-          ) <>
-          [ H.button
+                H.div_ []
+          , H.button
             [ E.onClick $ E.input_ AboutOpen ]
-            [ H.text "About" ]
+            [ H.span [ cls "octicon octicon-info" ] []
+            , H.text "About"
+            ]
           ]
         ]
       , case st.authStatus of

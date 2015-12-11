@@ -72,8 +72,8 @@ spinner = component render eval
       , P.id_ spinnerName
       , cls "spinnerContainer"
       ] $ if count > 0
-            then [ H.div [ cls "spinner" ] [] ]
-            else []
+            then [ H.span [ cls "spinner-on" ] [] ]
+            else [ H.div [ cls "spinner-off" ] [] ]
 
     eval :: Eval Query State Query Metrix
     eval (Init el next) = do

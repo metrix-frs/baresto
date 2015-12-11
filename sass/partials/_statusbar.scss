@@ -1,18 +1,46 @@
 .status {
   background-color: white;
   height: $statusbar-height;
-  padding: 2px;
   color: $metrix-darkgray;
+  position: relative;
   .spinnerContainer {
-    float: left;
-    width: 25px;
-    height: 25px;
+    position: absolute;
+    left: 5px;
+    top: 15px;
+    width: 30px;
+    bottom: 5px;
   }
   .license {
-    float: right;
-    margin-right: 10px;
+    position: absolute;
+    right: 5px;
+    top: 0px;
   }
   .menu {
-    float: right;
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    button {
+      margin: 0px 0px 0px 4px;
+    }
+  }
+  .status-metrix {
+    position: absolute;
+    left: 35px;
+    top: 15px;
+    bottom: 5px;
+    width: 75px;
+    background-image: url("../img/metrix.png");
+    background-size: contain;
+    background-position: left;
+  }
+  .status-baresto {
+    position: absolute;
+    left: 35px;
+    top: 5px;
+    bottom: 5px;
+    width: 94px;
+    background-image: url("../img/baresto-logo.png");
+    background-size: contain;
+    background-position: left;
   }
 }
