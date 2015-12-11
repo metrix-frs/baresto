@@ -80,6 +80,39 @@
     font-size: 20px;
     margin: 0px 1px 0px 1px;
   }
+  .lop {
+    background-image: url("../img/formula.png");
+    background-repeat: no-repeat;
+    height: 53px;
+  }
+  .lop-lparen {
+    width: 15px;
+    background-position: 2px 0px;
+  }
+  .lop-rparen {
+    width: 15px;
+    background-position: -146px 0px;
+  }
+  .lop-ge {
+    width: 18px;
+    background-position: -47px 0px;
+  }
+  .lop-le {
+    width: 18px;
+    background-position: -66px 0px;
+  }
+  .lop-eq {
+    width: 18px;
+    background-position: -82px 0px;
+  }
+  .lop-plus {
+    width: 18px;
+    background-position: -104px 0px;
+  }
+  .lop-minus {
+    width: 18px;
+    background-position: -122px 0px;
+  }
   div {
     display: inline-block;
     vertical-align: middle;
@@ -89,7 +122,7 @@
     margin: 4px;
     line-height: 16px;
     padding: 0px 4px 0px 4px;
-    border: 1px solid $metrix-blue;
+    border: 1px solid rgba(0,0,0,0.5);
     border-radius: 2px;
     text-align: center;
     .holetable {

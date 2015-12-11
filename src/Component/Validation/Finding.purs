@@ -42,7 +42,8 @@ renderTerm f = case f of
       [ renderValue s
       ]
     FUnary op f ->
-      [ opv $ op <> "("
+      [ opv op
+      , opv "("
       ] <> renderTerm f <>
       [ opv ")"
       ]
@@ -79,7 +80,15 @@ renderTerm f = case f of
       [ opv "]"
       ]
   where
-    opv v = H.span [ cls "op" ] [ H.text v ]
+    opv v = case v of
+      "("  -> H.div [ cls "lop lop-lparen" ] []
+      ")"  -> H.div [ cls "lop lop-rparen" ] []
+      ">=" -> H.div [ cls "lop lop-ge" ] []
+      "<=" -> H.div [ cls "lop lop-le" ] []
+      "="  -> H.div [ cls "lop lop-eq" ] []
+      "+"  -> H.div [ cls "lop lop-plus" ] []
+      "-"  -> H.div [ cls "lop lop-minus" ] []
+      _ -> H.span [ cls "op" ] [ H.text v ]
     paren term = if needParen term
       then
         [ opv "("

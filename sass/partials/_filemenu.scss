@@ -8,9 +8,14 @@
   z-index: 10000;
   background-color: white;
 
-  input, button {
-    width: 100%;
+  input.full, button.full {
     box-sizing: border-box;
+    margin: 5px 0px 0px 0px;
+    width: 100%;
+  }
+
+  p {
+    margin: 0px;
   }
 
   ul {
@@ -34,31 +39,34 @@
   }
 
   .entry-content {
-    margin: 5px;
+    padding: 5px;
     max-height: 700px;
     overflow-y: auto;
     max-height: 600px;
   }
 
-  ul.past {
+  table {
+
+    margin-top: 5px;
 
     background-color: white;
+    border-collapse: collapse;
 
-    li {
-      cursor: default;
-      .label {
-        cursor: pointer;
-        color: $metrix-darkgray;
-        &:hover {
-          color: black;
-        }
-      }
-      .tag {
-        background-color: $metrix-darkblue;
-        color: white;
-      }
+    .label {
+      cursor: pointer;
+      color: $metrix-darkgray;
       &:hover {
-        background-color: white;
+        color: black;
+      }
+    }
+    .tag {
+      background-color: $metrix-darkblue;
+      padding: 2px 4px 2px 4px;
+      border-radius: 2px;
+      color: white;
+      margin-left: 10px;
+      .octicon {
+        margin-right: 3px;
       }
     }
 

@@ -189,13 +189,15 @@ renderMenu st = H.div [ cls "menu-content" ] $
             ]
           ]
         , H.div [ cls "entry-content" ]
-          [ H.p_ [ H.text "Import CSV" ]
+          [ H.p_ [ H.text "Please select the CSV file to import:" ]
           , H.input
-            [ P.inputType P.InputFile
+            [ cls "full"
+            , P.inputType P.InputFile
             , P.id_ "csvFile"
             ]
           , H.button
-            [ E.onClick $ E.input_ UploadCsv ]
+            [ cls "full"
+            , E.onClick $ E.input_ UploadCsv ]
             [ H.span [ cls "octicon octicon-repo-push" ] []
             , H.text "Import CSV"
             ]
@@ -231,14 +233,17 @@ renderMenu st = H.div [ cls "menu-content" ] $
             ]
           ]
       , H.div [ cls "entry-content" ]
-        [H.input
-          [ E.onValueChange $ E.input NewTagSetName
+        [ H.input
+          [ cls "full"
+          , E.onValueChange $ E.input NewTagSetName
           , P.value st.newTagName
+          , P.placeholder "Tag Name"
           ]
         , H.button
-          [ E.onClick $ E.input_ NewTagCreate ]
+          [ cls "full"
+          , E.onClick $ E.input_ NewTagCreate ]
           [ H.text "Create Tag" ]
-        , H.ul [ cls "past" ] $ renderUpdate <$> past
+        , H.table_ $ renderUpdate <$> past
         ]
       ]
 
@@ -252,14 +257,19 @@ renderCsvWarning (Warning w) = H.li_
   ]
 
 renderUpdate :: UpdateDesc -> ComponentHTML Query
-renderUpdate (UpdateDesc upd) = H.li_ $
-    [ H.span
-      [ cls "label"
-      , E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId)
+renderUpdate (UpdateDesc upd) = H.tr_ $
+    [ H.td_
+      [ H.span
+        [ cls "label"
+        , E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId)
+        ]
+        [ H.text $ show upd.updateDescCreated ]
       ]
-      [ H.text $ show upd.updateDescCreated ]
-    ] <> (renderTag <$> upd.updateDescTags)
+    , H.td_ (renderTag <$> upd.updateDescTags)
+    ]
   where
-    renderTag (TagDesc tag) = H.span [ cls "tag" ]
-      [ H.text tag.tagDescTagName ]
-
+    renderTag (TagDesc tag) =
+      H.span [ cls "tag" ]
+      [ H.span [ cls "octicon octicon-tag" ] []
+      , H.text tag.tagDescTagName
+      ]
