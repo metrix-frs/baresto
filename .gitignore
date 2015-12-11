@@ -9,3 +9,7 @@ public/css/*.css
 .psci_modules
 .psci
 *.tix
+*.aux
+*.log
+latex/*.png
+latex/*.pdf
