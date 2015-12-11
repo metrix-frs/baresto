@@ -7,6 +7,8 @@ module Component.Handsontable.Utils
 
 import Prelude
 
+import Handsontable.Types
+
 import Control.Monad.Eff
 
 import Data.Array (length)
@@ -24,6 +26,6 @@ headerHeight (Table tbl) = length tbl.tableXHeader + case tbl.tableYAxis of
   YAxisCustom _ _ -> 2
   YAxisClosed _ _ -> 1
 
-foreign import attachClickHandler :: forall eff a. String -> Eff eff a -> Eff eff a
+foreign import attachClickHandler :: forall eff a. Handsontable String -> String -> Eff eff a -> Eff eff a
 
 foreign import forceString :: String -> String

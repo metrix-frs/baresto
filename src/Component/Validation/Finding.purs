@@ -6,6 +6,7 @@ import Prelude
 
 import Data.Maybe
 import Data.Tuple
+import Data.String (take)
 import Data.Foldable (intercalate)
 import Data.String (joinWith)
 
@@ -155,18 +156,34 @@ renderHole (Hole h) = H.div [ cls "hole" ]
     ]
   , H.br_
   , H.span [ cls "holecoords" ]
-    [ case h.holeCoords of
-        HoleCoords x y z ->
-          let xStr = case x of
-                HCX i ord              -> "c" <> ord
-              yStr = case y of
-                HCYClosed i ord        -> "r" <> ord
-                HCYCustom cmId rowKeys -> cmId
-              zStr = case z of
-                HCZSingleton           -> Nothing
-                HCZClosed i ord        -> Just $ "s" <> ord
-                HCZCustom cmId cm      -> Just $ cmId
-                HCZSubset smId sm      -> Just $ show smId
-          in  H.text ("(" <> yStr <> ", " <> xStr <> (maybe "" (", " <>) zStr) <> ")")
-    ]
+    case h.holeCoords of
+      HoleCoords x y z ->
+        let xStr = case x of
+              HCX i ord              -> ord
+            yStr = case y of
+              HCYClosed i ord        -> ord
+              HCYCustom cmId rowKeys -> take 6 cmId
+            zStr = case z of
+              HCZSingleton           -> Nothing
+              HCZClosed i ord        -> Just ord
+              HCZCustom cmId cm      -> Just $ take 6 cmId
+              HCZSubset smId sm      -> Just $ show smId
+        in  [ H.text "("
+            , H.b_ [ H.text "r" ]
+            , H.text yStr
+            , H.text ", "
+            , H.b_ [ H.text "c" ]
+            , H.text xStr
+            ] <> (
+              case zStr of
+                Just z ->
+                  [ H.text ", "
+                  , H.b_ [ H.text "s" ]
+                  , H.text z
+                  ]
+                Nothing ->
+                  []
+            ) <>
+            [ H.text ")"
+            ]
   ]

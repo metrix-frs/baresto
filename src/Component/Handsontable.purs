@@ -124,10 +124,10 @@ build s table@(Table tbl) bd = do
       case tbl.tableYAxis of
         YAxisClosed _ _ -> pure unit
         YAxisCustom axId _ -> do
-          subscribe $ eventSource_ (attachClickHandler "#newCustomY") do
+          subscribe $ eventSource_ (attachClickHandler hot "#newCustomY") do
             pure $ action AddRow
           for_ (getIndices $ getCustomYMembersBySheet axId s table bd) \i ->
-            subscribe $ eventSource_ (attachClickHandler ("#delCustomY" <> show i)) do
+            subscribe $ eventSource_ (attachClickHandler hot ("#delCustomY" <> show i)) do
               pure $ action $ DeleteRow i
 
   -- TODO: adjust resize
