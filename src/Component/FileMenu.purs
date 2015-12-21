@@ -30,7 +30,7 @@ data Location
 type State =
   { open :: Boolean
   , location :: Location
-  , csvImportResponse :: Maybe (ServerResponse CsvImportConf)
+  , csvImportResponse :: Maybe CsvImportConf
   , newTagName :: String
   , lastUpdateId :: UpdateId
   }
@@ -203,27 +203,17 @@ renderMenu st = H.div [ cls "menu-content" ] $
             ]
           ]
         ]
-      Just resp -> case resp of
-        ServerSuccess (CsvImportConf conf) ->
-          [ modal "Import CSV"
-            [ H.p_ [ H.text "Csv successfully imported!" ]
-            , H.h2_ [ H.text "Warnings:" ]
-            , H.ul_ $ renderCsvWarning <$> conf.warnings
-            ]
-            [ H.button
-              [ E.onClick $ E.input_ (UploadCsvConfirm conf.update) ]
-              [ H.text "Ok" ]
-            ]
+      Just (CsvImportConf conf) ->
+        [ modal "Import CSV"
+          [ H.p_ [ H.text "Csv successfully imported!" ]
+          , H.h2_ [ H.text "Warnings:" ]
+          , H.ul_ $ renderCsvWarning <$> conf.warnings
           ]
-        ServerError err ->
-          [ modal err.title
-            [ H.p_ [ H.text err.body ]
-            ]
-            [ H.button
-              [ E.onClick $ E.input_ UploadCsvClose ]
-              [ H.text "Ok" ]
-            ]
+          [ H.button
+            [ E.onClick $ E.input_ (UploadCsvConfirm conf.update) ]
+            [ H.text "Ok" ]
           ]
+        ]
     LocationPast past ->
       [ H.ul_
           [ H.li

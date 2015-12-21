@@ -17,5 +17,5 @@ instance isForeignServerResponse :: (IsForeign a) => IsForeign (ServerResponse a
     if success
       then ServerSuccess <$> readProp "object" json
       else do title <- readProp "title" json
-              body  <- readProp "body"  json
+              body  <- readProp "message" json
               pure $ ServerError { title: title, body: body }

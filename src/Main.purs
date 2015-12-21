@@ -15,7 +15,7 @@ import qualified Component.App as App
 
 import Types
 
-main :: Eff (Effects ()) Unit
+main :: Eff Effects Unit
 main = runAff throwException (const (pure unit)) $ do
   app <- runUI App.app (installedState App.initialState)
   appendToBody app.node

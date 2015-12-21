@@ -7,12 +7,13 @@ import Control.Monad.Aff (attempt, Aff())
 import Control.Monad.Aff.Class
 import Control.Monad.Eff.Class
 import Control.Monad.Eff.Exception (error, message)
-import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Console (CONSOLE(), log)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except.Trans
 
 import Data.Either
 
+import DOM (DOM())
 import DOM.File.Types (FileList())
 
 import Network.HTTP.Affjax
@@ -37,7 +38,7 @@ import Api.Schema.Import
 import qualified Component.Spinner as Spinner
 import qualified Component.ErrorBox as ErrorBox
 
-apiCall :: forall eff a s f g. (MonadEff (Effects eff) g, MonadAff (Effects eff) g, Functor g)
+apiCall :: forall eff a s f g. (MonadEff (dom :: DOM, console :: CONSOLE | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
         => Api eff a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit
 apiCall call onSuccess = do
   liftEff' $ Spinner.dispatch true
@@ -47,7 +48,7 @@ apiCall call onSuccess = do
     Left err -> liftEff' $ ErrorBox.raise err
     Right x -> onSuccess x
 
-apiCallParent :: forall eff a s s' f f' g p. (MonadEff (ajax :: AJAX | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
+apiCallParent :: forall eff a s s' f f' g p. (MonadEff (dom :: DOM, console :: CONSOLE | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
         => Api eff a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
 apiCallParent call onSuccess = do
   liftQuery $ liftEff' $ Spinner.dispatch true

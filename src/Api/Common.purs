@@ -33,7 +33,7 @@ import Types
 
 foreign import filesToFormData :: FileList -> FormData
 
-type Api a = ExceptT ErrorDetail (Aff Effects) a
+type Api eff a = ExceptT ErrorDetail (Aff (ajax :: AJAX | eff)) a
 
 postJson :: forall eff a b. (EncodeJson a, Respondable b) => URL -> a -> Affjax eff b
 postJson u c = affjax $ defaultRequest
@@ -56,7 +56,7 @@ succeeded :: StatusCode -> Boolean
 succeeded (StatusCode code) = 200 <= code && code < 300
 
 getJsonResponse :: forall a eff. (IsForeign a)
-                => String -> Affjax eff String -> Api a
+                => String -> Affjax eff String -> Api eff a
 getJsonResponse msg affjax = do
   res <- lift affjax
   if succeeded res.status
@@ -73,7 +73,7 @@ getJsonResponse msg affjax = do
             , body: "Probably a connection or protocol error."
             }
 
-getUnitResponse :: forall eff. String -> Affjax eff String -> Api Unit
+getUnitResponse :: forall eff. String -> Affjax eff String -> Api eff Unit
 getUnitResponse msg affjax = do
   res <- lift affjax
   if succeeded res.status

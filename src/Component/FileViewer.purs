@@ -3,8 +3,8 @@ module Component.FileViewer where
 import Prelude
 
 import Control.Monad.Eff.Console (log)
-import Control.Monad.Aff (attempt)
 import Control.Monad.Aff.AVar
+import Control.Monad.Except.Trans (runExceptT)
 
 import           Data.Either
 import           Data.Array (head, replicate)
@@ -306,11 +306,13 @@ viewer propUpdateId = parentComponent' render eval peek
               , updatePostValidationType: VTUpdate
               }
         let post = do
-              result <- liftH $ liftAff' $ attempt $ postUpdate payload
+              result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
               case result of
                 Left err -> do
                   modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
-                  liftH $ liftEff' $ log $ show err
+                  liftH $ liftEff' do
+                    log $ "Error: " <> err.title
+                    log $ "Details: " <> err.body
                   post
                 Right (UpdatePostResult res) -> case res.uprUpdateDesc of
                   UpdateDesc desc -> do

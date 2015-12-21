@@ -60,7 +60,7 @@ type StateInfo =
   , openConceptualModule :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean
   , selectedNode :: SelectedNode
   , newFileName :: String
-  , xbrlImportResponse :: Maybe (ServerResponse XbrlImportConf)
+  , xbrlImportResponse :: Maybe XbrlImportConf
   }
 
 type State = Maybe StateInfo
@@ -247,10 +247,10 @@ selector = parentComponent' render eval peek
           pure unit
       _ -> pure unit
 
-renderXbrlImportResponse :: Maybe (ServerResponse XbrlImportConf) -> ComponentHTMLP
+renderXbrlImportResponse :: Maybe XbrlImportConf -> ComponentHTMLP
 renderXbrlImportResponse resp = case resp of
     Nothing -> H.div_ []
-    Just (ServerSuccess (XbrlImportConf conf)) -> modal "Import XBRL"
+    Just (XbrlImportConf conf) -> modal "Import XBRL"
       [ H.p_ [ H.text "XBRL file successfully imported!" ]
       , H.h2_ [ H.text "Warnings:" ]
       , H.ul_ $ warning <$> conf.warnings
@@ -261,12 +261,6 @@ renderXbrlImportResponse resp = case resp of
       , H.button
         [ E.onClick $ E.input_ (UploadXbrlOpenFile conf.updateId) ]
         [ H.text "Open File" ]
-      ]
-    Just (ServerError err) -> modal err.title
-      [ H.p_ [ H.text err.body ] ]
-      [ H.button
-        [ E.onClick $ E.input_ UploadXbrlCloseModal ]
-        [ H.text "Close" ]
       ]
   where
     warning (Warning w) = H.li_

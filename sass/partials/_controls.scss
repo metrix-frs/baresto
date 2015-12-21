@@ -55,6 +55,13 @@ select {
   }
 }
 
+a {
+  color: darken($metrix-darkblue, 10%);
+  &:hover {
+    color: $metrix-darkblue;
+  }
+}
+
 a.tooltip {
   text-decoration: none;
   position: relative;
