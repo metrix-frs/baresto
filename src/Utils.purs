@@ -8,8 +8,8 @@ module Utils
   , maxOrd
   , getEntropy
   , createEvent
-  , createCustomEvent
-  , customEventDetail
+  , createErrorEvent
+  , errorEventDetail
   , shorten
   , peek'
   , getInputFileList
@@ -43,6 +43,8 @@ import           Halogen
 import           Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
 import qualified Halogen.HTML.Properties.Indexed as P
 import qualified Halogen.HTML.Core as H
+
+import Types
 
 
 maxInt :: Int -> Int -> Int
@@ -86,15 +88,15 @@ foreign import createEventImpl :: String -> Event
 createEvent :: EventType -> Event
 createEvent (EventType typ) = createEventImpl typ
 
-foreign import createCustomEventImpl :: String -> String -> Event
+foreign import createErrorEventImpl :: String -> ErrorDetail -> Event
 
-createCustomEvent :: EventType -> String -> Event
-createCustomEvent (EventType typ) msg = createCustomEventImpl typ msg
+createErrorEvent :: EventType -> ErrorDetail -> Event
+createErrorEvent (EventType typ) detail = createErrorEventImpl typ detail
 
-foreign import customEventDetailImpl :: Event -> Nullable String
+foreign import errorEventDetailImpl :: Event -> Nullable ErrorDetail
 
-customEventDetail :: Event -> Maybe String
-customEventDetail = toMaybe <<< customEventDetailImpl
+errorEventDetail :: Event -> Maybe ErrorDetail
+errorEventDetail = toMaybe <<< errorEventDetailImpl
 
 shorten :: String -> Int -> Maybe String
 shorten s len = let short = take len s in

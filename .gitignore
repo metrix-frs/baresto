@@ -13,3 +13,4 @@ public/css/*.css
 *.log
 latex/*.png
 latex/*.pdf
+*.sublime-workspace

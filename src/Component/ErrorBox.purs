@@ -42,24 +42,24 @@ errorId = "error"
 errorEvent :: EventType
 errorEvent = EventType "error"
 
-raise :: forall eff. String -> Eff (dom :: DOM, console :: CONSOLE | eff) Unit
-raise msg = do
+raise :: forall eff. ErrorDetail -> Eff (dom :: DOM, console :: CONSOLE | eff) Unit
+raise detail = do
   doc <- window >>= document
   maybeElem <- toMaybe <$> querySelector ("#" <> errorId) (htmlDocumentToParentNode doc)
   for_ maybeElem \el -> catchException print do
-    dispatchEvent (createCustomEvent errorEvent msg) (elementToEventTarget el)
+    dispatchEvent (createErrorEvent errorEvent detail) (elementToEventTarget el)
     pure unit
 
 --
 
-type State = Maybe String
+type State = Maybe ErrorDetail
 
 initialState :: State
 initialState = Nothing
 
 data Query a
   = Init HTMLElement a
-  | Open String a
+  | Open ErrorDetail a
   | Close a
 
 errorBox :: Component State Query Metrix
@@ -71,9 +71,10 @@ errorBox = component render eval
       [ P.initializer \el -> action (Init el)
       , P.id_ errorId
       ] $ case st of
-            Just msg ->
+            Just detail ->
               [ modal "Error"
-                [ H.p_ [ H.text msg ]
+                [ H.p_ [ H.b_ [ H.text detail.title ] ]
+                , H.p_ [ H.text detail.body ]
                 ]
                 [ H.button
                   [ E.onClick (E.input_ Close) ]
@@ -86,12 +87,15 @@ errorBox = component render eval
     eval :: Eval Query State Query Metrix
     eval (Init el next) = do
       let attach cb = addEventListener errorEvent
-            (eventListener \e -> cb $ customEventDetail e) true (htmlElementToEventTarget el)
-      subscribe $ eventSource attach \msg -> do
-        pure $ action $ Open $ fromMaybe "Error reading event" msg
+            (eventListener \e -> cb $ errorEventDetail e) true (htmlElementToEventTarget el)
+      subscribe $ eventSource attach \detail -> do
+        pure $ action $ Open $ fromMaybe
+          { title: "Internal error"
+          , body: "Error reading event detail."
+          } detail
       pure next
-    eval (Open msg next) = do
-      modify $ const $ Just msg
+    eval (Open detail next) = do
+      modify $ const $ Just detail
       pure next
     eval (Close next) = do
       modify $ const Nothing

@@ -24,8 +24,16 @@ import Data.Argonaut.Encode
 import Control.Monad.Aff
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Error.Class (throwError)
+import Control.Monad.Trans (lift)
+import Control.Monad.Except.Trans
+
+import Api.Schema
+
+import Types
 
 foreign import filesToFormData :: FileList -> FormData
+
+type Api a = ExceptT ErrorDetail (Aff Effects) a
 
 postJson :: forall eff a b. (EncodeJson a, Respondable b) => URL -> a -> Affjax eff b
 postJson u c = affjax $ defaultRequest
@@ -48,18 +56,29 @@ succeeded :: StatusCode -> Boolean
 succeeded (StatusCode code) = 200 <= code && code < 300
 
 getJsonResponse :: forall a eff. (IsForeign a)
-                => String -> Affjax eff String -> Aff (ajax :: AJAX | eff) a
+                => String -> Affjax eff String -> Api a
 getJsonResponse msg affjax = do
-  res <- affjax
+  res <- lift affjax
   if succeeded res.status
     then case readJSON res.response of
-           Left e -> throwError $ error $ "JSON decode error: " <> show e
-           Right x -> pure x
-    else throwError $ error msg
+           Left e -> throwError
+                        { title: "JSON decode error"
+                        , body: show e
+                        }
+           Right x -> case x of
+            ServerError e -> throwError e
+            ServerSuccess a -> pure a
+    else throwError
+            { title: msg
+            , body: "Probably a connection or protocol error."
+            }
 
-getUnitResponse :: forall eff. String -> Affjax eff String -> Aff (ajax :: AJAX | eff) Unit
+getUnitResponse :: forall eff. String -> Affjax eff String -> Api Unit
 getUnitResponse msg affjax = do
-  res <- affjax
+  res <- lift affjax
   if succeeded res.status
     then pure unit
-    else throwError $ error msg
+    else throwError
+            { title: msg
+            , body: "Probably a connection or protocol error."
+            }

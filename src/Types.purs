@@ -25,7 +25,7 @@ import Data.Tuple
 
 import DOM
 
-type Effects eff =
+type Effects =
   ( dom :: DOM
   , avar :: AVAR
   , err :: EXCEPTION
@@ -34,9 +34,9 @@ type Effects eff =
   , hot :: HOT
   , random :: RANDOM
   , ref :: REF
-  | eff )
+  )
 
-type Metrix = Aff (Effects ())
+type Metrix = Aff Effects
 
 --
 
@@ -79,3 +79,10 @@ foreign import showDate :: Date -> String
 
 instance showUTCTime :: Show UTCTime where
   show (UTCTime date) = showDate date
+
+--
+
+type ErrorDetail =
+  { title :: String
+  , body :: String
+  }

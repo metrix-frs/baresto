@@ -6,13 +6,13 @@ exports.createEventImpl = function (type) {
   return new Event(type);
 };
 
-exports.createCustomEventImpl = function (type) {
+exports.createErrorEventImpl = function (type) {
   return function (msg) {
     return new CustomEvent(type, {"detail": msg});
   };
 };
 
-exports.customEventDetailImpl = function (e) {
+exports.errorEventDetailImpl = function (e) {
   return e.detail;
 };
 

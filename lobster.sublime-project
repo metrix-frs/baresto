@@ -1,0 +1,20 @@
+{
+  "folders":
+  [
+    {
+      "path": ".",
+      "folder_exclude_patterns": [
+        "bower_components",
+        "node_modules",
+        "dist",
+        "output"
+      ],
+      "file_exclude_patterns": [
+      ]
+    }
+  ],
+  "settings":
+  {
+    "tab_size": 2
+  }
+}

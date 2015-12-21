@@ -9,10 +9,7 @@ import Types
 
 data ServerResponse a
   = ServerSuccess a
-  | ServerError
-    { title :: String
-    , body :: String
-    }
+  | ServerError ErrorDetail
 
 instance isForeignServerResponse :: (IsForeign a) => IsForeign (ServerResponse a) where
   read json = do
