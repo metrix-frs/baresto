@@ -18,6 +18,8 @@
     top: 50%;
     left: 50%;
     width: 600px;
+    max-height: 600px;
+    overflow-y: auto;
     margin-left: -300px;
     margin-top: -100px;
     background-color: white;
