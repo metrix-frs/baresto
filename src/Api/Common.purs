@@ -58,27 +58,37 @@ succeeded (StatusCode code) = 200 <= code && code < 300
 getJsonResponse :: forall a eff. (IsForeign a)
                 => String -> Affjax eff String -> Api eff a
 getJsonResponse msg affjax = do
-  res <- lift affjax
-  if succeeded res.status
-    then case readJSON res.response of
-           Left e -> throwError
-                        { title: "JSON decode error"
-                        , body: show e
-                        }
-           Right x -> case x of
-            ServerError e -> throwError e
-            ServerSuccess a -> pure a
-    else throwError
-            { title: msg
-            , body: "Probably a connection or protocol error."
-            }
+  result <- lift $ attempt affjax
+  case result of
+    Right res -> if succeeded res.status
+      then case readJSON res.response of
+             Left e -> throwError
+                          { title: "JSON decode error"
+                          , body: show e
+                          }
+             Right x -> case x of
+              ServerError e -> throwError e
+              ServerSuccess a -> pure a
+      else throwError
+              { title: msg
+              , body: "Probably a server or protocol error. Please consult the log files."
+              }
+    Left e -> throwError
+      { title: "Exception"
+      , body: show e
+      }
 
 getUnitResponse :: forall eff. String -> Affjax eff String -> Api eff Unit
 getUnitResponse msg affjax = do
-  res <- lift affjax
-  if succeeded res.status
-    then pure unit
-    else throwError
-            { title: msg
-            , body: "Probably a connection or protocol error."
-            }
+  result <- lift $ attempt affjax
+  case result of
+    Right res -> if succeeded res.status
+      then pure unit
+      else throwError
+              { title: msg
+              , body: "Probably a connection or protocol error."
+              }
+    Left e -> throwError
+      { title: "Exception"
+      , body: show e
+      }
