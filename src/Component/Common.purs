@@ -12,12 +12,11 @@ import Utils (cls)
 modal :: forall p f. String -> Array (HTML p f)
       -> Array (HTML p f) -> HTML p f
 modal title body controls =
-  H.div [ cls "modalContainer" ]
-  [ H.div [ cls "modalFade" ] []
-  , H.div [ cls "modal" ] $
+  H.div [ cls "modal-container" ]
+  [ H.div [ cls "modal" ] $
     [ H.h1_ [ H.text title ]
-    ] <> body <>
-    [ H.div [ cls "controls" ] controls
+    , H.div [ cls "modal-body" ] body
+    , H.div [ cls "modal-controls" ] controls
     ]
   ]
 
