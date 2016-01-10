@@ -7,25 +7,25 @@ import Control.Monad.Eff.Console
 
 import Control.Bind
 
-import           Data.Array hiding ((..))
-import           Data.Foldable
-import           Data.Tuple
-import           Data.Maybe
-import qualified Data.Map as M
+import Data.Array hiding ((..))
+import Data.Foldable
+import Data.Tuple
+import Data.Maybe
+import Data.Map as M
 
 import DOM.HTML.Types (HTMLElement())
 
 import Halogen
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
 import Optic.Core
 import Optic.At
 
-import qualified Handsontable       as Hot
-import qualified Handsontable.Types as Hot
-import qualified Handsontable.Hooks as Hot
+import Handsontable       as Hot
+import Handsontable.Types as Hot
+import Handsontable.Hooks as Hot
 
 import Utils (getEntropy, getIndices, cls)
 

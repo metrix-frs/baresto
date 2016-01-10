@@ -35,8 +35,8 @@ import Api.Schema.Table
 import Api.Schema.Validation
 import Api.Schema.Import
 
-import qualified Component.Spinner as Spinner
-import qualified Component.ErrorBox as ErrorBox
+import Component.Spinner as Spinner
+import Component.ErrorBox as ErrorBox
 
 apiCall :: forall eff a s f g. (MonadEff (dom :: DOM, console :: CONSOLE | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
         => Api eff a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit

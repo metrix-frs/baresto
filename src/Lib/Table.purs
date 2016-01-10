@@ -2,11 +2,11 @@ module Lib.Table where
 
 import Prelude
 
-import           Data.Either (Either (Left))
-import           Data.Maybe
-import           Data.Tuple
-import           Data.Array hiding ((..))
-import           Data.Foldable
+import Data.Either (Either (Left))
+import Data.Maybe
+import Data.Tuple
+import Data.Array hiding ((..))
+import Data.Foldable
 
 import Control.Bind
 

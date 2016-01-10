@@ -29,16 +29,16 @@ module Lib.BusinessData
 
 import Prelude
 
-import           Data.Int (fromNumber)
-import           Data.Array hiding ((..))
-import           Data.Maybe
-import           Data.Tuple
-import qualified Data.Map as M
-import           Data.Foldable
+import Data.Int (fromNumber)
+import Data.Array hiding ((..))
+import Data.Maybe
+import Data.Tuple
+import Data.Map as M
+import Data.Foldable
 
-import           Control.Apply
-import           Control.Monad.State
-import           Control.Monad.State.Class
+import Control.Apply
+import Control.Monad.State
+import Control.Monad.State.Class
 
 import Optic.At (at)
 import Optic.Core

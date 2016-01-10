@@ -2,18 +2,18 @@ module Api.Schema.Validation where
 
 import Prelude
 
-import           Data.Either
-import qualified Data.StrMap as SM
-import           Data.Maybe
-import           Data.Tuple
-import           Data.Foreign
-import           Data.Foreign.Class
-import           Data.Foreign.Keys
-import           Data.Foreign.NullOrUndefined
-import           Data.Traversable (traverse)
-import           Data.List (toList)
+import Data.Either
+import Data.StrMap as SM
+import Data.Maybe
+import Data.Tuple
+import Data.Foreign
+import Data.Foreign.Class
+import Data.Foreign.Keys
+import Data.Foreign.NullOrUndefined
+import Data.Traversable (traverse)
+import Data.List (toList)
 
-import           Types
+import Types
 
 newtype ValidationResult = ValidationResult
   { vrDpmFindings    :: SM.StrMap (Array Finding)

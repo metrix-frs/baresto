@@ -11,7 +11,7 @@ import Data.Functor.Coproduct (left)
 import Halogen
 import Halogen.Util (appendToBody)
 
-import qualified Component.App as App
+import Component.App as App
 
 import Types
 

@@ -15,6 +15,6 @@
     "gulp-closure-compiler": "^0.2.20",
     "vinyl-source-stream": "^1.1.0",
     "gulp-sass": "^2.0.3",
-    "purescript": "0.7.5-rc.4"
+    "purescript": "0.8.0-rc.1"
   }
 }

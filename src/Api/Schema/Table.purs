@@ -2,14 +2,14 @@ module Api.Schema.Table where
 
 import Prelude
 
-import           Data.Array
-import           Data.Either
-import           Data.Maybe
-import           Data.Tuple
-import           Data.Foreign
-import           Data.Foreign.Class
-import           Data.Foreign.NullOrUndefined
-import qualified Data.Map as M
+import Data.Array
+import Data.Either
+import Data.Maybe
+import Data.Tuple
+import Data.Foreign
+import Data.Foreign.Class
+import Data.Foreign.NullOrUndefined
+import Data.Map as M
 
 import Types
 

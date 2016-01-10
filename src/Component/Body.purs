@@ -7,15 +7,15 @@ import Data.Either
 import Data.Functor.Coproduct (Coproduct(), left, coproduct)
 import Data.Generic (Generic, gEq, gCompare)
 
-import           Halogen
-import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen
+import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
-import qualified Component.File as F
-import qualified Component.FileSelector as FS
-import qualified Component.FileViewer as FV
+import Component.File as F
+import Component.FileSelector as FS
+import Component.FileViewer as FV
 
 import Types
 import Utils (cls, peek')

@@ -2,16 +2,16 @@ module Api.Schema.BusinessData where
 
 import Prelude
 
-import qualified Data.Map as M
-import qualified Data.StrMap as SM
-import           Data.Maybe
-import           Data.Tuple
-import           Data.Foreign
-import           Data.Foreign.Class
-import           Data.Foreign.Keys
-import           Data.Foreign.NullOrUndefined
-import           Data.Traversable
-import           Data.List (toList)
+import Data.Map as M
+import Data.StrMap as SM
+import Data.Maybe
+import Data.Tuple
+import Data.Foreign
+import Data.Foreign.Class
+import Data.Foreign.Keys
+import Data.Foreign.NullOrUndefined
+import Data.Traversable
+import Data.List (toList)
 
 import Optic.Core
 

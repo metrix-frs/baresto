@@ -4,24 +4,22 @@ import Prelude
 
 import Control.Plus (Plus)
 
-import Control.Monad.Eff.Console (log)
-
 import Data.Array
 import Data.Either
 import Data.Maybe
 import Data.Functor.Coproduct (Coproduct())
 import Data.Generic (Generic, gEq, gCompare)
 
-import           Halogen
-import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen
+import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
-import qualified Component.Spinner as Spinner
-import qualified Component.ErrorBox as ErrorBox
-import qualified Component.Body as Body
-import           Component.Common (modal)
+import Component.Spinner as Spinner
+import Component.ErrorBox as ErrorBox
+import Component.Body as Body
+import Component.Common (modal)
 
 import Api
 import Api.Schema.Auth

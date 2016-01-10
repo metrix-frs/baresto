@@ -5,28 +5,29 @@ import Prelude
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Aff.AVar
 import Control.Monad.Except.Trans (runExceptT)
+import Control.Monad.Rec.Class (tailRecM, forever)
 
-import           Data.Either
-import           Data.Array (head, replicate)
-import           Data.Maybe
-import qualified Data.Map as M
-import           Data.Tuple
-import           Data.List (fromList)
-import           Data.Foldable
-import           Data.Functor.Coproduct (Coproduct())
-import           Data.Generic (Generic, gEq, gCompare)
+import Data.Either
+import Data.Array (head, replicate)
+import Data.Maybe
+import Data.Map as M
+import Data.Tuple
+import Data.List (fromList)
+import Data.Foldable
+import Data.Functor.Coproduct (Coproduct())
+import Data.Generic (Generic, gEq, gCompare)
 
-import           Halogen
-import           Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen
+import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
-import qualified Component.ModuleBrowser as MB
-import qualified Component.Handsontable as Hot
-import qualified Component.Validation as V
-import qualified Component.FileMenu as Menu
-import           Component.Common (toolButton)
+import Component.ModuleBrowser as MB
+import Component.Handsontable as Hot
+import Component.Validation as V
+import Component.FileMenu as Menu
+import Component.Common (toolButton)
 
 import Optic.Core
 import Optic.Monad.Setter
@@ -295,9 +296,8 @@ viewer propUpdateId = parentComponent' render eval peek
         _ -> pure unit
       pure next
 
-    -- TODO not stack-safe? Try to get a `MonadRec` instance and use `forever`
     postAgent :: AVar Update -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    postAgent queue = do
+    postAgent queue = forever $ do
       update <- liftH $ liftAff' $ takeVar queue
       withFileData \fd -> do
         let payload = UpdatePost
@@ -305,25 +305,23 @@ viewer propUpdateId = parentComponent' render eval peek
               , updatePostUpdate: update
               , updatePostValidationType: VTUpdate
               }
-        let post = do
-              result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
-              case result of
-                Left err -> do
-                  modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
-                  liftH $ liftEff' do
-                    log $ "Error: " <> err.title
-                    log $ "Details: " <> err.body
-                  post
-                Right (UpdatePostResult res) -> case res.uprUpdateDesc of
-                  UpdateDesc desc -> do
-                    modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                    , lastSaved = Just desc.updateDescCreated }
-                    query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
-                    query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
-                    query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
-        post
-        pure unit
-      postAgent queue
+        flip tailRecM unit \_ -> do
+          result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
+          case result of
+            Left err -> do
+              modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
+              liftH $ liftEff' do
+                log $ "Error: " <> err.title
+                log $ "Details: " <> err.body
+              pure $ Left unit
+            Right (UpdatePostResult res) -> case res.uprUpdateDesc of
+              UpdateDesc desc -> do
+                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
+                                                , lastSaved = Just desc.updateDescCreated }
+                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+                query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
+                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
+                pure $ Right unit
 
     processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     processEdit edit = withFileData \fd ->

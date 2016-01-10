@@ -2,10 +2,10 @@ module Component.Validation where
 
 import Prelude
 
-import qualified Data.Map as M
-import           Data.Maybe
-import           Data.Array hiding ((..))
-import           Data.Foldable
+import Data.Map as M
+import Data.Maybe
+import Data.Array hiding ((..))
+import Data.Foldable
 
 import Control.Monad.State (execState)
 
@@ -13,9 +13,9 @@ import Optic.Core
 import Optic.At
 
 import Halogen
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
 import Types
 import Utils

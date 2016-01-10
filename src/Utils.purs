@@ -17,7 +17,7 @@ module Utils
 
 import Prelude
 import Global
-import qualified Math as Math
+import Math as Math
 
 import Data.Int hiding (round)
 import Data.Either
@@ -39,10 +39,10 @@ import Control.Monad.Eff
 import Control.Bind
 import Control.Alt ((<|>))
 
-import           Halogen
-import           Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Core as H
+import Halogen
+import Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Core as H
 
 import Types
 

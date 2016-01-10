@@ -2,11 +2,11 @@ module Api.Schema.Auth where
 
 import Prelude
 
-import           Data.Maybe
-import           Data.Tuple
-import           Data.Foreign
-import           Data.Foreign.Class
-import           Data.Foreign.NullOrUndefined
+import Data.Maybe
+import Data.Tuple
+import Data.Foreign
+import Data.Foreign.Class
+import Data.Foreign.NullOrUndefined
 
 import Optic.Core
 

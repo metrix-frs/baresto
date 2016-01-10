@@ -3,6 +3,7 @@ module Api.Common where
 import Prelude
 
 import Data.Maybe
+import Data.Tuple
 import Data.Either
 import Data.Foreign
 import Data.Foreign.Class
@@ -39,7 +40,7 @@ postJson :: forall eff a b. (EncodeJson a, Respondable b) => URL -> a -> Affjax 
 postJson u c = affjax $ defaultRequest
   { method = POST
   , url = u
-  , content = Just $ toRequest (printJson (encodeJson c) :: String)
+  , content = Just $ snd $ toRequest (printJson (encodeJson c) :: String)
   , headers = [ContentType applicationJSON]
   }
 
@@ -47,7 +48,7 @@ uploadFiles :: forall eff b. (Respondable b) => URL -> FileList -> Affjax eff b
 uploadFiles u f = affjax $ defaultRequest
   { method = POST
   , url = u
-  , content = Just $ toRequest $ filesToFormData f
+  , content = Just $ snd $ toRequest $ filesToFormData f
   -- TODO: report purescript-affjax issue about `multipartFormData` and boundary
   -- , headers = [ContentType multipartFormData]
   }

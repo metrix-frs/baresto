@@ -22,8 +22,8 @@ import Data.Tuple.Nested
 
 import Utils (makeIndexed, getIndices)
 
-import qualified Handsontable       as Hot
-import qualified Handsontable.Types as Hot
+import Handsontable       as Hot
+import Handsontable.Types as Hot
 
 import Types
 import Api.Schema.Table

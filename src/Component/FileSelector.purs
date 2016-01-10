@@ -5,15 +5,15 @@ import Prelude
 import Control.Monad
 import Control.Monad.Writer
 
-import           Data.Array hiding ((..))
-import           Data.List (fromList)
-import qualified Data.Map as M
-import           Data.Maybe
-import           Data.Foldable
-import           Data.Tuple
-import           Data.List (toList)
-import           Data.Functor.Coproduct (Coproduct())
-import           Data.Generic (Generic, gEq, gCompare)
+import Data.Array hiding ((..))
+import Data.List (fromList)
+import Data.Map as M
+import Data.Maybe
+import Data.Foldable
+import Data.Tuple
+import Data.List (toList)
+import Data.Functor.Coproduct (Coproduct())
+import Data.Generic (Generic, gEq, gCompare)
 
 import Optic.Core
 import Optic.At
@@ -23,12 +23,12 @@ import Optic.Monad.Setter
 import Optic.Iso
 
 import Halogen
-import qualified Halogen.HTML.Indexed as H
-import qualified Halogen.HTML.Properties.Indexed as P
-import qualified Halogen.HTML.Events.Indexed as E
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Halogen.HTML.Events.Indexed as E
 
-import qualified Component.File as F
-import           Component.Common (modal, toolButton)
+import Component.File as F
+import Component.Common (modal, toolButton)
 
 import Api
 import Api.Schema
