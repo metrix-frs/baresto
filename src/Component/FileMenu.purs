@@ -165,7 +165,18 @@ renderMenu st = H.div [ cls "menu-content" ] $
             , P.target "_blank"
             ]
             [ H.span [ cls "octicon octicon-file-code" ] []
-            , H.text "Export XBRL" ]
+            , H.text "Export XBRL"
+            ]
+          ]
+        , H.li
+          [ cls "href" ]
+          [ H.a
+            [ P.href $ "/api/v0.1/xbrl/createExtraNet/" <> show st.lastUpdateId
+            , P.target "_blank"
+            ]
+            [ H.span [ cls "octicon octicon-file-code" ] []
+            , H.text "Export Zipped XBRL for ExtraNet"
+            ]
           ]
         , H.li
           [ cls "href" ]
