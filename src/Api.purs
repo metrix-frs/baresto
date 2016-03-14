@@ -60,8 +60,10 @@ apiCallParent call onSuccess = do
 
 --
 
+foreign import apiUrl :: String
+
 prefix :: String
-prefix = "/api/v0.1/"
+prefix = apiUrl <> "/api/v0.1/"
 
 -- Api.Table
 

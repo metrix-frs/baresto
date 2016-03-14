@@ -1,15 +1,14 @@
-var gulp            = require("gulp");
-var purescript      = require("gulp-purescript");
-var sass            = require("gulp-sass");
-var browserify      = require("browserify");
-var vinyl           = require("vinyl-source-stream")
-var closureCompiler = require("gulp-closure-compiler");
+var gulp       = require("gulp");
+var purescript = require("gulp-purescript");
+var sass       = require("gulp-sass");
+var browserify = require("browserify");
+var envify     = require("envify");
+var vinyl      = require("vinyl-source-stream")
 
 // Purescript
 
 var sources = [
   "src/**/*.purs",
-  "test/**/*.purs",
   "bower_components/purescript-*/src/**/*.purs",
 ];
 
@@ -42,6 +41,7 @@ gulp.task("bundle", ["make"], function () {
 
 gulp.task("browserify", ["bundle"], function () {
   return browserify("dist/main.js")
+    .transform(envify)
     .bundle()
     .pipe(vinyl("main.js"))
     .pipe(gulp.dest("public/js"));
@@ -51,24 +51,10 @@ gulp.task("browserify", ["bundle"], function () {
 
 gulp.task("sass", function() {
   return gulp.src("sass/**/*.scss")
-      .pipe(sass({
-        errLogToConsole: true
-      }))
-      .pipe(gulp.dest("public/css"));
-});
-
-// Closure compiler
-
-gulp.task("closureCompiler", ["browserify"], function() {
-  return gulp.src("public/js/main.js")
-    .pipe(closureCompiler({
-      compilerPath: "bower_components/closure-compiler/compiler.jar",
-      fileName: "public/js/main.min.js",
-      compilerFlags: {
-        language_in: "ECMASCRIPT5_STRICT"
-      },
+    .pipe(sass({
+      errLogToConsole: true
     }))
-    .pipe(gulp.dest("public/js"));
+    .pipe(gulp.dest("public/css"));
 });
 
 // Handsontable
@@ -84,4 +70,4 @@ gulp.task("handsontable", function() {
 
 gulp.task("default", ["browserify", "sass", "handsontable"]);
 
-gulp.task("prod", ["default", "closureCompiler"])
+gulp.task("prod", ["default"])
