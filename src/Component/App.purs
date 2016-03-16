@@ -144,7 +144,6 @@ app = parentComponent render eval
           then
             [ modal "About"
               [ H.p_ [ H.b_ [ H.text $ "Metrix Baresto " <> versionStr ] ]
-              , H.p_ [ H.text "This is an early alpha release, bugs may occur." ]
               , H.p_ [ H.text "For feedback, contact us at "
                      , H.a [ P.href "mailto:info@metrix-frs.de" ]
                            [ H.text "info@metrix-frs.de" ]
