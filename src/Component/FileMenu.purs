@@ -183,7 +183,7 @@ renderMenu st = H.div [ cls "menu-content" ] $
         , H.li
           [ cls "href" ]
           [ H.a
-            [ P.href $ "/api/v0.1/csv/create/" <> show st.lastUpdateId
+            [ P.href $ apiUrl <> "/api/v0.1/csv/create/" <> show st.lastUpdateId
             , P.target "_blank"
             ]
             [ H.span [ cls "octicon octicon-file-symlink-file" ] []
