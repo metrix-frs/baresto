@@ -156,11 +156,6 @@ renderMenu st = H.div [ cls "menu-content" ] $
           , H.text "Version History"
           ]
         , H.li
-          [ E.onClick $ E.input_ GoImportCsv ]
-          [ H.span [ cls "octicon octicon-repo-push" ] []
-          , H.text "Import CSV"
-          ]
-        , H.li
           [ cls "href" ]
           [ H.a
             [ P.href $ apiUrl <> "/api/v0.1/xbrl/create/" <> show st.lastUpdateId
@@ -179,6 +174,11 @@ renderMenu st = H.div [ cls "menu-content" ] $
             [ H.span [ cls "octicon octicon-file-code" ] []
             , H.text "Export Zipped XBRL for ExtraNet"
             ]
+          ]
+        , H.li
+          [ E.onClick $ E.input_ GoImportCsv ]
+          [ H.span [ cls "octicon octicon-repo-push" ] []
+          , H.text "Import CSV"
           ]
         , H.li
           [ cls "href" ]

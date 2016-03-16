@@ -328,8 +328,8 @@ viewer propUpdateId = parentComponent' render eval peek
       case editToUpdate edit fd.businessData of
         Nothing -> pure unit
         Just update -> do
-          liftH $ liftAff' $ putVar fd.queue update
           modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
+          liftH $ liftAff' $ putVar fd.queue update
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     rebuildHot = do
