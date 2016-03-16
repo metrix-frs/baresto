@@ -17,6 +17,8 @@ import Api.Schema
 import Api.Schema.Import
 import Api.Schema.BusinessData
 
+import Api (apiUrl)
+
 import Component.Common
 
 import Types
@@ -161,7 +163,7 @@ renderMenu st = H.div [ cls "menu-content" ] $
         , H.li
           [ cls "href" ]
           [ H.a
-            [ P.href $ "/api/v0.1/xbrl/create/" <> show st.lastUpdateId
+            [ P.href $ apiUrl <> "/api/v0.1/xbrl/create/" <> show st.lastUpdateId
             , P.target "_blank"
             ]
             [ H.span [ cls "octicon octicon-file-code" ] []
@@ -171,7 +173,7 @@ renderMenu st = H.div [ cls "menu-content" ] $
         , H.li
           [ cls "href" ]
           [ H.a
-            [ P.href $ "/api/v0.1/xbrl/createExtraNet/" <> show st.lastUpdateId
+            [ P.href $ apiUrl <> "/api/v0.1/xbrl/createExtraNet/" <> show st.lastUpdateId
             , P.target "_blank"
             ]
             [ H.span [ cls "octicon octicon-file-code" ] []
