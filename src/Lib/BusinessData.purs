@@ -16,6 +16,7 @@ module Lib.BusinessData
 , editToUpdate
 , applyUpdate
 , doesSheetExist
+, getMaxSheet
 , sheetToZLocation
 , gridHeight
 , getCellTable
@@ -213,6 +214,14 @@ doesSheetExist (S s) (Table tbl) bd =
     ZAxisSubset axisId _ _ -> isJust $ (getSubsetZMembers axisId bd) !! s
     ZAxisClosed _ ords     -> isJust $ ords !! s
     ZAxisSingleton         -> s == 0
+
+getMaxSheet :: Table -> BusinessData -> S
+getMaxSheet (Table tbl) bd = S $
+  case tbl.tableZAxis of
+    ZAxisCustom axisId _   -> length (getCustomZMembers axisId bd) - 1
+    ZAxisSubset axisId _ _ -> length (getSubsetZMembers axisId bd) - 1
+    ZAxisClosed _ ords     -> length ords - 1
+    ZAxisSingleton         -> 0
 
 sheetToZLocation :: S -> Table -> BusinessData -> Maybe ZLocation
 sheetToZLocation (S s) (Table tbl) bd = case tbl.tableZAxis of

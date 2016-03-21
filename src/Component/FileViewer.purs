@@ -276,6 +276,7 @@ viewer propUpdateId = parentComponent' render eval peek
       withTable \(Table tbl) -> case tbl.tableZAxis of
         ZAxisCustom axId _ -> do
           processEdit (DeleteCustomZMember axId index)
+          setSelectedSheetMaxNumberSheets
           rebuildHot
         _ -> pure unit
       pure next
@@ -292,6 +293,7 @@ viewer propUpdateId = parentComponent' render eval peek
       withTable \(Table tbl) -> case tbl.tableZAxis of
         ZAxisSubset axId _ _ -> do
           processEdit (DeselectSubsetZMember axId smId)
+          setSelectedSheetMaxNumberSheets
           rebuildHot
         _ -> pure unit
       pure next
@@ -322,6 +324,16 @@ viewer propUpdateId = parentComponent' render eval peek
                 query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
                 query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
                 pure $ Right unit
+
+    setSelectedSheetMaxNumberSheets :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+    setSelectedSheetMaxNumberSheets = withFileData $ \fd -> do
+      mTableData <- gets _.tableData
+      case mTableData of
+        Nothing -> pure unit
+        Just td -> do
+          let minS (S a) (S b) = S $ minOrd a b
+              newS = minS (getMaxSheet td.table fd.businessData) (td.selectedSheet)
+          modify $ _tableData .. _Just %~ _{ selectedSheet = newS }
 
     processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     processEdit edit = withFileData \fd ->
