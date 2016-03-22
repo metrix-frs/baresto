@@ -115,6 +115,7 @@ newtype UpdateDesc = UpdateDesc
   , updateDescCreated  :: UTCTime
   , updateDescAuthor   :: String
   , updateDescTags     :: Array TagDesc
+  , updateDescEntries  :: Array UpdateEntry
   }
 
 instance isForeignUpdateDesc :: IsForeign UpdateDesc where
@@ -123,12 +124,52 @@ instance isForeignUpdateDesc :: IsForeign UpdateDesc where
             , updateDescCreated: _
             , updateDescAuthor: _
             , updateDescTags: _
+            , updateDescEntries: _
             }
       <$> readProp "updateId" json
       <*> readProp "created" json
       <*> readProp "author" json
       <*> readProp "tags" json
+      <*> readProp "entries" json
     pure $ UpdateDesc desc
+
+newtype UpdateEntry = UpdateEntry
+  { updateEntryLoc :: UpdateEntryHuman
+  , updateEntryOld :: Maybe String
+  , updateEntryNew :: Maybe String
+  }
+
+instance isForeignUpdateEntry :: IsForeign UpdateEntry where
+  read json = do
+    entry <- { updateEntryLoc: _
+             , updateEntryOld: _
+             , updateEntryNew: _
+             }
+      <$> readProp "location" json
+      <*> (runNullOrUndefined <$> readProp "old" json)
+      <*> (runNullOrUndefined <$> readProp "new" json)
+    pure $ UpdateEntry entry
+
+data UpdateEntryHuman
+  = HumanHeaderFact String               -- label
+  | HumanFact       String HoleCoords    -- table coords
+  | HumanSubsetZ    String String        -- table member
+  | HumanCustomZ    String               -- table
+  | HumanCustomRow  String String String -- table member sheet
+
+instance isForeignUpdateEntryHuman :: IsForeign UpdateEntryHuman where
+  read json = do
+    typ <- readProp "type" json
+    case typ of
+      "header"    -> HumanHeaderFact <$> readProp "label" json
+      "fact"      -> HumanFact <$> readProp "table" json
+                               <*> readProp "coords" json
+      "subsetZ"   -> HumanSubsetZ <$> readProp "table" json
+                                  <*> readProp "member" json
+      "customZ"   -> HumanCustomZ <$> readProp "table" json
+      "customRow" -> HumanCustomRow <$> readProp "table" json
+                                    <*> readProp "member" json
+                                    <*> readProp "sheet" json
 
 newtype TagDesc = TagDesc
   { tagDescTagId    :: TagId

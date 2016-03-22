@@ -1,5 +1,6 @@
 module Component.Validation.Finding
   ( renderFinding
+  , renderHoleCoords
   ) where
 
 import Prelude
@@ -156,34 +157,36 @@ renderHole (Hole h) = H.div [ cls "hole" ]
     ]
   , H.br_
   , H.span [ cls "holecoords" ]
-    case h.holeCoords of
-      HoleCoords x y z ->
-        let xStr = case x of
-              HCX i ord              -> ord
-            yStr = case y of
-              HCYClosed i ord        -> ord
-              HCYCustom cmId rowKeys -> take 6 cmId
-            zStr = case z of
-              HCZSingleton           -> Nothing
-              HCZClosed i ord        -> Just ord
-              HCZCustom cmId cm      -> Just $ take 6 cmId
-              HCZSubset smId sm      -> Just $ show smId
-        in  [ H.text "("
-            , H.b_ [ H.text "r" ]
-            , H.text yStr
-            , H.text ", "
-            , H.b_ [ H.text "c" ]
-            , H.text xStr
-            ] <> (
-              case zStr of
-                Just z ->
-                  [ H.text ", "
-                  , H.b_ [ H.text "s" ]
-                  , H.text z
-                  ]
-                Nothing ->
-                  []
-            ) <>
-            [ H.text ")"
-            ]
+    [ renderHoleCoords h.holeCoords ]
   ]
+
+renderHoleCoords :: forall f. HoleCoords -> ComponentHTML f
+renderHoleCoords (HoleCoords x y z) = H.span_
+  let xStr = case x of
+        HCX i ord              -> ord
+      yStr = case y of
+        HCYClosed i ord        -> ord
+        HCYCustom cmId rowKeys -> take 8 cmId
+      zStr = case z of
+        HCZSingleton           -> Nothing
+        HCZClosed i ord        -> Just ord
+        HCZCustom cmId cm      -> Just $ take 8 cmId
+        HCZSubset smId sm      -> Just $ show smId
+  in  [ H.text "("
+      , H.b_ [ H.text "r" ]
+      , H.text yStr
+      , H.text ", "
+      , H.b_ [ H.text "c" ]
+      , H.text xStr
+      ] <> (
+        case zStr of
+          Just z ->
+            [ H.text ", "
+            , H.b_ [ H.text "s" ]
+            , H.text z
+            ]
+          Nothing ->
+            []
+      ) <>
+      [ H.text ")"
+      ]

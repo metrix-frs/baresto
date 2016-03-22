@@ -18,47 +18,90 @@
     margin: 0px;
   }
 
-  ul {
+  ul.menu {
     list-style: none;
     margin: 0px;
     padding: 0px;
     background-color: $metrix-blue;
-  }
 
-  li {
-    cursor: pointer;
-    padding: 8px 15px 8px 15px;
+    li {
+      cursor: pointer;
+      padding: 8px 15px 8px 15px;
 
-    &:hover {
-      background-color: $metrix-darkblue;
+      &:hover {
+        background-color: $metrix-darkblue;
+      }
+
+      .octicon {
+        margin-right: 10px;
+      }
     }
 
-    .octicon {
-      margin-right: 10px;
+    li.href {
+      padding: 0px;
+
+      a {
+        padding: 8px 15px 8px 15px;
+        text-decoration: none;
+        color: $metrix-darkgray;
+        display: block;
+      }
     }
   }
+
 
   .entry-content {
     padding: 5px;
     max-height: 700px;
     overflow-y: auto;
     max-height: 600px;
-  }
 
-  table {
-
-    margin-top: 5px;
-
-    background-color: white;
-    border-collapse: collapse;
-
-    .label {
+    ul.updates {
+      background-color: white;
+      margin-top: 5px;
+      margin-bottom: 0px;
+      padding: 0px;
+      list-style: none;
       cursor: pointer;
-      color: $metrix-darkgray;
-      &:hover {
-        color: black;
+      li {
+        &:hover {
+          background-color: #E5E5E5;
+        }
+        padding: 3px;
+        position: relative;
+        border-top: 1px solid #D0D0D0;
       }
     }
+
+    ul.entries {
+      padding-left: 23px;
+      li {
+        padding: 2px;
+        position: relative;
+        border: none;
+        font-size: 13px;
+
+        .location {
+          margin-left: -5px;
+        }
+
+        .action {
+          float: right;
+          color: #999;
+        }
+      }
+    }
+
+    .label {
+      color: $metrix-darkgray;
+    }
+
+    .tags {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+    }
+
     .tag {
       background-color: $metrix-darkblue;
       padding: 2px 4px 2px 4px;
@@ -68,18 +111,6 @@
       .octicon {
         margin-right: 3px;
       }
-    }
-
-  }
-
-  li.href {
-    padding: 0px;
-
-    a {
-      padding: 8px 15px 8px 15px;
-      text-decoration: none;
-      color: $metrix-darkgray;
-      display: block;
     }
   }
 

@@ -4,6 +4,8 @@ import Prelude
 
 import Data.Maybe
 import Data.Array (snoc)
+import Data.Tuple
+import Data.String (take)
 
 import Optic.Core
 
@@ -20,6 +22,8 @@ import Api.Schema.BusinessData
 import Api (apiUrl)
 
 import Component.Common
+
+import Component.Validation.Finding (renderHoleCoords)
 
 import Types
 import Utils
@@ -149,7 +153,8 @@ renderMenu :: Render State Query
 renderMenu st = H.div [ cls "menu-content" ] $
   case st.location of
     LocationHome ->
-      [ H.ul_
+      [ H.ul
+        [ cls "menu" ]
         [ H.li
           [ E.onClick $ E.input_ GoPast ]
           [ H.span [ cls "octicon octicon-git-commit" ] []
@@ -194,7 +199,8 @@ renderMenu st = H.div [ cls "menu-content" ] $
       ]
     LocationImportCsv -> case st.csvImportResponse of
       Nothing ->
-        [ H.ul_
+        [ H.ul
+          [ cls "menu" ]
           [ H.li
             [ E.onClick $ E.input_ GoHome ]
             [ H.span [ cls "octicon octicon-arrow-left" ] []
@@ -228,7 +234,8 @@ renderMenu st = H.div [ cls "menu-content" ] $
           ]
         ]
     LocationPast past ->
-      [ H.ul_
+      [ H.ul
+        [ cls "menu" ]
           [ H.li
             [ E.onClick $ E.input_ GoHome ]
             [ H.span [ cls "octicon octicon-arrow-left" ] []
@@ -246,7 +253,7 @@ renderMenu st = H.div [ cls "menu-content" ] $
           [ cls "full"
           , E.onClick $ E.input_ NewTagCreate ]
           [ H.text "Create Tag" ]
-        , H.table_ $ renderUpdate <$> past
+        , H.ul [ cls "updates" ] $ renderUpdate <$> past
         ]
       ]
 
@@ -260,15 +267,19 @@ renderCsvWarning (Warning w) = H.li_
   ]
 
 renderUpdate :: UpdateDesc -> ComponentHTML Query
-renderUpdate (UpdateDesc upd) = H.tr_ $
-    [ H.td_
-      [ H.span
-        [ cls "label"
-        , E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId)
-        ]
-        [ H.text $ show upd.updateDescCreated ]
+renderUpdate (UpdateDesc upd) = H.li
+    [ E.onClick $ E.input_ (OpenUpdate upd.updateDescUpdateId)
+    ]
+    [ H.span
+      [ cls "label" ]
+      [ H.b_ [ H.text $ show upd.updateDescCreated ]
+      , H.text " by "
+      , H.b_ [ H.text $ upd.updateDescAuthor ]
       ]
-    , H.td_ (renderTag <$> upd.updateDescTags)
+    , H.div
+      [ cls "tags"
+      ] (renderTag <$> upd.updateDescTags)
+    , H.ul [ cls "entries" ] $ renderUpdateEntry <$> upd.updateDescEntries
     ]
   where
     renderTag (TagDesc tag) =
@@ -276,3 +287,38 @@ renderUpdate (UpdateDesc upd) = H.tr_ $
       [ H.span [ cls "octicon octicon-tag" ] []
       , H.text tag.tagDescTagName
       ]
+    renderUpdateEntry e@(UpdateEntry entry) =
+      case entry.updateEntryLoc of
+        HumanHeaderFact label -> entryLayout
+          [ H.text $ "Header, " <> label ]
+          [ renderChange e ]
+        HumanFact table coords -> entryLayout
+          [ H.text $ table <> ", "
+          , renderHoleCoords coords
+          ]
+          [ renderChange e ]
+        HumanSubsetZ table member -> entryLayout
+          [ H.text $ table <> ", z axis member '" <> member <> "'" ]
+          [ renderAddDelete e "selected" "deselected" ]
+        HumanCustomZ table -> entryLayout
+          [ H.text $ table <> ", z axis member" ]
+          [ renderChange e ]
+        HumanCustomRow table member sheet -> entryLayout
+          [ H.text $ table <> ", row '" <> take 8 member <> "'" <> (if sheet /= "" then " on sheet '" <> take 8 sheet <> "'" else "") ]
+          [ renderAddDelete e "added" "deleted" ]
+    entryLayout location action = H.li_
+      [ H.div [ cls "location" ] $
+        [ H.div [ cls "action" ] action
+        ] <> location
+      ]
+    renderChange (UpdateEntry entry) = H.text $
+      case Tuple entry.updateEntryOld entry.updateEntryNew of
+        Tuple Nothing (Just n)  -> "added '" <> n <> "'"
+        Tuple (Just o) Nothing  -> "deleted '" <> o <> "'"
+        Tuple (Just o) (Just n) -> "'" <> o <> "' > '" <> n <> "'"
+        _                       -> ""
+    renderAddDelete (UpdateEntry entry) add del = H.text $
+      case Tuple entry.updateEntryOld entry.updateEntryNew of
+        Tuple Nothing (Just _)  -> add
+        Tuple (Just _) Nothing  -> del
+        _                       -> ""
