@@ -216,7 +216,7 @@ doesSheetExist (S s) (Table tbl) bd =
     ZAxisSingleton         -> s == 0
 
 getMaxSheet :: Table -> BusinessData -> S
-getMaxSheet (Table tbl) bd = S $
+getMaxSheet (Table tbl) bd = S $ maxInt 0 $
   case tbl.tableZAxis of
     ZAxisCustom axisId _   -> length (getCustomZMembers axisId bd) - 1
     ZAxisSubset axisId _ _ -> length (getSubsetZMembers axisId bd) - 1
