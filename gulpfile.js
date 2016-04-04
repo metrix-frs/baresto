@@ -4,6 +4,8 @@ var sass       = require("gulp-sass");
 var browserify = require("browserify");
 var envify     = require("envify");
 var vinyl      = require("vinyl-source-stream")
+var uglify     = require("gulp-uglify");
+var cleanCSS   = require('gulp-clean-css');
 
 // Purescript
 
@@ -70,4 +72,13 @@ gulp.task("handsontable", function() {
 
 gulp.task("default", ["browserify", "sass", "handsontable"]);
 
-gulp.task("prod", ["default"])
+gulp.task("prod", ["default"], function () {
+  gulp.src("public")
+    .pipe(gulp.dest("public-prod"));
+  gulp.src("public/css/main.css")
+    .pipe(cleanCSS())
+    .pipe(gulp.dest("public-prod/css/"));
+  return gulp.src("public/js/main.js")
+    .pipe(uglify())
+    .pipe(gulp.dest("public-prod/js/"));
+});
