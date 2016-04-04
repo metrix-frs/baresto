@@ -12,8 +12,10 @@
     "browserify": "^13.0.0",
     "envify": "^3.4.0",
     "gulp": "^3.9.0",
+    "gulp-clean-css": "^2.0.4",
     "gulp-purescript": "^0.8.0",
     "gulp-sass": "^2.2.0",
+    "gulp-uglify": "^1.5.3",
     "purescript": "0.8.2",
     "vinyl-source-stream": "^1.1.0"
   }

@@ -6,6 +6,7 @@
 /coverage/
 public/js/*.js
 public/css/*.css
+public-prod/
 .psci_modules
 .psci
 *.tix
