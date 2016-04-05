@@ -73,12 +73,10 @@ gulp.task("handsontable", function() {
 gulp.task("default", ["browserify", "sass", "handsontable"]);
 
 gulp.task("prod", ["default"], function () {
-  gulp.src("public")
-    .pipe(gulp.dest("public-prod"));
   gulp.src("public/css/main.css")
     .pipe(cleanCSS())
-    .pipe(gulp.dest("public-prod/css/"));
+    .pipe(gulp.dest("public/css/"));
   return gulp.src("public/js/main.js")
     .pipe(uglify())
-    .pipe(gulp.dest("public-prod/js/"));
+    .pipe(gulp.dest("public/js/"));
 });
