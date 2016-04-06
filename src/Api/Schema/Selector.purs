@@ -62,9 +62,10 @@ instance isForeignTaxonomy :: IsForeign Taxonomy where
     pure $ Taxonomy tax
 
 newtype ConceptualModule = ConceptualModule
-  { conceptId :: ConceptualModuleId
-  , conceptLabel :: String
-  , moduleEntries :: Array ModuleEntry
+  { conceptId      :: ConceptualModuleId
+  , conceptLabel   :: String
+  , conceptAllowed :: Boolean
+  , moduleEntries  :: Array ModuleEntry
   }
 
 _ConceptualModule :: LensP ConceptualModule _
@@ -76,14 +77,22 @@ _conceptId = _ConceptualModule .. lens _.conceptId _{conceptId = _ }
 _conceptLabel :: LensP ConceptualModule String
 _conceptLabel = _ConceptualModule .. lens _.conceptLabel _{ conceptLabel = _ }
 
+_conceptAllowed :: LensP ConceptualModule Boolean
+_conceptAllowed = _ConceptualModule .. lens _.conceptAllowed _{ conceptAllowed = _ }
+
 _moduleEntries :: LensP ConceptualModule (Array ModuleEntry)
 _moduleEntries = _ConceptualModule .. lens _.moduleEntries _{ moduleEntries = _ }
 
 instance isForeignConceptualModule :: IsForeign ConceptualModule where
   read json = do
-    con <- { conceptId: _, conceptLabel: _, moduleEntries: _ }
+    con <- { conceptId: _
+           , conceptLabel: _
+           , conceptAllowed: _
+           , moduleEntries: _
+           }
       <$> readProp "id"      json
       <*> readProp "label"   json
+      <*> readProp "allowed" json
       <*> readProp "modules" json
     pure $ ConceptualModule con
 

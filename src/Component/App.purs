@@ -9,6 +9,7 @@ import Data.Either
 import Data.Maybe
 import Data.Functor.Coproduct (Coproduct())
 import Data.Generic (Generic, gEq, gCompare)
+import Data.Foreign.Null (runNull)
 
 import Halogen
 import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
@@ -22,6 +23,7 @@ import Component.Body as Body
 import Component.Common (modal)
 
 import Api
+import Api.Schema (runJsonEither)
 import Api.Schema.Auth
 
 import Utils
@@ -66,7 +68,7 @@ cpBody = cpR :> cpR
 
 data AuthStatus
   = CheckingLicense
-  | Authenticated String
+  | Authenticated AuthInfo
   | LoggedOut
 
 type State =
@@ -112,12 +114,24 @@ app = parentComponent render eval
             Authenticated _ -> H.div [ cls "status-baresto" ] []
             _               -> H.div [ cls "status-metrix" ] []
         , case st.authStatus of
-            Authenticated cId -> H.div [ cls "license" ]
-              [ H.text $ "Using license for customer: " <> cId ]
+            Authenticated (AuthInfo authInfo) ->
+              let sep = H.text " -- " in
+              H.div
+              [ cls "license" ]
+              [ H.text $ fromMaybe "" authInfo.authContractInvalidMsg
+              , sep
+              , H.text $ if authInfo.authContractIsTrial then "test license" else "full license"
+              , sep
+              , H.text $ "from " <> show authInfo.authContractBegin
+              , sep
+              , H.text $ "to" <> show authInfo.authContractEnd
+              , sep
+              , H.text $ "user name: " <> authInfo.authUserName
+              ]
             _ -> H.div_ []
         , H.div [ cls "menu" ]
           [ case st.authStatus of
-              Authenticated cId ->
+              Authenticated _ ->
                 H.button
                 [ E.onClick (E.input_ $ LogOut) ]
                 [ H.span [ cls "octicon octicon-sign-out" ] []
@@ -164,20 +178,21 @@ app = parentComponent render eval
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Boot next) = do
-      apiCallParent loginStatus \(LoginStatus st) -> case st of
-        Just customerId ->
-          modify _{ authStatus = Authenticated customerId }
+      apiCallParent loginStatus \status -> case runNull status of
+        Just authInfo ->
+          modify _{ authStatus = Authenticated authInfo }
         Nothing ->
           modify _{ authStatus = LoggedOut }
       pure next
 
     eval (Authenticate next) = do
       st <- get
-      apiCallParent (login st.customerId st.licenseKey) \(LoginResponse res) ->
-        if res.lrSuccess
-          then modify _{ authStatus = Authenticated st.customerId
-                       , authError = Nothing }
-          else modify _{ authError = Just res.lrMessage }
+      apiCallParent (login st.customerId st.licenseKey) \res -> case runJsonEither res of
+        Right authInfo ->
+          modify _{ authStatus = Authenticated authInfo
+                  , authError = Nothing }
+        Left errMsg ->
+          modify _{ authError = Just errMsg }
       pure next
 
     eval (SetCustomerId customerId next) = do

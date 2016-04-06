@@ -8,23 +8,27 @@ import Data.Foreign
 import Data.Foreign.Class
 import Data.Foreign.NullOrUndefined
 
-import Optic.Core
-
 import Types
 
-
-newtype LoginResponse = LoginResponse
-  { lrSuccess :: Boolean
-  , lrMessage :: String
+newtype AuthInfo = AuthInfo
+  { authUserName           :: String
+  , authContractBegin      :: UTCTime
+  , authContractEnd        :: UTCTime
+  , authContractIsTrial    :: Boolean
+  , authContractInvalidMsg :: Maybe String
   }
 
-instance isForeignLoginResponse :: IsForeign LoginResponse where
+instance isForeignAuthInfo :: IsForeign AuthInfo where
   read json = do
-    suc <- readProp "success" json
-    msg <- readProp "msg" json
-    pure $ LoginResponse { lrSuccess: suc, lrMessage: msg }
-
-newtype LoginStatus = LoginStatus (Maybe String)
-
-instance isForeignLoginStatus :: IsForeign LoginStatus where
-  read json = LoginStatus <<< runNullOrUndefined <$> readProp "customerId" json
+    status <- { authUserName: _
+              , authContractBegin: _
+              , authContractEnd: _
+              , authContractIsTrial: _
+              , authContractInvalidMsg: _
+              }
+      <$> readProp "userName"      json
+      <*> readProp "contractBegin" json
+      <*> readProp "contractEnd"   json
+      <*> readProp "isTrial"       json
+      <*> (runNullOrUndefined <$> readProp "invalidMsg" json)
+    pure $ AuthInfo status

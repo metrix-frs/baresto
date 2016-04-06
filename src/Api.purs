@@ -12,6 +12,8 @@ import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except.Trans
 
 import Data.Either
+import Data.Maybe
+import Data.Foreign.Null
 
 import DOM (DOM())
 import DOM.File.Types (FileList())
@@ -167,7 +169,7 @@ validate updateId = getJsonResponse "Could not validate." $
 
 -- Api.Auth
 
-login :: forall eff. String -> String -> Api eff LoginResponse
+login :: forall eff. String -> String -> Api eff (JsonEither String AuthInfo)
 login customerId pw = getJsonResponse "Could not login." $
   get $ prefix <> "auth/login/?customerId=" <> customerId <> "&password=" <> pw
 
@@ -175,6 +177,6 @@ logout :: forall eff. Api eff Unit
 logout = getUnitResponse "Error logging out." $
   get $ prefix <> "auth/logout"
 
-loginStatus :: forall eff. Api eff LoginStatus
+loginStatus :: forall eff. Api eff (Null AuthInfo)
 loginStatus = getJsonResponse "Could not get login status." $
   get $ prefix <> "auth/status"

@@ -351,21 +351,32 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           ]
 
     renderConceptualModule :: TaxonomyId -> ConceptualModule -> Array ComponentHTMLP
-    renderConceptualModule tId (ConceptualModule c) =
-        [ H.li
-          [ cls $ "conceptualModule" <> if selected then " selected" else "" ]
-          [ H.span
-            [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
-            , E.onClick $ E.input_ (ToggleConceptualModuleOpen tId c.conceptId)
-            ] []
-          , H.span
-            [ cls "label"
-            , E.onClick $ E.input_ (ClickConceptualModule tId c.conceptId)
+    renderConceptualModule tId (ConceptualModule c) = if c.conceptAllowed
+        then (
+          [ H.li
+            [ cls $ "conceptualModule" <> if selected then " selected" else "" ]
+            [ H.span
+              [ cls $ "octicon octicon-chevron-" <> if open then "down" else "right"
+              , E.onClick $ E.input_ (ToggleConceptualModuleOpen tId c.conceptId)
+              ] []
+            , H.span
+              [ cls "label"
+              , E.onClick $ E.input_ (ClickConceptualModule tId c.conceptId)
+              ]
+              [ H.text c.conceptLabel
+              ]
             ]
-            [ H.text c.conceptLabel
+          ] <> if open then renderModuleEntry <$> c.moduleEntries else []
+        )
+        else (
+          [ H.li
+            [ cls "conceptualModule disabled" ]
+            [ H.span
+              [ cls "label" ]
+              [ H.text c.conceptLabel ]
             ]
           ]
-        ] <> if open then renderModuleEntry <$> c.moduleEntries else []
+        )
       where
         open = fromMaybe true $ M.lookup (Tuple tId c.conceptId) st.openConceptualModule
         selected = case st.selectedNode of
