@@ -86,7 +86,10 @@ gulp.task("watch", function () {
     gulp.src("sass/**/*.scss")
       .pipe(sass({
         errLogToConsole: true
-      }))
+      })).on("error", function (err) {
+        console.log(err);
+        this.emit("end");
+      })
       .pipe(gulp.dest("public/css"))
       .pipe(browserSync.stream());
   });

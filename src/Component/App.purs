@@ -8,6 +8,7 @@ import Data.Array
 import Data.Either
 import Data.Maybe
 import Data.Functor.Coproduct (Coproduct())
+import Data.Foldable (intercalate)
 import Data.Generic (Generic, gEq, gCompare)
 import Data.Foreign.Null (runNull)
 
@@ -115,19 +116,20 @@ app = parentComponent render eval
             _               -> H.div [ cls "status-metrix" ] []
         , case st.authStatus of
             Authenticated (AuthInfo authInfo) ->
-              let sep = H.text " -- " in
+              let sep = [ H.span [ cls "sep" ] [] ] in
               H.div
-              [ cls "license" ]
-              [ H.text $ fromMaybe "" authInfo.authContractInvalidMsg
-              , sep
-              , H.text $ if authInfo.authContractIsTrial then "test license" else "full license"
-              , sep
-              , H.text $ "from " <> show authInfo.authContractBegin
-              , sep
-              , H.text $ "to" <> show authInfo.authContractEnd
-              , sep
-              , H.text $ "user name: " <> authInfo.authUserName
-              ]
+              [ cls "license" ] $ intercalate sep $
+                ( case authInfo.authContractInvalidMsg of
+                    Nothing -> []
+                    Just msg -> [ [ H.span [ cls "warn" ] [ H.text msg ] ] ]
+                ) <>
+                ( if authInfo.authContractIsTrial
+                    then [ [ H.span [ cls "warn" ] [ H.text "Test licence" ] ] ]
+                    else []
+                ) <>
+                [ [ H.text $ "Licence valid: " <> authInfo.authContractBegin <> " to " <> authInfo.authContractEnd ]
+                , [ H.text $ "User: " <> authInfo.authUserName ]
+                ]
             _ -> H.div_ []
         , H.div [ cls "menu" ]
           [ case st.authStatus of

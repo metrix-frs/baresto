@@ -33,6 +33,16 @@ ul.frameworks {
     background-color: $metrix-lightblue;
   }
 
+  li.conceptualModule.disabled {
+    .label {
+      cursor: default;
+      color: #999;
+      &:hover {
+        color: #999;
+      }
+    }
+  }
+
   li.module {
     padding-left: $left + 2 * $indent;
   }

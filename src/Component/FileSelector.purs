@@ -372,7 +372,9 @@ renderFrameworks st = H.div [ cls "panel-frameworklist" ]
           [ H.li
             [ cls "conceptualModule disabled" ]
             [ H.span
-              [ cls "label" ]
+              [ cls "label"
+              , P.title "Not available in the current licence."
+              ]
               [ H.text c.conceptLabel ]
             ]
           ]

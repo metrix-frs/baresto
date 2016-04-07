@@ -12,8 +12,19 @@
   }
   .license {
     position: absolute;
-    right: 5px;
-    top: 0px;
+    right: 155px;
+    bottom: 5px;
+    color: #999;
+    .sep::after {
+      color: $metrix-darkgray;
+      content: "\2022";
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .warn {
+      color: $warn;
+      font-weight: bold;
+    }
   }
   .menu {
     position: absolute;

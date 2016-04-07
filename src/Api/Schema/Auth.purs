@@ -12,8 +12,8 @@ import Types
 
 newtype AuthInfo = AuthInfo
   { authUserName           :: String
-  , authContractBegin      :: UTCTime
-  , authContractEnd        :: UTCTime
+  , authContractBegin      :: String
+  , authContractEnd        :: String
   , authContractIsTrial    :: Boolean
   , authContractInvalidMsg :: Maybe String
   }
