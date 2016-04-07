@@ -9,6 +9,7 @@
     "virtual-dom": "2.0.1"
   },
   "devDependencies": {
+    "browser-sync": "^2.11.2",
     "browserify": "^13.0.0",
     "envify": "^3.4.0",
     "gulp": "^3.9.0",

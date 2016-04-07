@@ -1,16 +1,12 @@
-var gulp       = require("gulp");
-var purescript = require("gulp-purescript");
-var sass       = require("gulp-sass");
-var browserify = require("browserify");
-var envify     = require("envify");
-var vinyl      = require("vinyl-source-stream")
-var uglify     = require("gulp-uglify");
-var cleanCSS   = require('gulp-clean-css');
-
-if (process.env["API_URL"] === undefined) {
-  console.error("Error: API_URL environment variable must be set (\"\" for development).");
-  process.exit(1);
-}
+var gulp        = require("gulp");
+var purescript  = require("gulp-purescript");
+var sass        = require("gulp-sass");
+var browserify  = require("browserify");
+var envify      = require("envify");
+var vinyl       = require("vinyl-source-stream")
+var uglify      = require("gulp-uglify");
+var cleanCSS    = require('gulp-clean-css');
+var browserSync = require('browser-sync');
 
 // Purescript
 
@@ -47,6 +43,10 @@ gulp.task("bundle", ["make"], function () {
 });
 
 gulp.task("browserify", ["bundle"], function () {
+  if (process.env["API_URL"] === undefined) {
+    console.error("Error: API_URL environment variable must be set (\"\" for development).");
+    process.exit(1);
+  }
   return browserify("dist/main.js")
     .transform(envify)
     .bundle()
@@ -56,7 +56,7 @@ gulp.task("browserify", ["bundle"], function () {
 
 // Sass
 
-gulp.task("sass", function() {
+gulp.task("sass", function () {
   return gulp.src("sass/**/*.scss")
     .pipe(sass({
       errLogToConsole: true
@@ -66,12 +66,31 @@ gulp.task("sass", function() {
 
 // Handsontable
 
-gulp.task("handsontable", function() {
+gulp.task("handsontable", function () {
   gulp.src("bower_components/handsontable/dist/handsontable.full.min.css")
     .pipe(gulp.dest("public/css/"));
   return gulp.src("bower_components/handsontable/dist/handsontable.full.min.js")
     .pipe(gulp.dest("public/js/"));
 })
+
+// Watch
+
+gulp.task("watch", function () {
+  browserSync.init(null, {
+    proxy: "http://localhost:3000",
+    port: 3001,
+    open: false
+  });
+  gulp.watch("public/js/main.js", browserSync.reload);
+  gulp.watch("sass/**/*.scss", function () {
+    gulp.src("sass/**/*.scss")
+      .pipe(sass({
+        errLogToConsole: true
+      }))
+      .pipe(gulp.dest("public/css"))
+      .pipe(browserSync.stream());
+  });
+});
 
 // Main tasks
 
