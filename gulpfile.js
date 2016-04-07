@@ -7,6 +7,11 @@ var vinyl      = require("vinyl-source-stream")
 var uglify     = require("gulp-uglify");
 var cleanCSS   = require('gulp-clean-css');
 
+if (process.env["API_URL"] === undefined) {
+  console.error("Error: API_URL environment variable must be set (\"\" for development).");
+  process.exit(1);
+}
+
 // Purescript
 
 var sources = [
