@@ -33,9 +33,9 @@ runJsonEither (JsonEither x) = x
 
 instance isForeignJsonEither :: (IsForeign a, IsForeign b) => IsForeign (JsonEither a b) where
   read json = do
-    l <- readProp "left" json
-    r <- readProp "right" json
+    l <- readProp "Left" json
+    r <- readProp "Right" json
     case Tuple (runNullOrUndefined l) (runNullOrUndefined r) of
       Tuple (Just l') Nothing -> pure $ JsonEither $ Left l'
       Tuple Nothing (Just r') -> pure $ JsonEither $ Right r'
-      _ -> throwError $ JSONError "expected `left` or `right` property"
+      _ -> throwError $ JSONError "expected `Left` or `Right` property"
