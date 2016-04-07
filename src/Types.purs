@@ -76,6 +76,10 @@ instance isForeignUTCTime :: IsForeign UTCTime where
 
 -- TODO: think about way of running this effectful function in eff monad
 foreign import showDate :: Date -> String
+foreign import showDayImpl :: Date -> String
+
+showDay :: UTCTime -> String
+showDay (UTCTime date) = showDayImpl date
 
 instance showUTCTime :: Show UTCTime where
   show (UTCTime date) = showDate date

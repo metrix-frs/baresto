@@ -127,7 +127,7 @@ app = parentComponent render eval
                     then [ [ H.span [ cls "warn" ] [ H.text "Test licence" ] ] ]
                     else []
                 ) <>
-                [ [ H.text $ "Licence valid: " <> authInfo.authContractBegin <> " to " <> authInfo.authContractEnd ]
+                [ [ H.text $ "Licence valid: " <> showDay authInfo.authContractBegin <> " to " <> showDay authInfo.authContractEnd ]
                 , [ H.text $ "User: " <> authInfo.authUserName ]
                 ]
             _ -> H.div_ []
