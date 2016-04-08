@@ -125,6 +125,15 @@ file = component render eval
             [ cls "hlabel octicon octicon-pencil"
             , E.onClick $ E.input_ RenameFileStart
             ] []
+          , H.a
+            [ P.href $ apiUrl <> "/api/v0.1/baresto/export/" <> show (st.file ^. _fileId)
+            , P.target "_blank"
+            ]
+            [ H.span
+              [ cls "hlabel octicon octicon-arrow-down"
+              , P.title "Export as baresto file"
+              ] []
+            ]
           , H.span
             [ cls "hlabel octicon octicon-x"
             , E.onClick $ E.input_ DeleteFile

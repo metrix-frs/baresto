@@ -1,23 +1,24 @@
-$statusbar-height:       50px;
+$statusbar-height:          50px;
 
-$toolbar-height:         50px;
-$toolsep-width:           2px;
-$toolwidth-close:        50px;
-$toolwidth-menu:         50px;
-$toolwidth-mb:          300px;
-$toolwidth-sheets:      700px;
-$toolwidth-choose-file: 250px;
-$toolwidth-import:       50px;
-$toolwidth-name-file:   250px;
-$toolwidth-create:       50px;
-$toolwidth-conf:         70px;
+$toolbar-height:            50px;
+$toolsep-width:              2px;
+$toolwidth-close:           50px;
+$toolwidth-menu:            50px;
+$toolwidth-mb:             300px;
+$toolwidth-sheets:         700px;
+$toolwidth-choose-file:    250px;
+$toolwidth-import-xbrl:     40px;
+$toolwidth-import-baresto:  75px;
+$toolwidth-name-file:      250px;
+$toolwidth-create:          50px;
+$toolwidth-conf:            70px;
 
-$filelist-width:          45%;
-$panel-padding:           8px;
+$filelist-width:             45%;
+$panel-padding:              8px;
 
 $modulebrowser-width:  2 * $toolsep-width
                          + $toolwidth-close
                          + $toolwidth-menu
                          + $toolwidth-mb;
 
-$validation-height:     400px;
+$validation-height:        400px;

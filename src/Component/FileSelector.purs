@@ -91,6 +91,7 @@ data Query a
   | UploadXbrl a
   | UploadXbrlCloseModal a
   | UploadXbrlOpenFile UpdateId a
+  | UploadBaresto a
   | SetNewFileName String a
   | CreateFile ModuleId String a
   | ClickAll a
@@ -117,13 +118,14 @@ selector = parentComponent' render eval peek
       , H.div [ cls "toolbar" ] $
         [ H.div [ cls "tool tooldim-choose-file" ]
           [ H.p_
-            [ H.text "XBRL file to import:" ]
+            [ H.text "Import file:" ]
           , H.input
             [ P.inputType P.InputFile
-            , P.id_ "xbrlFile"
+            , P.id_ "importFile"
             ]
           ]
-        , toolButton "Import" "octicon octicon-arrow-up" "import" UploadXbrl
+        , toolButton "XBRL" "octicon octicon-arrow-up" "import-xbrl" UploadXbrl
+        , toolButton "Baresto File" "octicon octicon-arrow-up" "import-baresto" UploadBaresto
         , H.div [ cls "toolsep tooldim-sep-xbrl" ] []
         , H.div [ cls "toolsep tooldim-sep-create" ] []
         ] <> (
@@ -183,11 +185,19 @@ selector = parentComponent' render eval peek
       pure next
 
     eval (UploadXbrl next) = do
-      mFiles <- liftH $ liftEff' $ getInputFileList "xbrlFile"
+      mFiles <- liftH $ liftEff' $ getInputFileList "importFile"
       case mFiles of
         Nothing -> pure unit
         Just files -> apiCallParent (uploadXbrl files) \resp ->
           modify $ _Just %~ _{ xbrlImportResponse = Just resp }
+      pure next
+
+    eval (UploadBaresto next) = do
+      mFiles <- liftH $ liftEff' $ getInputFileList "importFile"
+      case mFiles of
+        Nothing -> pure unit
+        Just files -> apiCallParent (uploadBaresto files) \file ->
+          modify $ _Just .. _files %~ cons file
       pure next
 
     eval (UploadXbrlOpenFile _ next) =

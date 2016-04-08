@@ -53,8 +53,9 @@
     bottom: 4px;
     line-height: 9px;
     font-size: 9px;
-    left: 50%;
-    transform: translate(-50%,0px);
+    left: 0px;
+    right: 0px;
+    text-align: center;
     text-transform: uppercase;
   }
 }
@@ -70,20 +71,28 @@
   }
 }
 
-.tooldim-import {
-  width: $toolwidth-import;
+.tooldim-import-xbrl {
+  width: $toolwidth-import-xbrl;
   left: $toolwidth-choose-file;
+}
+
+.tooldim-import-baresto {
+  width: $toolwidth-import-baresto;
+  left: $toolwidth-choose-file
+      + $toolwidth-import-xbrl;
 }
 
 .tooldim-sep-xbrl {
   left: $toolwidth-choose-file
-      + $toolwidth-import;
+      + $toolwidth-import-xbrl
+      + $toolwidth-import-baresto;
 }
 
 .tooldim-name-file {
   width: $toolwidth-name-file;
   left: $toolwidth-choose-file
-      + $toolwidth-import
+      + $toolwidth-import-xbrl
+      + $toolwidth-import-baresto
       + $toolsep-width;
   padding: 3px;
   input {
@@ -94,14 +103,16 @@
 .tooldim-create {
   width: $toolwidth-create;
   left: $toolwidth-choose-file
-      + $toolwidth-import
+      + $toolwidth-import-xbrl
+      + $toolwidth-import-baresto
       + $toolsep-width
       + $toolwidth-name-file;
 }
 
 .tooldim-sep-create  {
   left: $toolwidth-choose-file
-      + $toolwidth-import
+      + $toolwidth-import-xbrl
+      + $toolwidth-import-baresto
       + $toolsep-width
       + $toolwidth-name-file
       + $toolwidth-create;

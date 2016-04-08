@@ -151,6 +151,10 @@ uploadXbrl :: forall eff. FileList -> Api eff XbrlImportConf
 uploadXbrl files = getJsonResponse "Could not upload XBRL file." $
   uploadFiles (prefix <> "xbrl/import") files
 
+uploadBaresto :: forall eff. FileList -> Api eff File
+uploadBaresto files = getJsonResponse "Could not upload Baresto file." $
+  uploadFiles (prefix <> "baresto/import") files
+
 uploadCsv :: forall eff. UpdateId -> FileList -> Api eff CsvImportConf
 uploadCsv lastUpdateId files = getJsonResponse "Could not upload CSV file." $
   uploadFiles (prefix <> "csv/import/" <> show lastUpdateId) files
