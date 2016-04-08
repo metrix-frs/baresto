@@ -17,6 +17,19 @@
       width: 20px;
     }
     td {
+      .subsetMemberId {
+        font-size: 11px;
+        color: #999;
+        padding-right: 8px;
+      }
+      .customMemberId {
+        position: absolute;
+        right: 5px;
+        top: 4px;
+        font-size: 11px;
+        color: #999;
+      }
+      position: relative;
       border-bottom: 1px solid $panel-gray;
     }
   }
@@ -26,7 +39,7 @@
     text-align: center;
   }
   input {
-    width: 100%;
+    width: 60%;
     box-sizing: border-box;
   }
   input[type="checkbox"] {

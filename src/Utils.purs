@@ -7,6 +7,7 @@ module Utils
   , minOrd
   , maxOrd
   , getEntropy
+  , initClipboard
   , createEvent
   , createErrorEvent
   , errorEventDetail
@@ -82,6 +83,8 @@ getEntropy n = fromCharArray <$> replicateM n do
     return $ fromMaybe '0' $ alphabet !! i
   where
     alphabet = toCharArray "0123456789abcdef"
+
+foreign import initClipboard :: forall e. String -> Eff (dom :: DOM | e) Unit
 
 foreign import createEventImpl :: String -> Event
 

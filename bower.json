@@ -13,7 +13,7 @@
     "tests"
   ],
   "dependencies": {
-    "purescript-halogen": "0.5.12",
+    "purescript-halogen": "0.5.18",
     "purescript-affjax": "0.10.1",
     "purescript-lens": "0.9.0",
     "purescript-index": "0.4.0",

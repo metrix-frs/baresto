@@ -452,7 +452,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
           then td.selectedSheet
           else S 0
 
-        customZMember (Tuple s (Tuple _ name)) = H.tr_
+        customZMember (Tuple s (Tuple memId name)) = H.tr_
           [ H.td [ cls "small" ]
             [ H.button
               [ E.onClick $ E.input_ $ DeleteSheet s ]
@@ -464,6 +464,10 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
               [ E.onValueInput $ E.input $ RenameSheet s
               , P.value name
               ]
+            , H.span
+              [ cls "customMemberId"
+              , P.title "Custom member ID" ]
+              [ H.text memId ]
             ]
           ]
 
@@ -471,7 +475,11 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
           [ H.td_
             -- TODO where is P.style?
             -- [ H.span [ P.style $ space m.memberLevel ] []
-            [ H.text m.memberLabel
+            [ H.span
+              [ cls "subsetMemberId"
+              , P.title "DPM member ID"]
+              [ H.text $ show m.memberId ]
+            , H.text m.memberLabel
             ]
           , H.td [ cls "small" ]
             [ H.input

@@ -174,9 +174,9 @@ xOrdsData ords = [whiteData <> (ord <$> ords)]
 yOrdsData :: S -> Table -> BusinessData -> Data
 yOrdsData s table@(Table tbl) bd = case tbl.tableYAxis of
     YAxisClosed _ ords -> closed <$> ords
-    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\"><span class=\"customY octicon octicon-plus\"></span></button>" ]] <> (custom <$> getIndices (getCustomYMembersBySheet axId s table bd))
+    YAxisCustom axId lbl -> [[ lbl, "<button id=\"newCustomY\"><span class=\"customY octicon octicon-plus\"></span></button>" ]] <> (custom <$> makeIndexed (getCustomYMembersBySheet axId s table bd))
   where
-    custom i = [ "", "<button id=\"delCustomY" <> show i <> "\"><span class=\"customY octicon octicon-dash\"></span></button>" ]
+    custom (Tuple i (Tuple memId _)) = [ "<span class=\"customYMember clipboard\" title=\"Custom member ID. Click to copy to clipboard.\" data-clipboard-text=\"" <> memId <> "\">" <> memId <> "</span>", "<button id=\"delCustomY" <> show i <> "\"><span class=\"customY octicon octicon-dash\"></span></button>" ]
     closed (Ordinate o) = if o.ordinateIsAbstract
       then [ indent o.ordinateLevel (o.ordinateCode <> " " <> o.ordinateLabel) ]
       else [ indent o.ordinateLevel o.ordinateLabel, o.ordinateCode ]
@@ -253,7 +253,7 @@ yOrdsProps s table@(Table tbl) bd = case tbl.tableYAxis of
       [ defProps
         { row = firstRow + 1 + index
         , col = 0
-        , renderer = renderSetClass "yOrdinate"
+        , renderer = renderHtml "yOrdinate"
         }
       , defProps
         { row = firstRow + 1 + index

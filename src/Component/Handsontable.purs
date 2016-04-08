@@ -2,7 +2,6 @@ module Component.Handsontable where
 
 import Prelude
 
-import Control.Monad.Eff
 import Control.Monad.Eff.Console
 
 import Control.Bind
@@ -27,7 +26,7 @@ import Handsontable       as Hot
 import Handsontable.Types as Hot
 import Handsontable.Hooks as Hot
 
-import Utils (getEntropy, getIndices, cls)
+import Utils (getEntropy, getIndices, cls, initClipboard)
 
 import Types
 import Api.Schema.Table
@@ -124,6 +123,7 @@ build s table@(Table tbl) bd = do
       case tbl.tableYAxis of
         YAxisClosed _ _ -> pure unit
         YAxisCustom axId _ -> do
+          liftEff' $ Hot.onAfterRender hot \_ -> initClipboard ".clipboard"
           subscribe $ eventSource_ (attachClickHandler hot "#newCustomY") do
             pure $ action AddRow
           for_ (getIndices $ getCustomYMembersBySheet axId s table bd) \i ->

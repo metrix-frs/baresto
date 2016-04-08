@@ -2,6 +2,14 @@
 
 "use strict";
 
+var Clipboard = require('clipboard');
+
+exports.initClipboard = function (selector) {
+  return function () {
+    new Clipboard(selector);
+  };
+};
+
 exports.createEventImpl = function (type) {
   return new Event(type);
 };
