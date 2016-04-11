@@ -1,0 +1,49 @@
+---
+- - :whitelist
+  - MIT
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:16:50.105405128 Z
+- - :whitelist
+  - ISC
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:16:56.361964120 Z
+- - :whitelist
+  - Apache 2.0
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:22:12.897803134 Z
+- - :whitelist
+  - New BSD
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:23:16.208750785 Z
+- - :whitelist
+  - BSD
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:23:42.351817738 Z
+- - :whitelist
+  - Public Domain
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:23:56.021252075 Z
+- - :whitelist
+  - MIT/X11
+  - :who: 
+    :why: Synonym for MIT
+    :versions: []
+    :when: 2016-04-11 09:24:54.498533877 Z
+- - :whitelist
+  - Simplified BSD
+  - :who: 
+    :why: 
+    :versions: []
+    :when: 2016-04-11 09:25:32.559741579 Z
