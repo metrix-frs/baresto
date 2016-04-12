@@ -2,10 +2,11 @@ module Component.FileViewer where
 
 import Prelude
 
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
-import Control.Monad.Aff.AVar
+import Control.Monad.Eff.Ref
 import Control.Monad.Except.Trans (runExceptT)
-import Control.Monad.Rec.Class (tailRecM, forever)
+import Control.Monad.Rec.Class (tailRecM)
 
 import Data.Either
 import Data.Array (head, replicate)
@@ -44,6 +45,17 @@ import Lib.Queue
 
 import Types
 import Utils
+
+--
+
+foreign import data Queue :: * -> *
+
+foreign import newQueue      :: forall a eff. Eff (ref :: REF | eff) (Queue a)
+foreign import registerQueue :: forall a eff. Queue a -> (a -> Eff (ref :: REF | eff) Unit) -> Eff (ref :: REF | eff) Unit
+foreign import pushQueue     :: forall a eff. Queue a -> a -> Eff (ref :: REF | eff) Unit
+foreign import triggerQueue  :: forall a eff. Queue a -> Eff (ref :: REF | eff) Unit
+
+--
 
 data ModuleBrowserSlot = ModuleBrowserSlot
 
@@ -93,7 +105,7 @@ type FileData =
   , moduleId      :: ModuleId
   , lastUpdateId  :: UpdateId
   , lastSaved     :: Maybe UTCTime
-  , queue         :: AVar Update
+  , queue         :: Queue Update
   }
 
 _fdBusinessData :: LensP FileData BusinessData
@@ -127,6 +139,7 @@ initialState =
 
 data Query a
   = Init a
+  | ProcessUpdate Update a
   | CloseFile a
   | SelectSheet S a
   | ToggleSheetConfiguratorOpen a
@@ -212,7 +225,8 @@ viewer propUpdateId = parentComponent' render eval peek
 
     eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
     eval (Init next) = do
-      queue <- liftH $ liftAff' makeVar
+      queue <- liftH $ liftEff' newQueue
+
       apiCallParent (getFileDetails propUpdateId) \(fileDesc@(FileDesc fd)) -> do
         apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) ->
           modify $ _{ fileData = Just
@@ -241,7 +255,35 @@ viewer propUpdateId = parentComponent' render eval peek
               query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
               pure unit
             Nothing -> pure unit
-      postAgent queue
+
+      subscribe' $ eventSource (registerQueue queue) (pure <<< action <<< ProcessUpdate)
+      pure next
+
+    eval (ProcessUpdate update next) = do
+      withFileData \fd -> do
+        let payload = UpdatePost
+              { updatePostParentId: fd.lastUpdateId
+              , updatePostUpdate: update
+              , updatePostValidationType: VTUpdate
+              }
+        flip tailRecM unit \_ -> do
+          result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
+          case result of
+            Left err -> do
+              modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
+              liftH $ liftEff' do
+                log $ "Error: " <> err.title
+                log $ "Details: " <> err.body
+              pure $ Left unit
+            Right (UpdatePostResult res) -> case res.uprUpdateDesc of
+              UpdateDesc desc -> do
+                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
+                                                , lastSaved = Just desc.updateDescCreated }
+                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+                query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
+                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
+                pure $ Right unit
+        liftH $ liftEff' $ triggerQueue fd.queue
       pure next
 
     eval (CloseFile next) = do
@@ -298,33 +340,6 @@ viewer propUpdateId = parentComponent' render eval peek
         _ -> pure unit
       pure next
 
-    postAgent :: AVar Update -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    postAgent queue = forever $ do
-      update <- liftH $ liftAff' $ takeVar queue
-      withFileData \fd -> do
-        let payload = UpdatePost
-              { updatePostParentId: fd.lastUpdateId
-              , updatePostUpdate: update
-              , updatePostValidationType: VTUpdate
-              }
-        flip tailRecM unit \_ -> do
-          result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
-          case result of
-            Left err -> do
-              modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
-              liftH $ liftEff' do
-                log $ "Error: " <> err.title
-                log $ "Details: " <> err.body
-              pure $ Left unit
-            Right (UpdatePostResult res) -> case res.uprUpdateDesc of
-              UpdateDesc desc -> do
-                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                , lastSaved = Just desc.updateDescCreated }
-                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
-                query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
-                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
-                pure $ Right unit
-
     setSelectedSheetMaxNumberSheets :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     setSelectedSheetMaxNumberSheets = withFileData $ \fd -> do
       mTableData <- gets _.tableData
@@ -341,7 +356,7 @@ viewer propUpdateId = parentComponent' render eval peek
         Nothing -> pure unit
         Just update -> do
           modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
-          liftH $ liftAff' $ putVar fd.queue update
+          liftH $ liftEff' $ pushQueue fd.queue update
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
     rebuildHot = do
