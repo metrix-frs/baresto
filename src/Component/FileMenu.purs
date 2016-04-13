@@ -41,9 +41,6 @@ type State =
   , lastUpdateId :: UpdateId
   }
 
-_open :: LensP State Boolean
-_open = lens _.open _{ open = _ }
-
 _location :: LensP State Location
 _location = lens _.location _{ location = _ }
 
@@ -57,7 +54,8 @@ initialState updateId =
   }
 
 data Query a
-  = ToggleOpen a
+  = Open a
+  | Close a
   | GoHome a
   | GoImportCsv a
   | GoPast a
@@ -77,14 +75,20 @@ fileMenu = component render eval
 
     render :: Render State Query
     render st = H.div_ $
-      [ toolButton "Menu" "octicon octicon-three-bars" "menu" ToggleOpen
+      [ toolButton "Menu" "octicon octicon-three-bars" "menu" (if st.open then Close else Open)
       ] <> if st.open
              then [ renderMenu st ]
              else []
 
     eval :: Eval Query State Query Metrix
-    eval (ToggleOpen next) = do
-      modify $ _open %~ (not :: Boolean -> Boolean)
+    eval (Open next) = do
+      modify $ _{ open = true }
+      pure next
+
+    eval (Close next) = do
+      modify $ _{ open = false
+                , location = LocationHome
+                }
       pure next
 
     eval (GoHome next) = do
