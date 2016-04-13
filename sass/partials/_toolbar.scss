@@ -40,6 +40,10 @@
     background-color: lighten($metrix-blue, 5%);
     color: $metrix-darkgray;
   }
+  &:active {
+    background-color: lighten($metrix-blue, 7%);
+    color: black;
+  }
   .icon {
     position: absolute;
     top: 4px;
