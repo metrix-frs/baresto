@@ -31,6 +31,7 @@ type State =
   { open :: Boolean
   , updateId :: UpdateId
   , results :: ValidationResult
+  , page :: Int
   }
 
 initialState :: UpdateId -> State
@@ -38,15 +39,21 @@ initialState updateId =
   { open: false
   , updateId: updateId
   , results: emptyValidationResult
+  , page: 1
   }
 
 _results :: LensP State ValidationResult
 _results = lens _.results _{ results = _ }
 
+_page :: LensP State Int
+_page = lens _.page _{ page = _ }
+
 data Query a
   = Init a
   | Open a
   | Close a
+  | PageNext a
+  | PagePrev a
   | SetUpdateId UpdateId a
   | Patch ValidationResult a
   | ValidateAll UpdateId a
@@ -60,14 +67,42 @@ validation = component render eval
       [ P.initializer $ \_ -> action $ Init
       ]
       [ if st.open
-          then H.div
-            [ cls "validation-open" ]
+          then let pagination = paginate 25 (flattenValidationResult st.results) st.page in
+            H.div
+            [ cls "validation-open" ] $
             [ H.span
               [ cls "octicon octicon-chevron-down"
               , E.onClick $ E.input_ Close
               ] []
+            , H.span
+              [ cls "pagination" ]
+              [ if st.page > 1 then
+                  H.span
+                  [ cls "octicon octicon-chevron-left"
+                  , E.onClick $ E.input_ PagePrev
+                  ] []
+                else
+                  H.span
+                  [ cls "octicon octicon-chevron-left disabled" ] []
+              , H.span
+                [ cls "fromto" ]
+                [ H.b_ [ H.text $ show pagination.from ]
+                , H.text " to "
+                , H.b_ [ H.text $ show pagination.to ]
+                , H.text " out of "
+                , H.b_ [ H.text $ show pagination.total ]
+                ]
+              , if st.page < pagination.pages then
+                  H.span
+                  [ cls "octicon octicon-chevron-right"
+                  , E.onClick $ E.input_ PageNext
+                  ] []
+                else
+                  H.span
+                  [ cls "octicon octicon-chevron-right disabled" ] []
+              ]
             , H.div [ cls "validation-content" ]
-              [ H.ul_ $ renderFinding <$> (flattenValidationResult st.results)
+              [ H.ul_ $ renderFinding <$> pagination.items
               ]
             ]
           else H.div_
@@ -98,6 +133,14 @@ validation = component render eval
 
     eval (Close next) = do
       modify _{ open = false }
+      pure next
+
+    eval (PageNext next) = do
+      modify $ _page %~ \p -> p + 1
+      pure next
+
+    eval (PagePrev next) = do
+      modify $ _page %~ \p -> maxOrd 1 (p - 1)
       pure next
 
     eval (SetUpdateId updateId next) = do

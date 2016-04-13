@@ -14,6 +14,8 @@ module Utils
   , shorten
   , peek'
   , getInputFileList
+  , Pagination
+  , paginate
   ) where
 
 import Prelude
@@ -24,8 +26,8 @@ import Data.Int hiding (round)
 import Data.Either
 import Data.Maybe
 import Data.Tuple
-import Data.Array hiding (take)
-import Data.String (take)
+import Data.Array
+import Data.String as Str
 import Data.Map (Map())
 import Data.Nullable
 import Data.String (toCharArray, fromCharArray)
@@ -102,7 +104,7 @@ errorEventDetail :: Event -> Maybe ErrorDetail
 errorEventDetail = toMaybe <<< errorEventDetailImpl
 
 shorten :: String -> Int -> Maybe String
-shorten s len = let short = take len s in
+shorten s len = let short = Str.take len s in
   if s == short then Nothing
                 else Just short
 
@@ -122,3 +124,29 @@ foreign import getInputFileListImpl :: forall eff. String -> Eff (dom :: DOM | e
 -- has been selected.
 getInputFileList :: forall eff. String -> Eff (dom :: DOM | eff) (Maybe FileList)
 getInputFileList i = toMaybe <$> getInputFileListImpl i
+
+-- Pagination
+
+type Pagination a =
+  { pages :: Int
+  , page  :: Int
+  , from  :: Int
+  , to    :: Int
+  , total :: Int
+  , items :: Array a
+  }
+
+paginate :: forall a. Int -> Array a -> Int -> Pagination a
+paginate segmentLength xs currentPage =
+    { pages: pages
+    , page: page
+    , from: minOrd (offset + 1) len
+    , to: minOrd (offset + segmentLength) len
+    , total: len
+    , items: take segmentLength $ drop offset xs
+    }
+  where
+    len = length xs
+    offset = segmentLength * (page - 1)
+    pages = maxOrd (ceil $ toNumber len / toNumber segmentLength) 1
+    page = minOrd pages currentPage

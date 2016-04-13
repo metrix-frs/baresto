@@ -47,13 +47,30 @@
     }
   }
 
+  .fromto {
+    margin: 5px 0px 0px 5px;
+    display: inline-block;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .disabled {
+    background-color: white;
+    cursor: default;
+    &:hover {
+      background-color: white;
+      color: $metrix-darkgray;
+    }
+  }
+
   .validation-content {
     position: absolute;
-    top: 0px;
-    left: 40px;
+    top: 33px;
+    left: 0px;
     right: 0px;
     bottom: 0px;
     overflow-y: auto;
+    border-top: 1px solid #BBB;
 
     ul {
       list-style: none;
