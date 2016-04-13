@@ -31,7 +31,7 @@ import Utils
 data Location
   = LocationHome
   | LocationImportCsv
-  | LocationPast (Array UpdateDesc)
+  | LocationPast Int (Array UpdateDesc) -- page and updates
 
 type State =
   { open :: Boolean
@@ -43,6 +43,9 @@ type State =
 
 _open :: LensP State Boolean
 _open = lens _.open _{ open = _ }
+
+_location :: LensP State Location
+_location = lens _.location _{ location = _ }
 
 initialState :: UpdateId -> State
 initialState updateId =
@@ -63,6 +66,8 @@ data Query a
   | UploadCsvClose a
   | NewTagSetName String a
   | NewTagCreate a
+  | PastPagePrev a
+  | PastPageNext a
   | OpenUpdate UpdateId a
   | SetLastUpdateId UpdateId a
 
@@ -93,7 +98,7 @@ fileMenu = component render eval
     eval (GoPast next) = do
       updateId <- gets _.lastUpdateId
       apiCall (getUpdatePast updateId) \past ->
-        modify $ _{ location = LocationPast past }
+        modify $ _{ location = LocationPast 1 past }
       pure next
 
     eval (UploadCsv next) = do
@@ -126,15 +131,29 @@ fileMenu = component render eval
       if st.newTagName /= ""
         then apiCall (newTag st.lastUpdateId st.newTagName) \tag ->
               case st.location of
-                LocationPast past -> do
+                LocationPast page past -> do
                   let go (UpdateDesc upd) = UpdateDesc $
                         if upd.updateDescUpdateId == st.lastUpdateId
                           then upd { updateDescTags = snoc upd.updateDescTags tag }
                           else upd
-                  modify $ _{ location = LocationPast (go <$> past) }
+                  modify $ _{ location = LocationPast page (go <$> past) }
                   modify $ _{ newTagName = "" }
                 _ -> pure unit
         else pure unit
+      pure next
+
+    eval (PastPagePrev next) = do
+      modify $ _location %~ \l -> case l of
+        LocationPast p past -> LocationPast (maxOrd 1 (p - 1)) past
+        LocationHome        -> LocationHome
+        LocationImportCsv   -> LocationImportCsv
+      pure next
+
+    eval (PastPageNext next) = do
+      modify $ _location %~ \l -> case l of
+        LocationPast p past -> LocationPast (p + 1) past
+        LocationHome        -> LocationHome
+        LocationImportCsv   -> LocationImportCsv
       pure next
 
     -- peeked by FileViewer
@@ -233,7 +252,8 @@ renderMenu st = H.div [ cls "menu-content" ] $
             [ H.text "Ok" ]
           ]
         ]
-    LocationPast past ->
+    LocationPast page past ->
+      let pagination = paginate 100 past page in
       [ H.ul
         [ cls "menu" ]
           [ H.li
@@ -253,7 +273,34 @@ renderMenu st = H.div [ cls "menu-content" ] $
           [ cls "full"
           , E.onClick $ E.input_ NewTagCreate ]
           [ H.text "Create Tag" ]
-        , H.ul [ cls "updates" ] $ renderUpdate <$> past
+        , H.div
+          [ cls "pagination" ]
+          [ if page > 1 then
+              H.div
+              [ cls "left octicon octicon-chevron-left"
+              , E.onClick $ E.input_ PastPagePrev
+              ] []
+            else
+              H.div
+              [ cls "left octicon octicon-chevron-left disabled" ] []
+          , H.div
+            [ cls "fromto" ]
+            [ H.b_ [ H.text $ show pagination.from ]
+            , H.text " to "
+            , H.b_ [ H.text $ show pagination.to ]
+            , H.text " out of "
+            , H.b_ [ H.text $ show pagination.total ]
+            ]
+          , if page < pagination.pages then
+              H.div
+              [ cls "right octicon octicon-chevron-right"
+              , E.onClick $ E.input_ PastPageNext
+              ] []
+            else
+              H.div
+              [ cls "right octicon octicon-chevron-right disabled" ] []
+          ]
+        , H.ul [ cls "updates" ] $ renderUpdate <$> pagination.items
         ]
       ]
 

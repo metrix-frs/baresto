@@ -56,6 +56,53 @@
     overflow-y: auto;
     max-height: 600px;
 
+    .pagination {
+      position: relative;
+      height: 29px;
+      .octicon {
+        width: 16px;
+        text-align: center;
+        border-radius: 2px;
+        padding: 3px;
+        position: absolute;
+        top: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        background-color: $metrix-blue;
+        cursor: pointer;
+        color: $metrix-darkgray;
+        &:hover {
+          color: black;
+          background-color: lighten($metrix-blue, 5%);
+        }
+      }
+
+      .left {
+        left: 0px;
+      }
+
+      .right {
+        right: 0px;
+      }
+
+      .fromto {
+        position: absolute;
+        left: 21px;
+        right: 21px;
+        top: 5px;
+        text-align: center;
+      }
+
+      .disabled {
+        background-color: white;
+        cursor: default;
+        &:hover {
+          background-color: white;
+          color: $metrix-darkgray;
+        }
+      }
+
+    }
+
     ul.updates {
       background-color: white;
       margin-top: 5px;
