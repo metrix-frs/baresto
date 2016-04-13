@@ -11,6 +11,10 @@ import Data.Foreign
 import Data.Foreign.Class
 import Data.Foreign.NullOrUndefined
 
+import Data.Argonaut.Core (jsonEmptyObject)
+import Data.Argonaut.Encode
+import Data.Argonaut.Combinators ((:=), (~>))
+
 import Types
 
 data ServerResponse a
@@ -39,3 +43,9 @@ instance isForeignJsonEither :: (IsForeign a, IsForeign b) => IsForeign (JsonEit
       Tuple (Just l') Nothing -> pure $ JsonEither $ Left l'
       Tuple Nothing (Just r') -> pure $ JsonEither $ Right r'
       _ -> throwError $ JSONError "expected `Left` or `Right` property"
+
+newtype Name = Name String
+
+instance encodeJsonName :: EncodeJson Name where
+  encodeJson (Name name) = "name" := name
+                        ~> jsonEmptyObject

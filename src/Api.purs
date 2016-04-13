@@ -87,15 +87,15 @@ getModule modId = getJsonResponse "Could not load templates of module." $
 
 newFile :: forall eff. ModuleId -> String -> Api eff UpdateGet
 newFile modId name = getJsonResponse "Could not create file." $
-  get $ prefix <> "businessdata/file/new/" <> show modId <> "/" <> name
+  postJson (prefix <> "businessdata/file/new/" <> show modId) (Name name)
 
 deleteFile :: forall eff. FileId -> Api eff Unit
 deleteFile fileId = getUnitResponse "Error deleting file." $
   get $ prefix <> "businessdata/file/delete/" <> show fileId
 
-renameFile :: forall eff. FileId -> String -> Api eff Unit
-renameFile fileId newName = getUnitResponse "Error renaming file." $
-  get $ prefix <> "businessdata/file/rename/" <> show fileId <> "/" <> newName
+renameFile :: forall eff. FileId -> String -> Api eff String
+renameFile fileId newName = getJsonResponse "Error renaming file." $
+  postJson (prefix <> "businessdata/file/rename/" <> show fileId) (Name newName)
 
 listFiles :: forall eff. Api eff (Array File)
 listFiles = getJsonResponse "Could not get files." $
@@ -113,15 +113,15 @@ getFileTags fileId = getJsonResponse "Could not get file tags." $
 
 newTag :: forall eff. UpdateId -> String -> Api eff TagDesc
 newTag updateId name = getJsonResponse "Could not create tag." $
-  get $ prefix <> "businessdata/tag/new/" <> show updateId <> "/" <> name
+  postJson (prefix <> "businessdata/tag/new/" <> show updateId) (Name name)
 
 deleteTag :: forall eff. TagId -> Api eff Unit
 deleteTag tagId = getUnitResponse "Could not delete tag." $
   get $ prefix <> "businessdata/tag/delete/" <> show tagId
 
-renameTag :: forall eff. TagId -> String -> Api eff Unit
-renameTag tagId newName = getUnitResponse "Could not rename tag." $
-  get $ prefix <> "businessdata/tag/rename/" <> show tagId <> "/" <> newName
+renameTag :: forall eff. TagId -> String -> Api eff String
+renameTag tagId newName = getJsonResponse "Could not rename tag." $
+  postJson (prefix <> "businessdata/tag/rename/" <> show tagId) (Name newName)
 
 --
 

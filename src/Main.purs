@@ -13,7 +13,7 @@ import Halogen.Util (appendToBody)
 
 import Component.App as App
 
-import Types
+import Types (Effects)
 
 main :: Eff Effects Unit
 main = runAff throwException (const (pure unit)) $ do

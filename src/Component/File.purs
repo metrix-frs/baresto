@@ -333,8 +333,8 @@ file = component render eval
       renaming <- gets _.renaming
       (File f) <- gets _.file
       case renaming of
-        RFile newName -> apiCall (renameFile f.fileId newName) \_ ->
-          modify $ _file .. _fileLabel .~ newName
+        RFile newName -> apiCall (renameFile f.fileId newName) \resultName ->
+          modify $ _file .. _fileLabel .~ resultName
         _ -> pure unit
       modify $ _{ renaming = RNone }
       pure next
@@ -356,9 +356,9 @@ file = component render eval
     eval (RenameTagDone next) = do
       renaming <- gets _.renaming
       case renaming of
-        RTag tagId newName -> apiCall (renameTag tagId newName) \_ -> do
+        RTag tagId newName -> apiCall (renameTag tagId newName) \resultName -> do
           let rename (TagDesc t) = TagDesc $ if t.tagDescTagId == tagId
-                then t { tagDescTagName = newName }
+                then t { tagDescTagName = resultName }
                 else t
           modify $ _tags %~ map rename
           modify $ _{ renaming = RNone }
