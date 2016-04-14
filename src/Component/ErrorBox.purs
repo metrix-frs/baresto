@@ -6,17 +6,17 @@ module Component.ErrorBox
   , errorBox
   ) where
 
-import Prelude
+import Prelude (Unit, pure, const, ($), bind, unit, (<>), (<$>), (>>=))
 
-import Control.Monad.Eff
-import Control.Monad.Eff.Console
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE, print)
 import Control.Monad.Eff.Exception (catchException)
 
-import Data.Maybe
+import Data.Maybe (Maybe(Nothing, Just), fromMaybe)
 import Data.Nullable (toMaybe)
 import Data.Foldable (for_)
 
-import DOM
+import DOM (DOM)
 import DOM.HTML.Types (HTMLElement())
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
 import DOM.Event.Types (EventType(..))
@@ -26,15 +26,15 @@ import DOM.HTML.Window (document)
 import DOM.Node.Types (elementToEventTarget)
 import DOM.Node.ParentNode (querySelector)
 
-import Halogen
+import Halogen (Eval, Render, Component, component, modify, action, eventSource, subscribe)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
 import Component.Common (modal)
 
-import Types
-import Utils
+import Types (Metrix, ErrorDetail)
+import Utils (errorEventDetail, createErrorEvent)
 
 errorId :: String
 errorId = "error"

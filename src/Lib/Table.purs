@@ -1,21 +1,14 @@
 module Lib.Table where
 
-import Prelude
+import Prelude (class Show, class Ord, class Eq, bind, pure, show, compare, (==), (<$>))
 
-import Data.Either (Either (Left))
-import Data.Maybe
-import Data.Tuple
-import Data.Array hiding ((..))
-import Data.Foldable
+import Data.Maybe (Maybe)
+import Data.Tuple (Tuple(Tuple))
+import Data.Array ((!!))
 
-import Control.Bind
-
-import Optic.Core
-
-import Utils
-import Types
-import Api.Schema.Table
-
+import Optic.Core (LensP, lens)
+import Utils (makeIndexed)
+import Api.Schema.Table (Cell, Grid(Grid), Row(Row), Sheet(Sheet), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
 
 mapGrid :: forall a. (Int -> Int -> Int -> Cell -> a) -> Grid -> Array (Array (Array a))
 mapGrid f (Grid sheets) = (\(Tuple s sheet) -> mapSheet (f s) sheet) <$> makeIndexed sheets

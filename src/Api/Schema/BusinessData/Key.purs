@@ -6,25 +6,23 @@ module Api.Schema.BusinessData.Key
 , parseKeyF
 ) where
 
-import Prelude
+import Prelude (class Ord, class Eq, class Show, (<$>), (+), (*), ($), (<<<), pure, (<*>), show, (<>), compare, eq)
 
-import Data.Function
-import Data.Tuple
-import Data.Tuple.Nested
-import Data.Either
+import Control.Alt ((<|>))
+import Control.Apply ((*>), (<*))
+
+import Data.Function (on)
+import Data.Either (Either(Right, Left))
 import Data.List (fromList)
 import Data.String (fromCharArray, toCharArray)
-import Data.Foreign
+import Data.Foreign (F, ForeignError(JSONError))
 import Data.Foldable (foldl)
 
-import Control.Alt
-import Control.Apply
+import Text.Parsing.StringParser (Parser, runParser)
+import Text.Parsing.StringParser.Combinators (many1, (<?>))
+import Text.Parsing.StringParser.String (oneOf, string)
 
-import Text.Parsing.StringParser
-import Text.Parsing.StringParser.Combinators
-import Text.Parsing.StringParser.String
-
-import Types
+import Types (OrdinateId, SubsetMemberId, CustomMemberId, AxisId, CellId)
 
 data Key
   = KeyHeaderFact      CellId

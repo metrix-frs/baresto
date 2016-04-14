@@ -1,19 +1,18 @@
 module Api.Schema.Validation where
 
-import Prelude
+import Prelude ((<$>), (<*>), bind, pure, ($), id, const, (<#>))
 
-import Data.Either
+import Control.Monad.Error.Class (throwError)
+
+import Data.Either (either)
 import Data.StrMap as SM
-import Data.Maybe
-import Data.Tuple
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Foreign.Keys
-import Data.Foreign.NullOrUndefined
-import Data.Traversable (traverse)
-import Data.List (toList)
+import Data.Maybe (Maybe(Nothing))
+import Data.Tuple (Tuple)
+import Data.Foreign (Foreign, ForeignError(JSONError), unsafeReadTagged)
+import Data.Foreign.Class (class IsForeign, readProp, read)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 
-import Types
+import Types (SubsetMemberId, CustomMemberId, RowKey)
 
 newtype ValidationResult = ValidationResult
   { vrDpmFindings    :: SM.StrMap (Array Finding)
@@ -111,6 +110,7 @@ instance isForeignHoleCoordY :: IsForeign HoleCoordY where
                             <*> readProp "ord" json
       "custom" -> HCYCustom <$> readProp "customMemberId" json
                             <*> readProp "rowKeys" json
+      _        -> throwError $ JSONError "expected `closed` or `custom`"
 
 data HoleCoordZ
   = HCZSingleton
@@ -129,6 +129,7 @@ instance isForeignHoleCoordZ :: IsForeign HoleCoordZ where
                                <*> readProp "customMember" json
       "subset"    -> HCZSubset <$> readProp "subsetMemberId" json
                                <*> readProp "subsetMember" json
+      _           -> throwError $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
 
 type ModuleParamValue = String
 
@@ -160,3 +161,4 @@ instance isForeignFormula :: IsForeign Formula where
       "string"      -> FString      <$> readProp "val" json
       "moduleParam" -> FModuleParam <$> readProp "name" json  <*> readProp "val" json
       "set"         -> FSet         <$> readProp "fs" json
+      _             -> throwError $ JSONError "invalid formula type"

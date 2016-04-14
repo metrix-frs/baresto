@@ -1,17 +1,13 @@
 module Lib.Validation where
 
-import Prelude
-
+import Prelude (($), (<>))
 import Control.Bind (join)
 
-import Data.Tuple
-import Data.Array
-import Data.Maybe
-import Data.Foldable
+import Data.Maybe (Maybe(Nothing, Just))
 import Data.StrMap as SM
 import Data.List (fromList)
 
-import Api.Schema.Validation
+import Api.Schema.Validation (Finding, ValidationResult(ValidationResult))
 
 foreign import fastPatch :: forall a. SM.StrMap (Array a) -> SM.StrMap (Array a) -> SM.StrMap (Array a)
 

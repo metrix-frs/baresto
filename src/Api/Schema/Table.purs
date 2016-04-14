@@ -1,17 +1,18 @@
 module Api.Schema.Table where
 
-import Prelude
+import Prelude (pure, ($), (<*>), (<$>), bind, map, (<<<))
 
-import Data.Array
-import Data.Either
-import Data.Maybe
-import Data.Tuple
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Foreign.NullOrUndefined
-import Data.Map as M
+import Control.Monad.Error.Class (throwError)
 
-import Types
+import Data.Array ((!!))
+import Data.Either (Either(Left))
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.Tuple (Tuple(Tuple))
+import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign.Class (class IsForeign, readProp, read)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+
+import Types (OrdinateId, MemberId, XBRLCodeSet, AxisId, CellId, TableId)
 
 type XHeader = Array (Array XHeaderCell)
 type Ordinates = Array Ordinate
@@ -77,6 +78,7 @@ instance isForeignCell :: IsForeign Cell where
       "fact"    -> FactCell <$> readProp "id" json <*> readProp "dataType" json
       "yMember" -> YMemberCell <$> readProp "id" json
       "noCell"  -> pure NoCell
+      _         -> throwError $ JSONError "expected `shaded`, `fact`, `yMember` or `noCell`"
 
 newtype XHeaderCell = XHeaderCell
   { colspan  :: Int
@@ -108,6 +110,7 @@ instance isForeignZAxis :: IsForeign ZAxis where
       "subset"    -> ZAxisSubset <$> readProp "id" json
                                  <*> readProp "label" json
                                  <*> readProp "options" json
+      _           -> throwError $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
 
 data YAxis
   = YAxisClosed AxisId Ordinates
@@ -121,6 +124,7 @@ instance isForeignYAxis :: IsForeign YAxis where
                               <*> readProp "ordinates" json
       "custom" -> YAxisCustom <$> readProp "id" json
                               <*> readProp "label" json
+      _        -> throwError $ JSONError "expected `closed` or `custom`"
 
 data DataType
   = BooleanData
@@ -144,6 +148,7 @@ instance isForeignDataType :: IsForeign DataType where
       "code"       -> CodeData <<< map getTuple <$> readProp "xbrlCodeSet" json
       "string"     -> pure StringData
       "number"     -> pure NumberData
+      _            -> throwError $ JSONError "unexpected data type"
 
 newtype FTuple a = FTuple (Tuple a a)
 

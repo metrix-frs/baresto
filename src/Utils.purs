@@ -18,37 +18,31 @@ module Utils
   , paginate
   ) where
 
-import Prelude
-import Global
+import Prelude (class Ord, Unit, Ordering(GT, LT), ($), (+), (/), (-), (*), (<$>), unit, pure, (==), (<<<), return, bind, compare, map)
+import Global (readInt)
 import Math as Math
 
-import Data.Int hiding (round)
-import Data.Either
-import Data.Maybe
-import Data.Tuple
-import Data.Array
+import Data.Int (toNumber, ceil, fromNumber)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Tuple (Tuple(Tuple), fst)
+import Data.Array (drop, take, length, (!!), replicateM, (..), zip)
 import Data.String as Str
-import Data.Map (Map())
-import Data.Nullable
+import Data.Nullable (Nullable, toMaybe)
 import Data.String (toCharArray, fromCharArray)
 
 import DOM.Event.Types (Event(), EventType(..))
 import DOM (DOM())
 import DOM.File.Types (FileList())
 
-import Control.Monad.Eff.Random
+import Control.Monad.Eff.Random (RANDOM, randomInt)
+import Control.Monad.Eff (Eff)
 
-import Control.Monad.Eff
-import Control.Bind
-import Control.Alt ((<|>))
-
-import Halogen
+import Halogen (ParentDSL, ChildF(ChildF))
 import Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Core as H
 
-import Types
-
+import Types (ErrorDetail)
 
 maxInt :: Int -> Int -> Int
 maxInt x y = fromMaybe 0 $ fromNumber $ Math.max (toNumber x) (toNumber y)

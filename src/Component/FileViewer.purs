@@ -1,24 +1,24 @@
 module Component.FileViewer where
 
-import Prelude
+import Prelude (class Ord, class Eq, Unit, ($), (<$>), show, (<>), (==), (<<<), unit, pure, bind, void, not, flip)
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
-import Control.Monad.Eff.Ref
+import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Except.Trans (runExceptT)
 import Control.Monad.Rec.Class (tailRecM)
 
-import Data.Either
+import Data.Either (Either(Right, Left))
 import Data.Array (head, replicate)
-import Data.Maybe
+import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Map as M
-import Data.Tuple
+import Data.Tuple (Tuple(Tuple))
 import Data.List (fromList)
-import Data.Foldable
+import Data.Foldable (find, foldl)
 import Data.Functor.Coproduct (Coproduct())
-import Data.Generic (Generic, gEq, gCompare)
+import Data.Generic (class Generic, gEq, gCompare)
 
-import Halogen
+import Halogen (ParentHTML, RenderParent, ChildF, Peek, ParentDSL, EvalParent, Component, InstalledState, parentComponent', gets, action, query', modify, liftEff', liftH, liftAff', eventSource, subscribe')
 import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
@@ -30,23 +30,19 @@ import Component.Validation as V
 import Component.FileMenu as Menu
 import Component.Common (toolButton)
 
-import Optic.Core
-import Optic.Monad.Setter
-import Optic.Refractor.Prism
+import Optic.Core (LensP, (^.), (%~), (..), (.~), lens)
+import Optic.Refractor.Prism (_Just)
 
-import Api
-import Api.Schema.File
-import Api.Schema.Table
-import Api.Schema.Module
-import Api.Schema.BusinessData
-import Lib.Table
-import Lib.BusinessData
-import Lib.Queue
+import Api (getUpdateSnapshot, apiCallParent, getHeader, getTable, postUpdate, getModule, getFileDetails)
+import Api.Schema.File (FileDesc(FileDesc))
+import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
+import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templateTables, _templates, _templateGroups)
+import Api.Schema.BusinessData (Update, UpdateDesc(UpdateDesc), UpdateGet(UpdateGet), UpdatePost(UpdatePost), UpdatePostResult(UpdatePostResult), ValidationType(VTUpdate))
+import Lib.Table (S(S))
+import Lib.BusinessData (BusinessData, Edit(DeleteCustomRow, NewCustomRow, SetFacts, DeselectSubsetZMember, SelectSubsetZMember, DeleteCustomZMember, RenameCustomZMember, NewCustomZMember), _snapshot, getSubsetZMembers, getCustomZMembers, isSubsetZMemberSelected, doesSheetExist, emptyBusinessData, applyUpdate, sheetToZLocation, editToUpdate, getMaxSheet)
+import Types (Metrix, TableId, UpdateId, UTCTime, ModuleId)
 
-import Types
-import Utils
-
---
+import Utils (cls, makeIndexed, readId, peek', getEntropy, minOrd)
 
 foreign import data Queue :: * -> *
 
@@ -179,18 +175,18 @@ viewer propUpdateId = parentComponent' render eval peek
           , H.div [ cls "toolsep tooldim-sep-sheets" ] []
           , case st.fileData of
               Just fd -> case fd.fileDesc of
-                FileDesc fd ->
+                FileDesc fd' ->
                   H.div [ cls "tool tooldim-fileinfo" ]
                   [ H.div [ cls "name" ]
                     [ H.p_
-                      [ H.text fd.fileDescLabel ]
+                      [ H.text fd'.fileDescLabel ]
                     ]
                   , H.div [ cls "module" ]
                     [ H.p_
-                      [ H.text fd.fileDescTaxLabel
+                      [ H.text fd'.fileDescTaxLabel
                       ]
                     , H.p_
-                      [ H.text fd.fileDescModLabel
+                      [ H.text fd'.fileDescModLabel
                       ]
                     ]
                   ]

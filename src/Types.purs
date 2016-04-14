@@ -1,6 +1,6 @@
 module Types where
 
-import Prelude
+import Prelude (class Show, ($), pure, (<$>), bind)
 
 import Control.Monad.Eff.Console (CONSOLE())
 import Control.Monad.Eff.Exception (EXCEPTION())
@@ -10,20 +10,18 @@ import Control.Monad.Eff.Ref (REF())
 import Control.Monad.Aff (Aff())
 import Control.Monad.Aff.AVar (AVAR())
 
-import Data.Date
-import Data.Date.UTC
-import Data.Maybe
-import Data.Either
-import Data.Foreign
-import Data.Foreign.Class
+import Data.Date (Date, fromString)
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.Either (Either(Left))
+import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign.Class (class IsForeign, read)
 
 import Network.HTTP.Affjax (AJAX())
 
 import Handsontable.Types (HOT())
 
-import Data.Tuple
-
-import DOM
+import Data.Tuple (Tuple)
+import DOM (DOM)
 
 type Effects =
   ( dom :: DOM

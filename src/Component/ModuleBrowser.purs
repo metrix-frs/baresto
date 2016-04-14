@@ -1,30 +1,24 @@
 module Component.ModuleBrowser where
 
-import Prelude
+import Prelude (($), (==), bind, (+), (<), mod, (<$>), (<>), (-), pure, not, map, const)
 
 import Data.Map as M
-import Data.Maybe
-import Data.Array hiding ((..))
-import Data.Foldable
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Array (length, index, findIndex, concat)
 
-import Control.Monad.State (execState)
+import Optic.Core (LensP, (^.), (%~), (..), lens)
+import Optic.At (at)
+import Optic.Refractor.Prism (_Just)
+import Optic.Iso (non)
 
-import Optic.Core
-import Optic.At
-import Optic.Refractor.Prism
-import Optic.Monad.Setter
-import Optic.Iso
-
-import Halogen
+import Halogen (ComponentHTML, Eval, Render, Component, component, modify)
 import Halogen.HTML.Indexed as H
-import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
-import Types
-import Utils
+import Types (TemplateGroupId, Metrix, TableId)
+import Utils (cls, shorten)
 
-import Api
-import Api.Schema.Module
+import Api.Schema.Module (Module, Template, TemplateGroup, _templateGroups, _tableEntryCode, _tableEntryId, _templateTables, _templateLabel, _templates, _templateGroupLabel, _templateGroupId)
 
 type TableSelect =
   { id :: TableId

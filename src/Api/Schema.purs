@@ -1,21 +1,20 @@
 module Api.Schema where
 
-import Prelude
+import Prelude (($), pure, bind, (<$>))
 
 import Control.Monad.Error.Class (throwError)
 
-import Data.Tuple
-import Data.Maybe
-import Data.Either
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Foreign.NullOrUndefined
-
+import Data.Tuple (Tuple(Tuple))
+import Data.Maybe (Maybe(Just, Nothing))
+import Data.Either (Either(Right, Left))
+import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign.Class (class IsForeign, readProp)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.Argonaut.Core (jsonEmptyObject)
-import Data.Argonaut.Encode
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Argonaut.Combinators ((:=), (~>))
 
-import Types
+import Types (ErrorDetail)
 
 data ServerResponse a
   = ServerSuccess a

@@ -1,28 +1,26 @@
 module Component.FileSelector where
 
-import Prelude
+import Prelude (class Ord, class Eq, ($), (<<<), (/=), flip, (#), (==), (&&), (<$>), (<>), show, unit, pure, bind, not, const, (<#>))
 
-import Control.Monad
-import Control.Monad.Writer
+import Control.Monad (when)
+import Control.Monad.Writer (tell, execWriter)
 
-import Data.Array hiding ((..))
+import Data.Array (length, filter, snoc, concat, cons, last)
 import Data.List (fromList)
 import Data.Map as M
-import Data.Maybe
-import Data.Foldable
-import Data.Tuple
+import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
+import Data.Foldable (foldl, foldr, for_, find)
+import Data.Tuple (Tuple(Tuple))
 import Data.List (toList)
 import Data.Functor.Coproduct (Coproduct())
-import Data.Generic (Generic, gEq, gCompare)
+import Data.Generic (class Generic, gEq, gCompare)
 
-import Optic.Core
-import Optic.At
-import Optic.Refractor.Prism
-import Optic.Refractor.Lens
-import Optic.Monad.Setter
-import Optic.Iso
+import Optic.Core (LensP, (%~), (..), lens, (.~), view)
+import Optic.At (at)
+import Optic.Refractor.Prism (_Just)
+import Optic.Iso (non)
 
-import Halogen
+import Halogen (Peek, EvalParent, RenderParent, Component, ParentHTML, InstalledState, ChildF(ChildF), parentComponent', modify, liftEff', liftH, action)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
@@ -30,14 +28,13 @@ import Halogen.HTML.Events.Indexed as E
 import Component.File as F
 import Component.Common (modal, toolButton)
 
-import Api
-import Api.Schema
-import Api.Schema.Selector
-import Api.Schema.File
-import Api.Schema.Import
+import Api (deleteFile, apiCallParent, listFiles, uploadBaresto, uploadXbrl, listFrameworks)
+import Api.Schema.Selector (ConceptualModule(ConceptualModule), Framework(Framework), ModuleEntry(ModuleEntry), Taxonomy(Taxonomy), _taxonomyId)
+import Api.Schema.File (File(File))
+import Api.Schema.Import (Warning(Warning), XbrlImportConf(XbrlImportConf))
 
-import Types
-import Utils
+import Types (TaxonomyId, Metrix, ConceptualModuleId, FrameworkId, ModuleId, UpdateId, FileId)
+import Utils (cls, readId, getInputFileList)
 
 data FileSlot = FileSlot FileId
 

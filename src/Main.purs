@@ -1,14 +1,14 @@
 module Main where
 
-import Prelude
+import Prelude (Unit, ($), bind, unit, pure, const)
 
-import Control.Monad.Aff (Aff(), runAff, later')
+import Control.Monad.Aff (runAff, later')
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Exception (throwException)
 
 import Data.Functor.Coproduct (left)
 
-import Halogen
+import Halogen (action, installedState, runUI)
 import Halogen.Util (appendToBody)
 
 import Component.App as App

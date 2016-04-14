@@ -1,32 +1,29 @@
 module Component.FileMenu where
 
-import Prelude
+import Prelude ((<$>), ($), show, (<>), (/=), (<), (>), pure, bind, (+), (-), unit, (==))
 
-import Data.Maybe
+import Data.Maybe (Maybe(Nothing, Just))
 import Data.Array (snoc)
-import Data.Tuple
+import Data.Tuple (Tuple(Tuple))
 import Data.String (take)
 
-import Optic.Core
+import Optic.Core (LensP, (%~), lens)
 
-import Halogen
+import Halogen (ComponentHTML, Render, Eval, Component, component, modify, get, gets, liftEff')
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
-import Api
-import Api.Schema
-import Api.Schema.Import
-import Api.Schema.BusinessData
-
+import Api (apiUrl, newTag, apiCall, uploadCsv, getUpdatePast)
+import Api.Schema.Import (CsvImportConf(CsvImportConf), Warning(Warning))
+import Api.Schema.BusinessData (UpdateGet, TagDesc(TagDesc), UpdateDesc(UpdateDesc), UpdateEntry(UpdateEntry), UpdateEntryHuman(HumanCustomRow, HumanCustomZ, HumanSubsetZ, HumanFact, HumanHeaderFact))
 import Api (apiUrl)
 
-import Component.Common
-
+import Component.Common (modal, toolButton)
 import Component.Validation.Finding (renderHoleCoords)
 
-import Types
-import Utils
+import Types (Metrix, UpdateId)
+import Utils (cls, paginate, maxOrd, getInputFileList)
 
 data Location
   = LocationHome

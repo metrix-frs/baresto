@@ -1,29 +1,28 @@
 module Component.File where
 
-import Prelude
+import Prelude (pure, ($), bind, not, unit, map, (==), (/=), show, (<>), (<$>))
 
 import Control.Monad (when)
 
-import Data.Maybe
+import Data.Maybe (Maybe(Just, Nothing))
 import Data.Array (filter)
 import Data.Foldable (find)
 
-import Optic.Core
+import Optic.Core (LensP, (%~), (.~), (..), (^.), lens)
 
-import Halogen
+import Halogen (Eval, ComponentHTML, Render, Component, component, modify, gets, action)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
-import Api
-import Api.Schema.Selector
-import Api.Schema.File
-import Api.Schema.BusinessData
+import Api (getFileOrphans, apiCall, getFileTags, renameTag, renameFile, pruneOrphan, deleteTag, apiUrl)
+import Api.Schema.File (File(File), _fileLabel, _fileCreated, _fileChanged, _fileId, _fileLastUpdateId)
+import Api.Schema.BusinessData (TagDesc(TagDesc), UpdateDesc(UpdateDesc))
 
-import Component.Common
+import Component.Common (modal)
 
-import Types
-import Utils
+import Types (Metrix, TagId, UpdateId)
+import Utils (cls)
 
 data Renaming
   = RNone

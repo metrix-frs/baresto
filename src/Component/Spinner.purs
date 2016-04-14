@@ -6,16 +6,15 @@ module Component.Spinner
   , spinner
   ) where
 
-import Prelude
-
-import Control.Monad.Eff
-import Control.Monad.Eff.Console
+import Prelude (Unit, pure, (-), bind, (+), ($), (>), unit, (<>), (<$>), (>>=))
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE, print)
 import Control.Monad.Eff.Exception (catchException)
 
 import Data.Nullable (toMaybe)
 import Data.Foldable (for_)
 
-import DOM
+import DOM (DOM)
 import DOM.HTML.Types (HTMLElement())
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
 import DOM.Event.Types (EventType(..))
@@ -25,13 +24,12 @@ import DOM.HTML.Window (document)
 import DOM.Node.Types (elementToEventTarget)
 import DOM.Node.ParentNode (querySelector)
 
-import Halogen
+import Halogen (Eval, Render, Component, component, modify, action, eventSource_, subscribe)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
 
-import Types
-import Utils
+import Types (Metrix)
+import Utils (cls, createEvent)
 
 spinnerName :: String
 spinnerName = "spinner"

@@ -5,15 +5,12 @@ module Component.Handsontable.Utils
   , forceString
   ) where
 
-import Prelude
-
-import Handsontable.Types
-
-import Control.Monad.Eff
-
+import Prelude ((+), (-))
+import Handsontable.Types (Handsontable)
+import Control.Monad.Eff (Eff)
 import Data.Array (length)
 
-import Api.Schema.Table
+import Api.Schema.Table (Table(Table), YAxis(YAxisClosed, YAxisCustom))
 
 toHotCoords :: Table -> Int -> Int -> {col :: Int, row :: Int}
 toHotCoords table c r = { col: c + 2, row: r + (headerHeight table) }

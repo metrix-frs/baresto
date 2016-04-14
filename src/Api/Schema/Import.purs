@@ -1,14 +1,9 @@
 module Api.Schema.Import where
 
-import Prelude
-
-import Data.Array
-import Data.Foreign
-import Data.Foreign.Class
-
-import Api.Schema.BusinessData
-
-import Types
+import Prelude (pure, ($), (<*>), (<$>), bind)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Api.Schema.BusinessData (UpdateGet)
+import Types (ModuleId, UpdateId)
 
 newtype Warning = Warning
   { message :: String

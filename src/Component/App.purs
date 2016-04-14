@@ -1,18 +1,15 @@
 module Component.App where
 
-import Prelude
+import Prelude (class Ord, class Eq, (<>), ($), pure, bind)
 
-import Control.Plus (Plus)
-
-import Data.Array
-import Data.Either
-import Data.Maybe
+import Data.Either (Either(Left, Right))
+import Data.Maybe (Maybe(Nothing, Just))
 import Data.Functor.Coproduct (Coproduct())
 import Data.Foldable (intercalate)
-import Data.Generic (Generic, gEq, gCompare)
+import Data.Generic (class Generic, gEq, gCompare)
 import Data.Foreign.Null (runNull)
 
-import Halogen
+import Halogen (ParentHTML, EvalParent, RenderParent, Component, ChildF, InstalledState, parentComponent, modify, get, installedState)
 import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
@@ -23,13 +20,12 @@ import Component.ErrorBox as ErrorBox
 import Component.Body as Body
 import Component.Common (modal)
 
-import Api
+import Api (logout, apiCallParent, login, loginStatus)
 import Api.Schema (runJsonEither)
-import Api.Schema.Auth
+import Api.Schema.Auth (AuthInfo(AuthInfo))
+import Utils (cls)
 
-import Utils
-import Types
-
+import Types (Metrix, showDay)
 import Version (versionStr)
 
 --

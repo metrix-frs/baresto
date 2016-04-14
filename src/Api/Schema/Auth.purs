@@ -1,14 +1,12 @@
 module Api.Schema.Auth where
 
-import Prelude
+import Prelude (pure, ($), (<$>), (<*>), bind)
 
-import Data.Maybe
-import Data.Tuple
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Foreign.NullOrUndefined
+import Data.Maybe (Maybe)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 
-import Types
+import Types (UTCTime)
 
 newtype AuthInfo = AuthInfo
   { authUserName           :: String

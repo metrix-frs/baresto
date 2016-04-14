@@ -1,36 +1,32 @@
 module Api.Common where
 
-import Prelude
+import Prelude (Unit, show, unit, pure, ($), bind, (<), (&&), (<=))
 
-import Data.Maybe
-import Data.Tuple
-import Data.Either
-import Data.Foreign
-import Data.Foreign.Class
+import Control.Monad.Aff (Aff, attempt)
+import Control.Monad.Trans (lift)
+import Control.Monad.Except.Trans (ExceptT, throwError)
 
-import Network.HTTP.Affjax
-import Network.HTTP.Affjax.Request
-import Network.HTTP.Affjax.Response
-import Network.HTTP.MimeType.Common (applicationJSON, multipartFormData)
-import Network.HTTP.StatusCode
-import Network.HTTP.Method
-import Network.HTTP.RequestHeader
+import Data.Maybe (Maybe(Just))
+import Data.Tuple (snd)
+import Data.Either (Either(Left, Right))
+import Data.Foreign.Class (class IsForeign, readJSON)
+
+import Network.HTTP.Affjax (Affjax, URL, AJAX, defaultRequest, affjax)
+import Network.HTTP.Affjax.Request (toRequest)
+import Network.HTTP.Affjax.Response (class Respondable)
+import Network.HTTP.MimeType.Common (applicationJSON)
+import Network.HTTP.StatusCode (StatusCode(StatusCode))
+import Network.HTTP.Method (Method(POST))
+import Network.HTTP.RequestHeader (RequestHeader(ContentType))
 
 import DOM.File.Types (FileList())
 import DOM.XHR.Types (FormData())
 
-import Data.Argonaut.Printer
-import Data.Argonaut.Encode
+import Data.Argonaut.Printer (printJson)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 
-import Control.Monad.Aff
-import Control.Monad.Eff.Exception (error)
-import Control.Monad.Error.Class (throwError)
-import Control.Monad.Trans (lift)
-import Control.Monad.Except.Trans
-
-import Api.Schema
-
-import Types
+import Api.Schema (ServerResponse(ServerSuccess, ServerError))
+import Types (ErrorDetail)
 
 foreign import filesToFormData :: FileList -> FormData
 

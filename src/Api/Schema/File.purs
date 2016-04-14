@@ -1,13 +1,10 @@
 module Api.Schema.File where
 
-import Prelude
+import Prelude (pure, ($), (<*>), (<$>), bind)
 
-import Data.Foreign
-import Data.Foreign.Class
-
-import Optic.Core
-
-import Types
+import Data.Foreign.Class (class IsForeign, readProp)
+import Optic.Core (LensP, lens, (..))
+import Types (UpdateId, UTCTime, ModuleId, FileId, Label)
 
 newtype File = File
   { fileId           :: FileId

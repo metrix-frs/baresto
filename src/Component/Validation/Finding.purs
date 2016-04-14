@@ -3,20 +3,18 @@ module Component.Validation.Finding
   , renderHoleCoords
   ) where
 
-import Prelude
+import Prelude ((<>), show, ($), (<$>), pure, (<<<))
 
-import Data.Maybe
-import Data.Tuple
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.Tuple (Tuple(Tuple))
 import Data.String (take)
 import Data.Foldable (intercalate)
-import Data.String (joinWith)
 
-import Halogen
+import Halogen (ComponentHTML)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
 
-import Api.Schema.Validation
+import Api.Schema.Validation (Finding(Finding), Formula(FBinary, FUnary, FSet, FModuleParam, FString, FNumber, FBoolean, FIfThenElse, FMember, FSum, FHole), Hole(Hole), HoleCoordX(HCX), HoleCoordY(HCYCustom, HCYClosed), HoleCoordZ(HCZSubset, HCZCustom, HCZClosed, HCZSingleton), HoleCoords(HoleCoords))
 import Utils (cls)
 
 renderFinding :: forall f. Finding -> ComponentHTML f

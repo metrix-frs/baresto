@@ -1,13 +1,9 @@
 module Api.Schema.Module where
 
-import Prelude
-
-import Data.Foreign
-import Data.Foreign.Class
-
-import Optic.Core
-
-import Types
+import Prelude (pure, ($), (<*>), (<$>), bind)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Optic.Core (LensP, lens, (..))
+import Types (TableId, TemplateId, TemplateGroupId, ModuleId)
 
 newtype Module = Module
   { moduleId :: ModuleId

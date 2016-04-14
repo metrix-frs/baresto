@@ -1,31 +1,23 @@
 module Component.Validation where
 
-import Prelude
+import Prelude (pure, bind, ($), (-), (+), (<>), (<$>), (<), show, (>))
 
-import Data.Map as M
-import Data.Maybe
-import Data.Array hiding ((..))
-import Data.Foldable
+import Optic.Core (LensP, (%~), lens)
 
-import Control.Monad.State (execState)
-
-import Optic.Core
-import Optic.At
-
-import Halogen
+import Halogen (Eval, ComponentHTML, Render, Component, component, modify, gets, action)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
-import Types
-import Utils
+import Types (Metrix, UpdateId)
+import Utils (maxOrd, cls, paginate)
 
-import Api
-import Api.Schema.Validation
+import Api (validate, apiCall)
+import Api.Schema.Validation (ValidationResult, emptyValidationResult)
 
-import Lib.Validation
+import Lib.Validation (patchValidationResult, flattenValidationResult)
 
-import Component.Validation.Finding
+import Component.Validation.Finding (renderFinding)
 
 type State =
   { open :: Boolean

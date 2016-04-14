@@ -1,10 +1,9 @@
 module Component.Common where
 
-import Prelude
+import Prelude ((<>), ($))
 
-import Halogen
+import Halogen (HTML, Action)
 import Halogen.HTML.Indexed as H
-import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Events.Indexed as E
 
 import Utils (cls)

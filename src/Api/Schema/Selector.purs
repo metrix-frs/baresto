@@ -1,13 +1,9 @@
 module Api.Schema.Selector where
 
-import Prelude
-
-import Data.Foreign
-import Data.Foreign.Class
-
-import Optic.Core
-
-import Types
+import Prelude (pure, ($), (<*>), (<$>), bind)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Optic.Core (LensP, lens, (..))
+import Types (ModuleId, ConceptualModuleId, TaxonomyId, FrameworkId)
 
 newtype Framework = Framework
   { frameworkId :: FrameworkId

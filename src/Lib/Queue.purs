@@ -5,12 +5,12 @@ module Lib.Queue
   , Queue()
   ) where
 
-import Prelude
+import Prelude (($), flip)
 
-import Data.Tuple
-import Data.Array
-import Data.Exists
-import Data.Maybe
+import Data.Tuple (Tuple(Tuple))
+import Data.Array (snoc, uncons)
+import Data.Exists (Exists, runExists, mkExists)
+import Data.Maybe (Maybe(Just, Nothing))
 
 data QueueF a q = QueueF
   { state :: q

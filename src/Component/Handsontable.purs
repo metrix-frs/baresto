@@ -1,40 +1,26 @@
 module Component.Handsontable where
 
-import Prelude
-
-import Control.Monad.Eff.Console
-
-import Control.Bind
-
-import Data.Array hiding ((..))
-import Data.Foldable
-import Data.Tuple
-import Data.Maybe
-import Data.Map as M
-
+import Prelude (Unit, ($), pure, show, (<>), bind, unit, (<$>), (>), const)
+import Data.Array (length)
+import Data.Foldable (for_)
+import Data.Tuple (Tuple(Tuple))
+import Data.Maybe (Maybe(Nothing, Just))
 import DOM.HTML.Types (HTMLElement())
 
-import Halogen
+import Halogen (ComponentDSL, Eval, Render, Component, action, eventSource_, subscribe, liftEff', eventSource, modify, get, component)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
-
-import Optic.Core
-import Optic.At
-
-import Handsontable       as Hot
-import Handsontable.Types as Hot
-import Handsontable.Hooks as Hot
-
-import Utils (getEntropy, getIndices, cls, initClipboard)
-
-import Types
-import Api.Schema.Table
+import Handsontable (populateFromArray, handsontableNode, destroy) as Hot
+import Handsontable.Types (Handsontable, ChangeSource(ChangeSpliceRow, ChangeSpliceCol, ChangePaste, ChangeAutofill, ChangeLoadData, ChangePopulateFromArray, ChangeEdit, ChangeEmpty, ChangeAlter), Direction(DirectionDown), PopulateMethod(Overwrite)) as Hot
+import Handsontable.Hooks (onAfterRender, onAfterChange) as Hot
+import Utils (getIndices, initClipboard, cls)
+import Types (Metrix)
+import Api.Schema.Table (Table(Table), YAxis(YAxisCustom, YAxisClosed))
 import Lib.Table
-import Lib.BusinessData
+import Lib.BusinessData (BusinessData, getCustomYMembersBySheet, getFactTable)
 
-import Component.Handsontable.Options
-import Component.Handsontable.Utils
+import Component.Handsontable.Options (tableOptions)
+import Component.Handsontable.Utils (attachClickHandler, forceString, fromHotCoords, toHotCoords)
 
 type State =
   { hotInstance :: Maybe (Hot.Handsontable String)

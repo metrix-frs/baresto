@@ -1,26 +1,23 @@
 module Component.Body where
 
-import Prelude
+import Prelude (class Ord, class Eq, unit, pure, const, ($), bind)
 
-import Data.Maybe
-import Data.Either
-import Data.Functor.Coproduct (Coproduct(), left, coproduct)
-import Data.Generic (Generic, gEq, gCompare)
+import Data.Either (Either)
+import Data.Functor.Coproduct (Coproduct, coproduct)
+import Data.Generic (class Generic, gEq, gCompare)
 
-import Halogen
-import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
+import Halogen (Peek, EvalParent, RenderParent, Component, InstalledState, ChildF(ChildF), parentComponent', modify, installedState)
+import Halogen.Component.ChildPath (ChildPath, cpR, cpL)
 import Halogen.HTML.Indexed as H
-import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
 
 import Component.File as F
 import Component.FileSelector as FS
 import Component.FileViewer as FV
 
-import Types
+import Types (Metrix, UpdateId, FileId)
 import Utils (cls, peek')
-import Api
-import Api.Schema.BusinessData
+import Api (newFile, apiCallParent)
+import Api.Schema.BusinessData (UpdateGet(UpdateGet))
 
 data SelectorSlot = SelectorSlot
 

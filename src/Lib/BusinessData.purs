@@ -28,41 +28,30 @@ module Lib.BusinessData
 , isSubsetZMemberSelected
 ) where
 
-import Prelude
+import Prelude ((#), ($), pure, bind, (<$>), (-), (==), unit, (/=), flip, id, map)
 
-import Data.Int (fromNumber)
-import Data.Array hiding ((..))
-import Data.Maybe
-import Data.Tuple
+import Data.Array ((!!), length, filter, snoc)
+import Data.Maybe (Maybe(Just, Nothing), isJust, fromMaybe)
+import Data.Tuple (Tuple(Tuple), lookup, fst)
 import Data.Map as M
-import Data.Foldable
+import Data.Foldable (foldl, find)
 
-import Control.Apply
-import Control.Monad.State
-import Control.Monad.State.Class
+import Control.Monad.State (execState)
 
 import Optic.At (at)
-import Optic.Core
-import Optic.Refractor.Prism (_Just)
-import Optic.Fold ((^?))
-import Optic.Monad.Setter
-import Optic.Monad.Getter
+import Optic.Core (LensP, (.~), (..), (^.), lens)
+import Optic.Monad.Setter ((%=), (.=))
 import Optic.Iso (non)
 
-import Data.Argonaut.Core (jsonEmptyObject)
-import Data.Argonaut.Encode
-import Data.Argonaut.Combinators ((:=), (~>))
+import Types (SubsetMemberId, AxisId, CellId, CustomMemberId)
 
-import Types
+import Lib.Table (C(C), Coord(Coord), R(R), S(S), cellLookup, boolValueMap)
 
-import Lib.Table
-
-import Api.Schema.Table
-import Api.Schema.BusinessData
-import Api.Schema.BusinessData.Key
+import Api.Schema.Table (Cell(YMemberCell, FactCell, NoCell), DataType(BooleanData, CodeData, PercentageData, MonetaryData), Ordinate(Ordinate), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
+import Api.Schema.BusinessData (Update(Update))
+import Api.Schema.BusinessData.Key (IsRowKey(RowKey, NoRowKey), Key(KeySubsetZSelected, KeyHeaderFact, KeyFact, KeyCustomZMember, KeyCustomRow), YLocation(YLocCustom, YLocClosed), ZLocation(ZLocSubset, ZLocCustom, ZLocClosed, ZLocSingle))
 
 import Utils (maxInt, getIndices)
-
 
 type CustomMember = Tuple CustomMemberId String
 type SubsetMember = Tuple SubsetMemberId String

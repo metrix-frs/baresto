@@ -7,30 +7,29 @@ module Component.Handsontable.Options
   , CellRenderer()
   ) where
 
-import Prelude
+import Prelude (($), (<$>), (<>), (+), show, (==), (-), const)
 
-import Control.Bind
-import Data.Array hiding (take)
-import Data.Traversable
-import Data.Foldable
-import Data.Maybe
-import Data.Tuple
-import Data.Function
-import Data.Nullable
+import Control.Bind (join)
+
+import Data.Array (length, filter, (:), replicate, range)
+import Data.Traversable (mapAccumL)
+import Data.Foldable (foldl)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Tuple (Tuple(Tuple), snd)
+import Data.Function (Fn8, runFn8)
+import Data.Nullable (Nullable, toNullable)
 import Data.String (take)
-import Data.Tuple.Nested
 
 import Utils (makeIndexed, getIndices)
 
-import Handsontable       as Hot
-import Handsontable.Types as Hot
+import Handsontable.Types (Options) as Hot
 
-import Types
-import Api.Schema.Table
-import Lib.Table
-import Lib.BusinessData
+import Api.Schema.Table (XHeader, Ordinates, Cell(FactCell, NoCell, YMemberCell, ShadedCell), DataType(CodeData, BooleanData, DateData, NumberData, StringData, PercentageData, MonetaryData, IntegerData), Ordinate(Ordinate), Table(Table), XHeaderCell(XHeaderCell), YAxis(YAxisCustom, YAxisClosed))
 
-import Component.Handsontable.Utils
+import Lib.Table (S, boolValueMap)
+import Lib.BusinessData (BusinessData, getCellTable, getCustomYMembersBySheet)
+
+import Component.Handsontable.Utils (toHotCoords)
 
 foreign import data CellRenderer :: *
 foreign import data CellBorder :: *

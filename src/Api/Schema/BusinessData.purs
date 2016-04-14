@@ -1,28 +1,26 @@
 module Api.Schema.BusinessData where
 
-import Prelude
+import Prelude (pure, ($), (<*>), (<$>), bind, (<<<), show)
+
+import Control.Monad.Error.Class (throwError)
 
 import Data.Map as M
 import Data.StrMap as SM
-import Data.Maybe
-import Data.Tuple
-import Data.Foreign
-import Data.Foreign.Class
-import Data.Foreign.Keys
-import Data.Foreign.NullOrUndefined
-import Data.Traversable
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.Tuple (Tuple(Tuple))
+import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign.Class (class IsForeign, readProp)
+import Data.Foreign.Keys (keys)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+import Data.Traversable (traverse)
 import Data.List (toList)
-
-import Optic.Core
-
 import Data.Argonaut.Core (jsonEmptyObject, fromString)
-import Data.Argonaut.Encode
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Combinators ((:=), (~>))
 
-import Types
-import Api.Schema.Validation
-import Api.Schema.BusinessData.Key
-
+import Types (UTCTime, UpdateId, TagId)
+import Api.Schema.Validation (HoleCoords, ValidationResult)
+import Api.Schema.BusinessData.Key (Key, parseKeyF)
 
 newtype Update = Update (M.Map Key (Tuple (Maybe String) (Maybe String)))
 
@@ -170,6 +168,7 @@ instance isForeignUpdateEntryHuman :: IsForeign UpdateEntryHuman where
       "customRow" -> HumanCustomRow <$> readProp "table" json
                                     <*> readProp "member" json
                                     <*> readProp "sheet" json
+      _           -> throwError $ JSONError "expected `header`, `fact`, `subsetZ`, `customZ` or `customRow`"
 
 newtype TagDesc = TagDesc
   { tagDescTagId    :: TagId
