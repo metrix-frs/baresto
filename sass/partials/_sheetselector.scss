@@ -19,10 +19,12 @@
     td {
       .subsetMemberId {
         font-size: 11px;
+        font-family: monospace;
         color: #999;
         padding-right: 8px;
       }
       .customMemberId {
+        font-family: monospace;
         position: absolute;
         right: 5px;
         top: 4px;
