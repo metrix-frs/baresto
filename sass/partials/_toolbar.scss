@@ -212,11 +212,12 @@
   overflow: hidden;
   .name {
     float: left;
+    min-width: 150px;
     padding-left: 3px;
     line-height: $toolbar-height;
     font-size: 20pt;
     position: relative;
-    top: -6px;
+    top: -8px;
     font-weight: bold;
     margin: 0px 10px 0px 0px;
   }
