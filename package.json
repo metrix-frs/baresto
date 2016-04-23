@@ -5,6 +5,11 @@
     "Moritz Drexl <m.drexl@metrix-frs.de>",
     "Ruben Moor <r.moor@metrix-frs.de>"
   ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@gitlab.mdrexl.net:10022/holger/lobster.git"
+  },
   "dependencies": {
     "virtual-dom": "2.0.1"
   },

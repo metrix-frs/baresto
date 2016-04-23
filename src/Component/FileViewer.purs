@@ -1,55 +1,50 @@
 module Component.FileViewer where
 
-import Prelude (class Ord, class Eq, Unit, ($), (<$>), show, (<>), (==), (<<<), unit, pure, bind, void, not, flip)
-
+import Component.FileMenu as Menu
+import Component.Handsontable as Hot
+import Component.ModuleBrowser as MB
+import Component.Validation as V
+import Data.Map as M
+import Halogen.HTML.Events.Indexed as E
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
+import Api (getUpdateSnapshot, apiCallParent, getHeader, getTable, postUpdate, getModule, getFileDetails)
+import Api.Schema.BusinessData (Update, UpdateDesc(UpdateDesc), UpdateGet(UpdateGet), UpdatePost(UpdatePost), UpdatePostResult(UpdatePostResult), ValidationType(VTUpdate))
+import Api.Schema.File (FileDesc(FileDesc))
+import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templateTables, _templates, _templateGroups)
+import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
+import Component.Common (toolButton)
+import Control.Monad (unless)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Except.Trans (runExceptT)
 import Control.Monad.Rec.Class (tailRecM)
-
-import Data.Either (Either(Right, Left))
 import Data.Array (head, replicate)
-import Data.Maybe (Maybe(Just, Nothing), maybe)
-import Data.Map as M
-import Data.Tuple (Tuple(Tuple))
-import Data.List (fromList)
+import Data.Either (Either(Right, Left))
 import Data.Foldable (find, foldl)
-import Data.Functor.Coproduct (Coproduct())
+import Data.Functor.Coproduct (Coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
-
+import Data.List (fromList)
+import Data.Maybe (Maybe(Nothing, Just), maybe)
+import Data.Tuple (Tuple(Tuple))
 import Halogen (ParentHTML, RenderParent, ChildF, Peek, ParentDSL, EvalParent, Component, InstalledState, parentComponent', gets, action, query', modify, liftEff', liftH, liftAff', eventSource, subscribe')
-import Halogen.Component.ChildPath (ChildPath(), cpL, cpR, (:>))
-import Halogen.HTML.Indexed as H
-import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
-
-import Component.ModuleBrowser as MB
-import Component.Handsontable as Hot
-import Component.Validation as V
-import Component.FileMenu as Menu
-import Component.Common (toolButton)
-
+import Halogen.Component.ChildPath (ChildPath, cpL, cpR, (:>))
+import Lib.BusinessData (BusinessData, Edit(DeleteCustomRow, NewCustomRow, SetFacts, DeselectSubsetZMember, SelectSubsetZMember, DeleteCustomZMember, RenameCustomZMember, NewCustomZMember), _snapshot, getSubsetZMembers, getCustomZMembers, isSubsetZMemberSelected, doesSheetExist, emptyBusinessData, applyUpdate, sheetToZLocation, editToUpdate, getMaxSheet)
+import Lib.Table (S(S))
 import Optic.Core (LensP, (^.), (%~), (..), (.~), lens)
 import Optic.Refractor.Prism (_Just)
-
-import Api (getUpdateSnapshot, apiCallParent, getHeader, getTable, postUpdate, getModule, getFileDetails)
-import Api.Schema.File (FileDesc(FileDesc))
-import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
-import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templateTables, _templates, _templateGroups)
-import Api.Schema.BusinessData (Update, UpdateDesc(UpdateDesc), UpdateGet(UpdateGet), UpdatePost(UpdatePost), UpdatePostResult(UpdatePostResult), ValidationType(VTUpdate))
-import Lib.Table (S(S))
-import Lib.BusinessData (BusinessData, Edit(DeleteCustomRow, NewCustomRow, SetFacts, DeselectSubsetZMember, SelectSubsetZMember, DeleteCustomZMember, RenameCustomZMember, NewCustomZMember), _snapshot, getSubsetZMembers, getCustomZMembers, isSubsetZMemberSelected, doesSheetExist, emptyBusinessData, applyUpdate, sheetToZLocation, editToUpdate, getMaxSheet)
-import Types (Metrix, TableId, UpdateId, UTCTime, ModuleId)
-
+import Prelude (class Ord, class Eq, Unit, ($), (<$>), show, (<>), (==), (<<<), unit, pure, bind, void, not, flip)
+import Types (Metrix, TableId, UpdateId, ModuleId)
 import Utils (cls, makeIndexed, readId, peek', getEntropy, minOrd)
 
 foreign import data Queue :: * -> *
 
-foreign import newQueue      :: forall a eff. Eff (ref :: REF | eff) (Queue a)
-foreign import registerQueue :: forall a eff. Queue a -> (a -> Eff (ref :: REF | eff) Unit) -> Eff (ref :: REF | eff) Unit
-foreign import pushQueue     :: forall a eff. Queue a -> a -> Eff (ref :: REF | eff) Unit
-foreign import triggerQueue  :: forall a eff. Queue a -> Eff (ref :: REF | eff) Unit
+foreign import newQueue        :: forall a eff. Eff (ref :: REF | eff) (Queue a)
+foreign import registerQueue   :: forall a eff. Queue a -> (a -> Eff (ref :: REF | eff) Unit) -> Eff (ref :: REF | eff) Unit
+foreign import unregisterQueue :: forall a eff. Queue a -> Eff (ref :: REF | eff) Unit
+foreign import pushQueue       :: forall a eff. Queue a -> a -> Eff (ref :: REF | eff) Unit
+foreign import nextElemQueue   :: forall a eff. Queue a -> Eff (ref :: REF | eff) Boolean
 
 --
 
@@ -95,12 +90,17 @@ cpMenu = cpR :> cpR :> cpR
 
 --
 
+data SaveState
+  = Saved
+  | Saving
+  | SaveError String
+
 type FileData =
   { businessData  :: BusinessData
   , fileDesc      :: FileDesc
   , moduleId      :: ModuleId
   , lastUpdateId  :: UpdateId
-  , lastSaved     :: Maybe UTCTime
+  , saveState     :: SaveState
   , queue         :: Queue Update
   }
 
@@ -158,7 +158,13 @@ viewer propUpdateId = parentComponent' render eval peek
         , P.initializer \_ -> action Init
         ]
         [ H.div [ cls "toolbar" ]
-          [ toolButton "Close" "octicon octicon-x" "close" CloseFile
+          [ let enabled = case st.fileData of
+                  Just fd -> case fd.saveState of
+                    Saving -> false
+                    Saved -> true
+                    SaveError _ -> false
+                  Nothing -> true
+            in toolButton "Close" "octicon octicon-x" "close" enabled CloseFile
           , H.div [ cls "toolsep tooldim-sep-close" ] []
           , case st.fileData of
               Just fd ->
@@ -178,9 +184,17 @@ viewer propUpdateId = parentComponent' render eval peek
                 FileDesc fd' ->
                   H.div [ cls "tool tooldim-fileinfo" ]
                   [ H.div [ cls "name" ]
-                    [ H.p_
-                      [ H.text fd'.fileDescLabel ]
-                    ]
+                    [ H.text fd'.fileDescLabel ]
+                  , H.div [ cls "saved" ] $ case fd.saveState of
+                      Saving ->
+                        [ H.span [ cls "spinner" ] []
+                        , H.text "Saving and validating..." ]
+                      Saved ->
+                        [ H.span [ cls "octicon octicon-check" ] []
+                        , H.text "All changes saved" ]
+                      SaveError msg ->
+                        [ H.span [ cls "octicon octicon-x" ] []
+                        , H.text $ "Error saving changes: " <> msg ]
                   , H.div [ cls "module" ]
                     [ H.p_
                       [ H.text fd'.fileDescTaxLabel
@@ -230,7 +244,7 @@ viewer propUpdateId = parentComponent' render eval peek
                       , fileDesc: fileDesc
                       , moduleId: fd.fileDescModId
                       , lastUpdateId: upd.updateGetId
-                      , lastSaved: Just upd.updateGetCreated
+                      , saveState: Saved
                       , queue: queue
                       }
                     }
@@ -266,23 +280,24 @@ viewer propUpdateId = parentComponent' render eval peek
           result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
           case result of
             Left err -> do
-              modify $ _fileData .. _Just %~ _{ lastSaved = Nothing }
+              modify $ _fileData .. _Just %~ _{ saveState = SaveError err.title }
               liftH $ liftEff' do
                 log $ "Error: " <> err.title
                 log $ "Details: " <> err.body
               pure $ Left unit
             Right (UpdatePostResult res) -> case res.uprUpdateDesc of
               UpdateDesc desc -> do
-                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId
-                                                , lastSaved = Just desc.updateDescCreated }
+                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId }
                 query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
                 query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
                 query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
                 pure $ Right unit
-        liftH $ liftEff' $ triggerQueue fd.queue
+        running <- liftH $ liftEff' $ nextElemQueue fd.queue
+        unless (running) $ modify $ _fileData .. _Just %~ _{ saveState = Saved }
       pure next
 
     eval (CloseFile next) = do
+      withFileData \fd -> liftH $ liftEff' $ unregisterQueue fd.queue
       pure next
 
     eval (SelectSheet s next) = do
@@ -352,6 +367,7 @@ viewer propUpdateId = parentComponent' render eval peek
         Nothing -> pure unit
         Just update -> do
           modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
+          modify $ _fileData .. _Just %~ _{ saveState = Saving }
           liftH $ liftEff' $ pushQueue fd.queue update
 
     rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
@@ -415,9 +431,7 @@ viewer propUpdateId = parentComponent' render eval peek
       peek' cpMenu child \s q -> case q of
         Menu.UploadCsvConfirm (UpdateGet u) _ -> do
           modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
-          modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId
-                                          , lastSaved = Just u.updateGetCreated
-                                          }
+          modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId }
           query' cpValidation ValidationSlot $ action $ V.ValidateAll u.updateGetId
           query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
           rebuildHot
@@ -427,7 +441,6 @@ viewer propUpdateId = parentComponent' render eval peek
             modify $ _fileData .. _Just %~
                _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
                 , lastUpdateId = upd.updateGetId
-                , lastSaved = Just upd.updateGetCreated
                 }
             query' cpValidation ValidationSlot $ action $ V.ValidateAll upd.updateGetId
             rebuildHot
@@ -542,7 +555,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
               [ H.text $ label <> ":" ]
             , H.select [ E.onValueChange $ E.input $ selectSheet ]
                        $ customOption <$> makeIndexed (getCustomZMembers axId fd.businessData)
-            , toolButton "Configure" "octicon octicon-tools" "conf" ToggleSheetConfiguratorOpen
+            , toolButton "Configure" "octicon octicon-tools" "conf" true ToggleSheetConfiguratorOpen
             ] <> if td.sheetConfiguratorOpen then
                 [ H.div [ cls "sheet-configurator" ]
                   [ H.table_ $
@@ -566,7 +579,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
             , H.select
               [ E.onValueChange $ E.input $ selectSheet ]
               $ subsetOption mems <$> makeIndexed (getSubsetZMembers axId fd.businessData)
-            , toolButton "Configure" "octicon octicon-tools" "conf" ToggleSheetConfiguratorOpen
+            , toolButton "Configure" "octicon octicon-tools" "conf" true ToggleSheetConfiguratorOpen
             ] <> if td.sheetConfiguratorOpen then
                 [ H.div [ cls "sheet-configurator" ]
                   [ H.table_ $ subsetMember axId <$> mems ]

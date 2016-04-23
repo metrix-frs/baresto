@@ -6,12 +6,11 @@ import Control.Monad (when)
 import Control.Monad.Writer (tell, execWriter)
 
 import Data.Array (length, filter, snoc, concat, cons, last)
-import Data.List (fromList)
 import Data.Map as M
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
 import Data.Foldable (foldl, foldr, for_, find)
 import Data.Tuple (Tuple(Tuple))
-import Data.List (toList)
+import Data.List (toList, fromList)
 import Data.Functor.Coproduct (Coproduct())
 import Data.Generic (class Generic, gEq, gCompare)
 
@@ -121,8 +120,8 @@ selector = parentComponent' render eval peek
             , P.id_ "importFile"
             ]
           ]
-        , toolButton "XBRL" "octicon octicon-arrow-up" "import-xbrl" UploadXbrl
-        , toolButton "Baresto File" "octicon octicon-arrow-up" "import-baresto" UploadBaresto
+        , toolButton "XBRL" "octicon octicon-arrow-up" "import-xbrl" true UploadXbrl
+        , toolButton "Baresto File" "octicon octicon-arrow-up" "import-baresto" true UploadBaresto
         , H.div [ cls "toolsep tooldim-sep-xbrl" ] []
         , H.div [ cls "toolsep tooldim-sep-create" ] []
         ] <> (
@@ -138,7 +137,7 @@ selector = parentComponent' render eval peek
                     , P.value st'.newFileName
                     ]
                   ]
-                , toolButton "Create" "octicon octicon-file-text" "create"
+                , toolButton "Create" "octicon octicon-file-text" "create" true
                              (CreateFile mId st'.newFileName)
                 ]
               _ ->

@@ -10,20 +10,29 @@ var Queue = function () {
 
 Queue.prototype.push = function (a) {
   this.queue.push(a);
-  this.trigger();
+  if (!this.running) {
+    this.nextElem();
+  }
 };
 
-Queue.prototype.trigger = function () {
+Queue.prototype.nextElem = function () {
+  this.running = false;
   if (this.callback) {
     var elem = this.queue.shift();
     if (elem) {
+      this.running = true;
       this.callback(elem)();
     }
   }
+  return this.running;
 };
 
 Queue.prototype.register = function (cb) {
   this.callback = cb;
+};
+
+Queue.prototype.unregister = function () {
+  this.callback = null;
 };
 
 exports.newQueue = function () {
@@ -38,6 +47,12 @@ exports.registerQueue = function (queue) {
   };
 };
 
+exports.unregisterQueue = function (queue) {
+  return function () {
+    return queue.unregister();
+  };
+};
+
 exports.pushQueue = function (queue) {
   return function (elem) {
     return function () {
@@ -46,8 +61,8 @@ exports.pushQueue = function (queue) {
   };
 };
 
-exports.triggerQueue = function (queue) {
+exports.nextElemQueue = function (queue) {
   return function () {
-    return queue.trigger();
+    return queue.nextElem();
   };
 };

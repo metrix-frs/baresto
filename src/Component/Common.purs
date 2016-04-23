@@ -1,11 +1,9 @@
 module Component.Common where
 
-import Prelude ((<>), ($))
-
-import Halogen (HTML, Action)
-import Halogen.HTML.Indexed as H
 import Halogen.HTML.Events.Indexed as E
-
+import Halogen.HTML.Indexed as H
+import Halogen (HTML, Action)
+import Prelude ((<>), ($))
 import Utils (cls)
 
 modal :: forall p f. String -> Array (HTML p f)
@@ -19,11 +17,12 @@ modal title body controls =
     ]
   ]
 
-toolButton :: forall p f. String -> String -> String -> Action f -> HTML p f
-toolButton name icon dimClass action =
-  H.div
-  [ cls $ "toolbutton tooldim-" <> dimClass
-  , E.onClick $ E.input_ action ]
+toolButton :: forall p f. String -> String -> String -> Boolean -> Action f -> HTML p f
+toolButton name icon dimClass enabled action =
+  H.div (
+    [ cls $ "toolbutton tooldim-" <> dimClass <> (if enabled then "" else " disabled")
+    ] <> if enabled then [ E.onClick $ E.input_ action ] else []
+  )
   [ H.span
     [ cls $ "icon " <> icon
     ] []

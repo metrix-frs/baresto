@@ -17,7 +17,6 @@ import Halogen.HTML.Events.Indexed as E
 import Api (apiUrl, newTag, apiCall, uploadCsv, getUpdatePast)
 import Api.Schema.Import (CsvImportConf(CsvImportConf), Warning(Warning))
 import Api.Schema.BusinessData (UpdateGet, TagDesc(TagDesc), UpdateDesc(UpdateDesc), UpdateEntry(UpdateEntry), UpdateEntryHuman(HumanCustomRow, HumanCustomZ, HumanSubsetZ, HumanFact, HumanHeaderFact))
-import Api (apiUrl)
 
 import Component.Common (modal, toolButton)
 import Component.Validation.Finding (renderHoleCoords)
@@ -72,7 +71,7 @@ fileMenu = component render eval
 
     render :: Render State Query
     render st = H.div_ $
-      [ toolButton "Menu" "octicon octicon-three-bars" "menu" (if st.open then Close else Open)
+      [ toolButton "Menu" "octicon octicon-three-bars" "menu" true (if st.open then Close else Open)
       ] <> if st.open
              then [ renderMenu st ]
              else []
