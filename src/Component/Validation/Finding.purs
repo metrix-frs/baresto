@@ -66,7 +66,7 @@ renderTerm f = case f of
       [ renderValue (show v)
       ]
     FNumber  v ->
-      [ renderValue (show v)
+      [ renderValue v
       ]
     FString  v ->
       [ renderValue v

@@ -141,7 +141,7 @@ data Formula
   | FBinary String Formula Formula
   | FIfThenElse Formula Formula Formula
   | FBoolean Boolean
-  | FNumber Number
+  | FNumber String
   | FString String
   | FModuleParam String ModuleParamValue
   | FSet (Array Formula)
