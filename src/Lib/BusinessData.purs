@@ -149,10 +149,8 @@ editToUpdate bde bd = case bde of
               fromMaybe v $ lookupBySnd v pairs
             BooleanData ->
               fromMaybe v $ lookupBySnd v boolValueMap
-            MonetaryData ->
-              stripDecimals v 2
-            PercentageData ->
-              stripDecimals v 4
+            MonetaryData -> v
+            PercentageData -> v
             _ -> v
           Just _ -> v
           Nothing -> v
