@@ -16,6 +16,7 @@ module Utils
   , getInputFileList
   , Pagination
   , paginate
+  , tryFormatNumber
   ) where
 
 import Prelude (class Ord, Unit, Ordering(GT, LT), ($), (+), (/), (-), (*), (<$>), unit, pure, (==), (<<<), return, bind, compare, map)
@@ -144,3 +145,7 @@ paginate segmentLength xs currentPage =
     offset = segmentLength * (page - 1)
     pages = maxOrd (ceil $ toNumber len / toNumber segmentLength) 1
     page = minOrd pages currentPage
+
+-- Number formatting
+
+foreign import tryFormatNumber :: Int -> String -> String

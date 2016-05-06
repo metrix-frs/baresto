@@ -15,7 +15,7 @@ import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 
 import Api.Schema.Validation (Finding(Finding), Formula(FBinary, FUnary, FSet, FModuleParam, FString, FNumber, FBoolean, FIfThenElse, FMember, FSum, FHole), Hole(Hole), HoleCoordX(HCX), HoleCoordY(HCYCustom, HCYClosed), HoleCoordZ(HCZSubset, HCZCustom, HCZClosed, HCZSingleton), HoleCoords(HoleCoords))
-import Utils (cls)
+import Utils (cls, tryFormatNumber)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
 renderFinding (Finding f) = H.li_ $
@@ -66,7 +66,7 @@ renderTerm f = case f of
       [ renderValue (show v)
       ]
     FNumber  v ->
-      [ renderValue v
+      [ renderValue $ tryFormatNumber 2 v
       ]
     FString  v ->
       [ renderValue v
@@ -150,7 +150,7 @@ renderHole (Hole h) = H.div [ cls "hole" ]
   , H.br_
   , H.div [ cls "data" ]
     [ case h.holeData of
-        Just d -> H.text d
+        Just d -> H.text $ tryFormatNumber 2 d
         Nothing -> H.span [ cls "missing", P.title "Not filled in, treated as zero." ] [ H.text "0.00" ]
     ]
   , H.br_
