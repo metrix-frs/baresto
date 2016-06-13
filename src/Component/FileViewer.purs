@@ -15,6 +15,7 @@ import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templ
 import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
 import Component.Common (toolButton)
 import Control.Monad (unless)
+import Control.Monad.Aff.Free (fromAff, fromEff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Ref (REF)
@@ -27,8 +28,9 @@ import Data.Functor.Coproduct (Coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
 import Data.List (fromList)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
+import Data.NaturalTransformation (Natural)
 import Data.Tuple (Tuple(Tuple))
-import Halogen (ParentHTML, RenderParent, ChildF, Peek, ParentDSL, EvalParent, Component, InstalledState, parentComponent', gets, action, query', modify, liftEff', liftH, liftAff', eventSource, subscribe')
+import Halogen (ParentHTML, ParentDSL, ChildF, Component, ParentState, gets, action, query', modify, eventSource, subscribe', lifecycleParentComponent)
 import Halogen.Component.ChildPath (ChildPath, cpL, cpR, (:>))
 import Lib.BusinessData (BusinessData, Edit(DeleteCustomRow, NewCustomRow, SetFacts, DeselectSubsetZMember, SelectSubsetZMember, DeleteCustomZMember, RenameCustomZMember, NewCustomZMember), _snapshot, getSubsetZMembers, getCustomZMembers, isSubsetZMemberSelected, doesSheetExist, emptyBusinessData, applyUpdate, sheetToZLocation, editToUpdate, getMaxSheet)
 import Lib.Table (S(S))
@@ -145,329 +147,336 @@ data Query a
   | ChooseMember Int a
   | UnchooseMember Int a
 
-type StateP = InstalledState State ChildState Query ChildQuery Metrix ChildSlot
+type StateP = ParentState State ChildState Query ChildQuery Metrix ChildSlot
 type QueryP = Coproduct Query (ChildF ChildSlot ChildQuery)
 
 viewer :: UpdateId -> Component StateP QueryP Metrix
-viewer propUpdateId = parentComponent' render eval peek
-  where
+viewer propUpdateId = lifecycleParentComponent
+  { render
+  , eval: eval propUpdateId
+  , peek: Just peek
+  , initializer: Just (action Init)
+  , finalizer: Nothing
+  }
 
-    render :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
-    render st = H.div
-        [ cls "container"
-        , P.initializer \_ -> action Init
-        ]
-        [ H.div [ cls "toolbar" ]
-          [ let enabled = case st.fileData of
-                  Just fd -> case fd.saveState of
-                    Saving -> false
-                    Saved -> true
-                    SaveError _ -> false
-                  Nothing -> true
-            in toolButton "Close" "octicon octicon-x" "close" enabled CloseFile
-          , H.div [ cls "toolsep tooldim-sep-close" ] []
-          , case st.fileData of
-              Just fd ->
-                H.slot' cpMenu MenuSlot \_ ->
-                { component: Menu.fileMenu
-                , initialState: Menu.initialState fd.lastUpdateId
-                }
-              Nothing -> H.div_ []
-          , H.div [ cls "toolsep tooldim-sep-menu" ] []
-          , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
-            { component: MB.moduleBrowser, initialState: MB.initialState }
-          , H.div [ cls "toolsep tooldim-sep-mb" ] []
-          , viewSheetSelector st
-          , H.div [ cls "toolsep tooldim-sep-sheets" ] []
-          , case st.fileData of
-              Just fd -> case fd.fileDesc of
-                FileDesc fd' ->
-                  H.div [ cls "tool tooldim-fileinfo" ]
-                  [ H.div [ cls "name" ]
-                    [ H.text fd'.fileDescLabel ]
-                  , H.div [ cls "saved" ] $ case fd.saveState of
-                      Saving ->
-                        [ H.span [ cls "spinner" ] []
-                        , H.text "Saving and validating..." ]
-                      Saved ->
-                        [ H.span [ cls "octicon octicon-check" ] []
-                        , H.text "All changes saved" ]
-                      SaveError msg ->
-                        [ H.span [ cls "octicon octicon-x" ] []
-                        , H.text $ "Error saving changes: " <> msg ]
-                  , H.div [ cls "module" ]
-                    [ H.p_
-                      [ H.text fd'.fileDescTaxLabel
-                      ]
-                    , H.p_
-                      [ H.text fd'.fileDescModLabel
-                      ]
-                    ]
+render :: State -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
+render st = H.div
+    [ cls "container"
+    ]
+    [ H.div [ cls "toolbar" ]
+      [ let enabled = case st.fileData of
+              Just fd -> case fd.saveState of
+                Saving -> false
+                Saved -> true
+                SaveError _ -> false
+              Nothing -> true
+        in toolButton "Close" "octicon octicon-x" "close" enabled CloseFile
+      , H.div [ cls "toolsep tooldim-sep-close" ] []
+      , case st.fileData of
+          Just fd ->
+            H.slot' cpMenu MenuSlot \_ ->
+            { component: Menu.fileMenu
+            , initialState: Menu.initialState fd.lastUpdateId
+            }
+          Nothing -> H.div_ []
+      , H.div [ cls "toolsep tooldim-sep-menu" ] []
+      , H.slot' cpModuleBrowser ModuleBrowserSlot \_ ->
+        { component: MB.moduleBrowser, initialState: MB.initialState }
+      , H.div [ cls "toolsep tooldim-sep-mb" ] []
+      , viewSheetSelector st
+      , H.div [ cls "toolsep tooldim-sep-sheets" ] []
+      , case st.fileData of
+          Just fd -> case fd.fileDesc of
+            FileDesc fd' ->
+              H.div [ cls "tool tooldim-fileinfo" ]
+              [ H.div [ cls "name" ]
+                [ H.text fd'.fileDescLabel ]
+              , H.div [ cls "saved" ] $ case fd.saveState of
+                  Saving ->
+                    [ H.span [ cls "spinner" ] []
+                    , H.text "Saving and validating..." ]
+                  Saved ->
+                    [ H.span [ cls "octicon octicon-check" ] []
+                    , H.text "All changes saved" ]
+                  SaveError msg ->
+                    [ H.span [ cls "octicon octicon-x" ] []
+                    , H.text $ "Error saving changes: " <> msg ]
+              , H.div [ cls "module" ]
+                [ H.p_
+                  [ H.text fd'.fileDescTaxLabel
                   ]
-              Nothing -> H.div_ []
-          ]
-        , case st.fileData of
-            Just fd -> H.slot' cpValidation ValidationSlot \_ ->
-                       { component: V.validation
-                       , initialState: V.initialState fd.lastUpdateId }
-            Nothing -> H.div_ []
-        , H.div [ cls "content" ]
-          [ H.div [ cls "panel-table"]
-            [ H.div [ cls "frame"]
-              [ case Tuple st.fileData st.tableData of
-                  Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
-                    then H.slot' cpHot HotSlot \_ ->
-                           { component: Hot.handsontable td.selectedSheet td.table fd.businessData
-                           , initialState: Hot.initialState }
-                    else H.text "No sheets to display. Add member or select member for the z-Axis."
-                  _ -> H.div_ []
-              -- , H.div [ cls "bd-debug" ]
-              --   [ case st.fileData of
-              --       Just fd -> debugBusinessData fd.businessData
-              --       Nothing -> H.div_ []
-              --   ]
+                , H.p_
+                  [ H.text fd'.fileDescModLabel
+                  ]
+                ]
               ]
-            ]
+          Nothing -> H.div_ []
+      ]
+    , case st.fileData of
+        Just fd -> H.slot' cpValidation ValidationSlot \_ ->
+                   { component: V.validation
+                   , initialState: V.initialState fd.lastUpdateId }
+        Nothing -> H.div_ []
+    , H.div [ cls "content" ]
+      [ H.div [ cls "panel-table"]
+        [ H.div [ cls "frame"]
+          [ case Tuple st.fileData st.tableData of
+              Tuple (Just fd) (Just td) -> if hasSheets td.table fd.businessData
+                then H.slot' cpHot HotSlot \_ ->
+                       { component: Hot.handsontable td.selectedSheet td.table fd.businessData
+                       , initialState: Hot.initialState }
+                else H.text "No sheets to display. Add member or select member for the z-Axis."
+              _ -> H.div_ []
+          -- , H.div [ cls "bd-debug" ]
+          --   [ case st.fileData of
+          --       Just fd -> debugBusinessData fd.businessData
+          --       Nothing -> H.div_ []
+          --   ]
           ]
         ]
-      where
-        hasSheets table bd = doesSheetExist (S 0) table bd
+      ]
+    ]
+  where
+    hasSheets table bd = doesSheetExist (S 0) table bd
 
-    eval :: EvalParent Query State ChildState Query ChildQuery Metrix ChildSlot
-    eval (Init next) = do
-      queue <- liftH $ liftEff' newQueue
+eval :: UpdateId -> Natural Query (ParentDSL State ChildState Query ChildQuery Metrix ChildSlot)
+eval propUpdateId (Init next) = do
+  queue <- fromEff newQueue
 
-      apiCallParent (getFileDetails propUpdateId) \(fileDesc@(FileDesc fd)) -> do
-        apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) ->
-          modify $ _{ fileData = Just
-                      { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
-                      , fileDesc: fileDesc
-                      , moduleId: fd.fileDescModId
-                      , lastUpdateId: upd.updateGetId
-                      , saveState: Saved
-                      , queue: queue
-                      }
-                    }
-        apiCallParent (getModule fd.fileDescModId) \mod -> do
-          query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot mod
-          let mTableSelect = do
-                firstGroup <- head (mod ^. _templateGroups)
-                firstTempl <- head (firstGroup ^. _templates)
-                firstTbl   <- head (firstTempl ^. _templateTables)
-                pure { id: firstTbl ^. _tableEntryId
-                     , header: false
-                     , code: firstTbl ^. _tableEntryCode
-                     , label: firstTempl ^. _templateLabel
-                     }
-          case mTableSelect of
-            Just tableSelect -> do
-              loadTable tableSelect.id
-              query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
-              pure unit
-            Nothing -> pure unit
-
-      subscribe' $ eventSource (registerQueue queue) (pure <<< action <<< ProcessUpdate)
-      pure next
-
-    eval (ProcessUpdate update next) = do
-      withFileData \fd -> do
-        let payload = UpdatePost
-              { updatePostParentId: fd.lastUpdateId
-              , updatePostUpdate: update
-              , updatePostValidationType: VTUpdate
-              }
-        flip tailRecM unit \_ -> do
-          result <- liftH $ liftAff' $ runExceptT $ postUpdate payload
-          case result of
-            Left err -> do
-              modify $ _fileData .. _Just %~ _{ saveState = SaveError err.title }
-              liftH $ liftEff' do
-                log $ "Error: " <> err.title
-                log $ "Details: " <> err.body
-              pure $ Left unit
-            Right (UpdatePostResult res) -> case res.uprUpdateDesc of
-              UpdateDesc desc -> do
-                modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId }
-                query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
-                query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
-                query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
-                pure $ Right unit
-        running <- liftH $ liftEff' $ nextElemQueue fd.queue
-        unless (running) $ modify $ _fileData .. _Just %~ _{ saveState = Saved }
-      pure next
-
-    eval (CloseFile next) = do
-      withFileData \fd -> liftH $ liftEff' $ unregisterQueue fd.queue
-      pure next
-
-    eval (SelectSheet s next) = do
-      modify $ _tableData .. _Just %~ _{ selectedSheet = s }
-      rebuildHot
-      pure next
-
-    eval (ToggleSheetConfiguratorOpen next) = do
-      modify $ _tableData .. _Just .. _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
-      pure next
-
-    eval (AddSheet name next) = do
-      withTable \(Table tbl) -> case tbl.tableZAxis of
-        ZAxisCustom axId _ -> do
-          cm <- liftH $ liftEff' $ getEntropy 32
-          processEdit (NewCustomZMember axId cm name)
-          rebuildHot
-        _ -> pure unit
-      pure next
-
-    eval (RenameSheet index name next) = do
-      withTable \(Table tbl) -> case tbl.tableZAxis of
-        ZAxisCustom axId _ -> do
-          processEdit (RenameCustomZMember axId index name)
-        _ -> pure unit
-      pure next
-
-    eval (DeleteSheet index next) = do
-      withTable \(Table tbl) -> case tbl.tableZAxis of
-        ZAxisCustom axId _ -> do
-          processEdit (DeleteCustomZMember axId index)
-          setSelectedSheetMaxNumberSheets
-          rebuildHot
-        _ -> pure unit
-      pure next
-
-    eval (ChooseMember smId next) = do
-      withTable \(Table tbl) -> case tbl.tableZAxis of
-        ZAxisSubset axId _ _ -> do
-          processEdit (SelectSubsetZMember axId smId)
-          rebuildHot
-        _ -> pure unit
-      pure next
-
-    eval (UnchooseMember smId next) = do
-      withTable \(Table tbl) -> case tbl.tableZAxis of
-        ZAxisSubset axId _ _ -> do
-          processEdit (DeselectSubsetZMember axId smId)
-          setSelectedSheetMaxNumberSheets
-          rebuildHot
-        _ -> pure unit
-      pure next
-
-    setSelectedSheetMaxNumberSheets :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    setSelectedSheetMaxNumberSheets = withFileData $ \fd -> do
-      mTableData <- gets _.tableData
-      case mTableData of
-        Nothing -> pure unit
-        Just td -> do
-          let minS (S a) (S b) = S $ minOrd a b
-              newS = minS (getMaxSheet td.table fd.businessData) (td.selectedSheet)
-          modify $ _tableData .. _Just %~ _{ selectedSheet = newS }
-
-    processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    processEdit edit = withFileData \fd ->
-      case editToUpdate edit fd.businessData of
-        Nothing -> pure unit
-        Just update -> do
-          modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
-          modify $ _fileData .. _Just %~ _{ saveState = Saving }
-          liftH $ liftEff' $ pushQueue fd.queue update
-
-    rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    rebuildHot = do
-      mTableData <- gets _.tableData
-      case mTableData of
-        Nothing -> pure unit
-        Just td -> withFileData \fd -> do
-          let act = Hot.Rebuild td.selectedSheet td.table fd.businessData
-          void $ query' cpHot HotSlot $ action act
-
-    loadTable :: TableId -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
-    loadTable tableId =
-      withFileData \fd ->
-        apiCallParent (getTable fd.moduleId tableId) \table -> do
-          modify $ _tableData .~ Just { table: table
-                                      , selectedSheet: S 0
-                                      , sheetConfiguratorOpen: false
-                                      }
-          rebuildHot
-
-    peek :: Peek (ChildF ChildSlot ChildQuery) State ChildState Query ChildQuery Metrix ChildSlot
-    peek child = do
-
-      peek' cpHot child \_ q -> case q of
-        Hot.Edit changes _ ->
-          withTable \table ->
-            processEdit (SetFacts table changes)
-        Hot.AddRow _ ->
-          withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
-            YAxisCustom axId _ ->
-              case sheetToZLocation s table bd of
-                Nothing -> pure unit
-                Just zLoc -> do
-                  cm <- liftH $ liftEff' $ getEntropy 32
-                  processEdit (NewCustomRow axId zLoc cm)
-                  rebuildHot
-            _ -> pure unit
-        Hot.DeleteRow index _ ->
-          withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
-            YAxisCustom axId _ -> do
-              case sheetToZLocation s table bd of
-                Nothing -> pure unit
-                Just zLoc -> do
-                  processEdit (DeleteCustomRow axId zLoc index)
-                  rebuildHot
-            _ -> pure unit
-        _ -> pure unit
-
-      peek' cpModuleBrowser child \s q -> case q of
-        MB.SelectTable tSelect _ -> if tSelect.header
-          then  apiCallParent getHeader \table -> do
-                  modify $ _tableData .~ Just { table: table
-                                              , selectedSheet: S 0
-                                              , sheetConfiguratorOpen: false
-                                              }
-                  rebuildHot
-          else  loadTable tSelect.id
-        _ -> pure unit
-
-      peek' cpMenu child \s q -> case q of
-        Menu.UploadCsvConfirm (UpdateGet u) _ -> do
-          modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
-          modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId }
-          query' cpValidation ValidationSlot $ action $ V.ValidateAll u.updateGetId
-          query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
-          rebuildHot
-
-        Menu.OpenUpdate updateId _ ->
-          apiCallParent (getUpdateSnapshot updateId) \(UpdateGet upd) -> do
-            modify $ _fileData .. _Just %~
-               _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
-                , lastUpdateId = upd.updateGetId
+  apiCallParent (getFileDetails propUpdateId) \(fileDesc@(FileDesc fd)) -> do
+    apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) ->
+      modify $ _{ fileData = Just
+                  { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
+                  , fileDesc: fileDesc
+                  , moduleId: fd.fileDescModId
+                  , lastUpdateId: upd.updateGetId
+                  , saveState: Saved
+                  , queue: queue
+                  }
                 }
-            query' cpValidation ValidationSlot $ action $ V.ValidateAll upd.updateGetId
-            rebuildHot
-
-        _ -> pure unit
-
-    withTable action = do
-      mTableData <- gets _.tableData
-      case mTableData of
+    apiCallParent (getModule fd.fileDescModId) \mod -> do
+      query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.Boot mod
+      let mTableSelect = do
+            firstGroup <- head (mod ^. _templateGroups)
+            firstTempl <- head (firstGroup ^. _templates)
+            firstTbl   <- head (firstTempl ^. _templateTables)
+            pure { id: firstTbl ^. _tableEntryId
+                 , header: false
+                 , code: firstTbl ^. _tableEntryCode
+                 , label: firstTempl ^. _templateLabel
+                 }
+      case mTableSelect of
+        Just tableSelect -> do
+          loadTable tableSelect.id
+          query' cpModuleBrowser ModuleBrowserSlot $ action $ MB.SelectTable tableSelect
+          pure unit
         Nothing -> pure unit
-        Just tableData -> action tableData.table
 
-    withFileData action = do
-      mFileData <- gets _.fileData
-      case mFileData of
-        Nothing -> pure unit
-        Just fileData -> action fileData
+  subscribe' $ eventSource (registerQueue queue) (pure <<< action <<< ProcessUpdate)
+  pure next
 
-    withSheetTableBd action = do
-      mTableData <- gets _.tableData
-      mFileData <- gets _.fileData
-      case Tuple mTableData mFileData of
-        Tuple (Just td) (Just fd) ->
-          action td.selectedSheet td.table fd.businessData
+eval _ (ProcessUpdate update next) = do
+  withFileData \fd -> do
+    let payload = UpdatePost
+          { updatePostParentId: fd.lastUpdateId
+          , updatePostUpdate: update
+          , updatePostValidationType: VTUpdate
+          }
+    flip tailRecM unit \_ -> do
+      result <- fromAff $ runExceptT $ postUpdate payload
+      case result of
+        Left err -> do
+          modify $ _fileData .. _Just %~ _{ saveState = SaveError err.title }
+          fromEff do
+            log $ "Error: " <> err.title
+            log $ "Details: " <> err.body
+          pure $ Left unit
+        Right (UpdatePostResult res) -> case res.uprUpdateDesc of
+          UpdateDesc desc -> do
+            modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId }
+            query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
+            query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
+            query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
+            pure $ Right unit
+    running <- fromEff $ nextElemQueue fd.queue
+    unless (running) $ modify $ _fileData .. _Just %~ _{ saveState = Saved }
+  pure next
+
+eval _ (CloseFile next) = do
+  withFileData \fd -> fromEff $ unregisterQueue fd.queue
+  pure next
+
+eval _ (SelectSheet s next) = do
+  modify $ _tableData .. _Just %~ _{ selectedSheet = s }
+  rebuildHot
+  pure next
+
+eval _ (ToggleSheetConfiguratorOpen next) = do
+  modify $ _tableData .. _Just .. _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
+  pure next
+
+eval _ (AddSheet name next) = do
+  withTable \(Table tbl) -> case tbl.tableZAxis of
+    ZAxisCustom axId _ -> do
+      cm <- fromEff $ getEntropy 32
+      processEdit (NewCustomZMember axId cm name)
+      rebuildHot
+    _ -> pure unit
+  pure next
+
+eval _ (RenameSheet index name next) = do
+  withTable \(Table tbl) -> case tbl.tableZAxis of
+    ZAxisCustom axId _ -> do
+      processEdit (RenameCustomZMember axId index name)
+    _ -> pure unit
+  pure next
+
+eval _ (DeleteSheet index next) = do
+  withTable \(Table tbl) -> case tbl.tableZAxis of
+    ZAxisCustom axId _ -> do
+      processEdit (DeleteCustomZMember axId index)
+      setSelectedSheetMaxNumberSheets
+      rebuildHot
+    _ -> pure unit
+  pure next
+
+eval _ (ChooseMember smId next) = do
+  withTable \(Table tbl) -> case tbl.tableZAxis of
+    ZAxisSubset axId _ _ -> do
+      processEdit (SelectSubsetZMember axId smId)
+      rebuildHot
+    _ -> pure unit
+  pure next
+
+eval _ (UnchooseMember smId next) = do
+  withTable \(Table tbl) -> case tbl.tableZAxis of
+    ZAxisSubset axId _ _ -> do
+      processEdit (DeselectSubsetZMember axId smId)
+      setSelectedSheetMaxNumberSheets
+      rebuildHot
+    _ -> pure unit
+  pure next
+
+setSelectedSheetMaxNumberSheets :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+setSelectedSheetMaxNumberSheets = withFileData $ \fd -> do
+  mTableData <- gets _.tableData
+  case mTableData of
+    Nothing -> pure unit
+    Just td -> do
+      let minS (S a) (S b) = S $ minOrd a b
+          newS = minS (getMaxSheet td.table fd.businessData) (td.selectedSheet)
+      modify $ _tableData .. _Just %~ _{ selectedSheet = newS }
+
+processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+processEdit edit = withFileData \fd ->
+  case editToUpdate edit fd.businessData of
+    Nothing -> pure unit
+    Just update -> do
+      modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
+      modify $ _fileData .. _Just %~ _{ saveState = Saving }
+      fromEff $ pushQueue fd.queue update
+
+rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+rebuildHot = do
+  mTableData <- gets _.tableData
+  case mTableData of
+    Nothing -> pure unit
+    Just td -> withFileData \fd -> do
+      let act = Hot.Rebuild td.selectedSheet td.table fd.businessData
+      void $ query' cpHot HotSlot $ action act
+
+loadTable :: TableId -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+loadTable tableId =
+  withFileData \fd ->
+    apiCallParent (getTable fd.moduleId tableId) \table -> do
+      modify $ _tableData .~ Just { table: table
+                                  , selectedSheet: S 0
+                                  , sheetConfiguratorOpen: false
+                                  }
+      rebuildHot
+
+peek :: forall a. ChildF ChildSlot ChildQuery a -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+peek child = do
+
+  peek' cpHot child \_ q -> case q of
+    Hot.Edit changes _ ->
+      withTable \table ->
+        processEdit (SetFacts table changes)
+    Hot.AddRow _ ->
+      withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
+        YAxisCustom axId _ ->
+          case sheetToZLocation s table bd of
+            Nothing -> pure unit
+            Just zLoc -> do
+              cm <- fromEff $ getEntropy 32
+              processEdit (NewCustomRow axId zLoc cm)
+              rebuildHot
         _ -> pure unit
+    Hot.DeleteRow index _ ->
+      withSheetTableBd \s (table@(Table tbl)) bd -> case tbl.tableYAxis of
+        YAxisCustom axId _ -> do
+          case sheetToZLocation s table bd of
+            Nothing -> pure unit
+            Just zLoc -> do
+              processEdit (DeleteCustomRow axId zLoc index)
+              rebuildHot
+        _ -> pure unit
+    _ -> pure unit
 
-viewSheetSelector :: RenderParent State ChildState Query ChildQuery Metrix ChildSlot
+  peek' cpModuleBrowser child \s q -> case q of
+    MB.SelectTable tSelect _ -> if tSelect.header
+      then  apiCallParent getHeader \table -> do
+              modify $ _tableData .~ Just { table: table
+                                          , selectedSheet: S 0
+                                          , sheetConfiguratorOpen: false
+                                          }
+              rebuildHot
+      else  loadTable tSelect.id
+    _ -> pure unit
+
+  peek' cpMenu child \s q -> case q of
+    Menu.UploadCsvConfirm (UpdateGet u) _ -> do
+      modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
+      modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId }
+      query' cpValidation ValidationSlot $ action $ V.ValidateAll u.updateGetId
+      query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
+      rebuildHot
+
+    Menu.OpenUpdate updateId _ ->
+      apiCallParent (getUpdateSnapshot updateId) \(UpdateGet upd) -> do
+        modify $ _fileData .. _Just %~
+           _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
+            , lastUpdateId = upd.updateGetId
+            }
+        query' cpValidation ValidationSlot $ action $ V.ValidateAll upd.updateGetId
+        rebuildHot
+
+    _ -> pure unit
+
+withTable :: (Table -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit) -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+withTable action = do
+  mTableData <- gets _.tableData
+  case mTableData of
+    Nothing -> pure unit
+    Just tableData -> action tableData.table
+
+withFileData :: (FileData -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit) -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+withFileData action = do
+  mFileData <- gets _.fileData
+  case mFileData of
+    Nothing -> pure unit
+    Just fileData -> action fileData
+
+withSheetTableBd :: (S -> Table -> BusinessData -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit) -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
+withSheetTableBd action = do
+  mTableData <- gets _.tableData
+  mFileData <- gets _.fileData
+  case Tuple mTableData mFileData of
+    Tuple (Just td) (Just fd) ->
+      action td.selectedSheet td.table fd.businessData
+    _ -> pure unit
+
+viewSheetSelector :: State -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 viewSheetSelector st = case Tuple st.fileData st.tableData of
     Tuple (Just fd) (Just td) ->
       let

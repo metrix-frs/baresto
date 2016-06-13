@@ -1,26 +1,22 @@
 module Component.FileMenu where
 
-import Prelude ((<$>), ($), show, (<>), (/=), (<), (>), pure, bind, (+), (-), unit, (==))
-
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.Array (snoc)
-import Data.Tuple (Tuple(Tuple))
-import Data.String (take)
-
-import Optic.Core (LensP, (%~), lens)
-
-import Halogen (ComponentHTML, Render, Eval, Component, component, modify, get, gets, liftEff')
+import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-import Halogen.HTML.Events.Indexed as E
-
 import Api (apiUrl, newTag, apiCall, uploadCsv, getUpdatePast)
-import Api.Schema.Import (CsvImportConf(CsvImportConf), Warning(Warning))
 import Api.Schema.BusinessData (UpdateGet, TagDesc(TagDesc), UpdateDesc(UpdateDesc), UpdateEntry(UpdateEntry), UpdateEntryHuman(HumanCustomRow, HumanCustomZ, HumanSubsetZ, HumanFact, HumanHeaderFact))
-
+import Api.Schema.Import (CsvImportConf(CsvImportConf), Warning(Warning))
 import Component.Common (modal, toolButton)
 import Component.Validation.Finding (renderHoleCoords)
-
+import Control.Monad.Aff.Free (fromEff)
+import Data.Array (snoc)
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.NaturalTransformation (Natural)
+import Data.String (take)
+import Data.Tuple (Tuple(Tuple))
+import Halogen (ComponentDSL, ComponentHTML, Component, component, modify, get, gets)
+import Optic.Core (LensP, (%~), lens)
+import Prelude ((<$>), ($), show, (<>), (/=), (<), (>), pure, bind, (+), (-), unit, (==))
 import Types (Metrix, UpdateId)
 import Utils (cls, paginate, maxOrd, getInputFileList)
 
@@ -66,109 +62,111 @@ data Query a
   | SetLastUpdateId UpdateId a
 
 fileMenu :: Component State Query Metrix
-fileMenu = component render eval
-  where
+fileMenu = component
+  { render
+  , eval
+  }
 
-    render :: Render State Query
-    render st = H.div_ $
-      [ toolButton "Menu" "octicon octicon-three-bars" "menu" true (if st.open then Close else Open)
-      ] <> if st.open
-             then [ renderMenu st ]
-             else []
+render :: State -> ComponentHTML Query
+render st = H.div_ $
+  [ toolButton "Menu" "octicon octicon-three-bars" "menu" true (if st.open then Close else Open)
+  ] <> if st.open
+         then [ renderMenu st ]
+         else []
 
-    eval :: Eval Query State Query Metrix
-    eval (Open next) = do
-      modify $ _{ open = true }
-      pure next
+eval :: Natural Query (ComponentDSL State Query Metrix)
+eval (Open next) = do
+  modify $ _{ open = true }
+  pure next
 
-    eval (Close next) = do
-      modify $ _{ open = false
-                , location = LocationHome
-                }
-      pure next
+eval (Close next) = do
+  modify $ _{ open = false
+            , location = LocationHome
+            }
+  pure next
 
-    eval (GoHome next) = do
-      modify $ _{ location = LocationHome }
-      pure next
+eval (GoHome next) = do
+  modify $ _{ location = LocationHome }
+  pure next
 
-    eval (GoImportCsv next) = do
-      modify $ _{ location = LocationImportCsv }
-      pure next
+eval (GoImportCsv next) = do
+  modify $ _{ location = LocationImportCsv }
+  pure next
 
-    eval (GoPast next) = do
-      updateId <- gets _.lastUpdateId
-      apiCall (getUpdatePast updateId) \past ->
-        modify $ _{ location = LocationPast 1 past }
-      pure next
+eval (GoPast next) = do
+  updateId <- gets _.lastUpdateId
+  apiCall (getUpdatePast updateId) \past ->
+    modify $ _{ location = LocationPast 1 past }
+  pure next
 
-    eval (UploadCsv next) = do
-      mFiles <- liftEff' $ getInputFileList "csvFile"
-      updateId <- gets _.lastUpdateId
-      case mFiles of
-        Nothing -> pure unit
-        Just files -> apiCall (uploadCsv updateId files) \resp ->
-          modify $ _{ csvImportResponse = Just resp }
-      pure next
+eval (UploadCsv next) = do
+  mFiles <- fromEff $ getInputFileList "csvFile"
+  updateId <- gets _.lastUpdateId
+  case mFiles of
+    Nothing -> pure unit
+    Just files -> apiCall (uploadCsv updateId files) \resp ->
+      modify $ _{ csvImportResponse = Just resp }
+  pure next
 
-    -- peeked by FileViewer
-    eval (UploadCsvConfirm _ next) = do
-      modify _{ open = false
-              , location = LocationHome
-              , csvImportResponse = Nothing
-              }
-      pure next
+-- peeked by FileViewer
+eval (UploadCsvConfirm _ next) = do
+  modify _{ open = false
+          , location = LocationHome
+          , csvImportResponse = Nothing
+          }
+  pure next
 
-    eval (UploadCsvClose next) = do
-      modify _{ csvImportResponse = Nothing }
-      pure next
+eval (UploadCsvClose next) = do
+  modify _{ csvImportResponse = Nothing }
+  pure next
 
-    eval (NewTagSetName name next) = do
-      modify _{ newTagName = name }
-      pure next
+eval (NewTagSetName name next) = do
+  modify _{ newTagName = name }
+  pure next
 
-    eval (NewTagCreate next) = do
-      st <- get
-      if st.newTagName /= ""
-        then apiCall (newTag st.lastUpdateId st.newTagName) \tag ->
-              case st.location of
-                LocationPast page past -> do
-                  let go (UpdateDesc upd) = UpdateDesc $
-                        if upd.updateDescUpdateId == st.lastUpdateId
-                          then upd { updateDescTags = snoc upd.updateDescTags tag }
-                          else upd
-                  modify $ _{ location = LocationPast page (go <$> past) }
-                  modify $ _{ newTagName = "" }
-                _ -> pure unit
-        else pure unit
-      pure next
+eval (NewTagCreate next) = do
+  st <- get
+  if st.newTagName /= ""
+    then apiCall (newTag st.lastUpdateId st.newTagName) \tag ->
+          case st.location of
+            LocationPast page past -> do
+              let go (UpdateDesc upd) = UpdateDesc $
+                    if upd.updateDescUpdateId == st.lastUpdateId
+                      then upd { updateDescTags = snoc upd.updateDescTags tag }
+                      else upd
+              modify $ _{ location = LocationPast page (go <$> past) }
+              modify $ _{ newTagName = "" }
+            _ -> pure unit
+    else pure unit
+  pure next
 
-    eval (PastPagePrev next) = do
-      modify $ _location %~ \l -> case l of
-        LocationPast p past -> LocationPast (maxOrd 1 (p - 1)) past
-        LocationHome        -> LocationHome
-        LocationImportCsv   -> LocationImportCsv
-      pure next
+eval (PastPagePrev next) = do
+  modify $ _location %~ \l -> case l of
+    LocationPast p past -> LocationPast (maxOrd 1 (p - 1)) past
+    LocationHome        -> LocationHome
+    LocationImportCsv   -> LocationImportCsv
+  pure next
 
-    eval (PastPageNext next) = do
-      modify $ _location %~ \l -> case l of
-        LocationPast p past -> LocationPast (p + 1) past
-        LocationHome        -> LocationHome
-        LocationImportCsv   -> LocationImportCsv
-      pure next
+eval (PastPageNext next) = do
+  modify $ _location %~ \l -> case l of
+    LocationPast p past -> LocationPast (p + 1) past
+    LocationHome        -> LocationHome
+    LocationImportCsv   -> LocationImportCsv
+  pure next
 
-    -- peeked by FileViewer
-    eval (OpenUpdate updateId next) = do
-      modify _{ open = false
-              , location = LocationHome
-              , lastUpdateId = updateId
-              }
-      pure next
+-- peeked by FileViewer
+eval (OpenUpdate updateId next) = do
+  modify _{ open = false
+          , location = LocationHome
+          , lastUpdateId = updateId
+          }
+  pure next
 
-    eval (SetLastUpdateId updateId next) = do
-      modify $ _{ lastUpdateId = updateId }
-      pure next
+eval (SetLastUpdateId updateId next) = do
+  modify $ _{ lastUpdateId = updateId }
+  pure next
 
-renderMenu :: Render State Query
+renderMenu :: State -> ComponentHTML Query
 renderMenu st = H.div [ cls "menu-content" ] $
   case st.location of
     LocationHome ->

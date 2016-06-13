@@ -1,24 +1,20 @@
 module Component.ModuleBrowser where
 
-import Prelude (($), (==), bind, (+), (<), mod, (<$>), (<>), (-), pure, not, map, const)
-
 import Data.Map as M
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
-import Data.Array (length, index, findIndex, concat)
-
-import Optic.Core (LensP, (^.), (%~), (..), lens)
-import Optic.At (at)
-import Optic.Refractor.Prism (_Just)
-import Optic.Iso (non)
-
-import Halogen (ComponentHTML, Eval, Render, Component, component, modify)
-import Halogen.HTML.Indexed as H
 import Halogen.HTML.Events.Indexed as E
-
+import Halogen.HTML.Indexed as H
+import Api.Schema.Module (Module, Template, TemplateGroup, _templateGroups, _tableEntryCode, _tableEntryId, _templateTables, _templateLabel, _templates, _templateGroupLabel, _templateGroupId)
+import Data.Array (length, index, findIndex, concat)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.NaturalTransformation (Natural)
+import Halogen (ComponentHTML, ComponentDSL, Component, component, modify)
+import Optic.At (at)
+import Optic.Core (LensP, (^.), (%~), (..), lens)
+import Optic.Iso (non)
+import Optic.Refractor.Prism (_Just)
+import Prelude (($), (==), bind, (+), (<), mod, (<$>), (<>), (-), pure, not, map, const)
 import Types (TemplateGroupId, Metrix, TableId)
 import Utils (cls, shorten)
-
-import Api.Schema.Module (Module, Template, TemplateGroup, _templateGroups, _tableEntryCode, _tableEntryId, _templateTables, _templateLabel, _templates, _templateGroupLabel, _templateGroupId)
 
 type TableSelect =
   { id :: TableId
@@ -63,37 +59,39 @@ data Query a
   | ToggleOpen a
 
 moduleBrowser :: Component State Query Metrix
-moduleBrowser = component render eval
-  where
+moduleBrowser = component
+  { render
+  , eval
+  }
 
-    render :: Render State Query
-    render st = H.div_
-      [ case st of
-          Nothing -> H.text ""
-          Just mbInfo -> renderModuleBrowser mbInfo
-      ]
+render :: State -> ComponentHTML Query
+render st = H.div_
+  [ case st of
+      Nothing -> H.text ""
+      Just mbInfo -> renderModuleBrowser mbInfo
+  ]
 
-    eval :: Eval Query State Query Metrix
-    eval (Boot mod next) = do
-      modify $ const $ Just
-        { mod: mod
-        , open: true
-        , groupOpen: (M.empty :: M.Map TemplateGroupId Boolean)
-        , selectedTable: Nothing
-        }
-      pure next
+eval :: Natural Query (ComponentDSL State Query Metrix)
+eval (Boot mod next) = do
+  modify $ const $ Just
+    { mod: mod
+    , open: true
+    , groupOpen: (M.empty :: M.Map TemplateGroupId Boolean)
+    , selectedTable: Nothing
+    }
+  pure next
 
-    eval (SelectTable tSelect next) = do
-      modify $ map _{ selectedTable = Just tSelect }
-      pure next
+eval (SelectTable tSelect next) = do
+  modify $ map _{ selectedTable = Just tSelect }
+  pure next
 
-    eval (ToggleGroupOpen gId next) = do
-      modify $ _Just .. _groupOpen .. at gId .. non true %~ (not :: Boolean -> Boolean)
-      pure next
+eval (ToggleGroupOpen gId next) = do
+  modify $ _Just .. _groupOpen .. at gId .. non true %~ (not :: Boolean -> Boolean)
+  pure next
 
-    eval (ToggleOpen next) = do
-      modify $ map \info -> info { open = not info.open }
-      pure next
+eval (ToggleOpen next) = do
+  modify $ map \info -> info { open = not info.open }
+  pure next
 
 renderModuleBrowser :: ModuleBrowserInfo -> ComponentHTML Query
 renderModuleBrowser info = H.div

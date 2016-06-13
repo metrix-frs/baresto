@@ -1,26 +1,26 @@
 module Component.Handsontable where
 
-import Prelude (Unit, ($), pure, show, (<>), bind, unit, (<$>), (>), const)
-import Data.Array (length)
-import Data.Foldable (for_)
-import Data.Tuple (Tuple(Tuple))
-import Data.Maybe (Maybe(Nothing, Just))
-import DOM.HTML.Types (HTMLElement())
-
-import Halogen (ComponentDSL, Eval, Render, Component, action, eventSource_, subscribe, liftEff', eventSource, modify, get, component)
+import Lib.Table
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-import Handsontable (populateFromArray, handsontableNode, destroy) as Hot
-import Handsontable.Types (Handsontable, ChangeSource(ChangeSpliceRow, ChangeSpliceCol, ChangePaste, ChangeAutofill, ChangeLoadData, ChangePopulateFromArray, ChangeEdit, ChangeEmpty, ChangeAlter), Direction(DirectionDown), PopulateMethod(Overwrite)) as Hot
-import Handsontable.Hooks (onAfterRender, onAfterChange) as Hot
-import Utils (getIndices, initClipboard, cls)
-import Types (Metrix)
 import Api.Schema.Table (Table(Table), YAxis(YAxisCustom, YAxisClosed))
-import Lib.Table
-import Lib.BusinessData (BusinessData, getCustomYMembersBySheet, getFactTable)
-
 import Component.Handsontable.Options (tableOptions)
 import Component.Handsontable.Utils (attachClickHandler, forceString, fromHotCoords, toHotCoords)
+import Control.Monad.Aff.Free (fromEff)
+import DOM.HTML.Types (HTMLElement)
+import Data.Array (length)
+import Data.Foldable (for_)
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.NaturalTransformation (Natural)
+import Data.Tuple (Tuple(Tuple))
+import Halogen (ComponentDSL, ComponentHTML, Component, action, eventSource_, subscribe, eventSource, modify, get, lifecycleComponent)
+import Handsontable (populateFromArray, handsontableNode, destroy) as Hot
+import Handsontable.Hooks (onAfterRender, onAfterChange) as Hot
+import Handsontable.Types (Handsontable, ChangeSource(ChangeSpliceRow, ChangeSpliceCol, ChangePaste, ChangeAutofill, ChangeLoadData, ChangePopulateFromArray, ChangeEdit, ChangeEmpty, ChangeAlter), Direction(DirectionDown), PopulateMethod(Overwrite)) as Hot
+import Lib.BusinessData (BusinessData, getCustomYMembersBySheet, getFactTable)
+import Prelude (Unit, ($), pure, show, (<>), bind, unit, (<$>), (>), const)
+import Types (Metrix)
+import Utils (getIndices, initClipboard, cls)
 
 type State =
   { hotInstance :: Maybe (Hot.Handsontable String)
@@ -36,26 +36,35 @@ initialState =
 type Changes = Array (Tuple Coord String)
 
 data Query a
-  = Init HTMLElement a
+  = Init a
+  | SetRoot (Maybe HTMLElement) a
   | Edit Changes a
   | AddRow a
   | DeleteRow Int a
   | Rebuild S Table BusinessData a
 
 handsontable :: S -> Table -> BusinessData -> Component State Query Metrix
-handsontable propS propTable propBusinessData = component render eval
+handsontable propS propTable propBusinessData = lifecycleComponent
+    { render
+    , eval
+    , initializer: Just (action Init)
+    , finalizer: Nothing
+    }
   where
 
-    render :: Render State Query
+    render :: State -> ComponentHTML Query
     render = const $ H.div
       [ cls "hotContainer"
-      , P.initializer \el -> action (Init el)
+      , P.ref \el -> action (SetRoot el)
       ] []
 
-    eval :: Eval Query State Query Metrix
-    eval (Init el next) = do
-      modify _{ hotRoot = Just el }
+    eval :: Natural Query (ComponentDSL State Query Metrix)
+    eval (Init next) = do
       build propS propTable propBusinessData
+      pure next
+
+    eval (SetRoot el next) = do
+      modify _{ hotRoot = el }
       pure next
 
     eval (Edit changes next) = do
@@ -79,14 +88,14 @@ build s table@(Table tbl) bd = do
     Just el -> do
       case st.hotInstance of
         Nothing -> pure unit
-        Just hot -> liftEff' $ Hot.destroy hot
+        Just hot -> fromEff $ Hot.destroy hot
 
-      hot <- liftEff' $ Hot.handsontableNode el (tableOptions s table bd)
+      hot <- fromEff $ Hot.handsontableNode el (tableOptions s table bd)
       modify _{ hotInstance = Just hot }
 
       case getFactTable s table bd of
         Just vals | length vals > 0 -> do
-          liftEff' $ Hot.populateFromArray (toHotCoords table 0 0) vals Nothing Nothing Hot.Overwrite Hot.DirectionDown [] hot
+          fromEff $ Hot.populateFromArray (toHotCoords table 0 0) vals Nothing Nothing Hot.Overwrite Hot.DirectionDown [] hot
           pure unit
         _ -> pure unit
 
@@ -109,7 +118,7 @@ build s table@(Table tbl) bd = do
       case tbl.tableYAxis of
         YAxisClosed _ _ -> pure unit
         YAxisCustom axId _ -> do
-          liftEff' $ Hot.onAfterRender hot \_ -> initClipboard ".clipboard"
+          fromEff $ Hot.onAfterRender hot \_ -> initClipboard ".clipboard"
           subscribe $ eventSource_ (attachClickHandler hot "#newCustomY") do
             pure $ action AddRow
           for_ (getIndices $ getCustomYMembersBySheet axId s table bd) \i ->

@@ -1,57 +1,48 @@
 module Api where
 
-import Prelude (class Functor, Unit, (<>), ($), show, bind)
-
 import Control.Apply
-import Control.Monad.Aff.Class (class MonadAff)
-import Control.Monad.Eff.Class (class MonadEff)
-import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Except.Trans (runExceptT)
-
-import Data.Either (Either(Right, Left))
-import Data.Foreign.Null (Null)
-
-import DOM (DOM())
-import DOM.File.Types (FileList())
-
-import Network.HTTP.Affjax (AJAX, get)
-
-import Halogen.Query (liftEff', liftAff')
-import Halogen.Component (ParentDSL, ComponentDSL, liftQuery)
-import Types (UpdateId, TagId, FileId, ModuleId, TableId)
-
+import Component.ErrorBox as ErrorBox
+import Component.Spinner as Spinner
 import Api.Common (Api, getJsonResponse, getUnitResponse, uploadFiles, postJson)
 import Api.Schema (JsonEither, Name(Name))
-import Api.Schema.Selector (Framework)
-import Api.Schema.File (File, FileDesc)
-import Api.Schema.Module (Module)
-import Api.Schema.BusinessData (UpdateDesc, UpdatePostResult, UpdatePost, UpdateGet, TagDesc)
 import Api.Schema.Auth (AuthInfo)
+import Api.Schema.BusinessData (UpdateDesc, UpdatePostResult, UpdatePost, UpdateGet, TagDesc)
+import Api.Schema.File (File, FileDesc)
+import Api.Schema.Import (CsvImportConf, XbrlImportConf)
+import Api.Schema.Module (Module)
+import Api.Schema.Selector (Framework)
 import Api.Schema.Table (Table)
 import Api.Schema.Validation (ValidationResult)
-import Api.Schema.Import (CsvImportConf, XbrlImportConf)
+import Control.Monad.Aff.Free (class Affable, fromAff, fromEff)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Except.Trans (runExceptT)
+import DOM (DOM)
+import DOM.File.Types (FileList)
+import Data.Either (Either(Right, Left))
+import Data.Foreign.Null (Null)
+import Halogen.Component (ParentDSL, ComponentDSL, liftQuery)
+import Network.HTTP.Affjax (AJAX, get)
+import Prelude (class Monad, Unit, (<>), ($), show, bind)
+import Types (UpdateId, TagId, FileId, ModuleId, TableId)
 
-import Component.Spinner as Spinner
-import Component.ErrorBox as ErrorBox
-
-apiCall :: forall eff a s f g. (MonadEff (dom :: DOM, console :: CONSOLE | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
-        => Api eff a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit
+apiCall :: forall eff a s f g. (Affable (dom :: DOM, console :: CONSOLE, ajax :: AJAX | eff) g, Monad g)
+        => Api _ a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit
 apiCall call onSuccess = do
-  liftEff' $ Spinner.dispatch true
-  result <- liftAff' $ runExceptT call
-  liftEff' $ Spinner.dispatch false
+  fromEff $ Spinner.dispatch true
+  result <- fromAff $ runExceptT call
+  fromEff $ Spinner.dispatch false
   case result of
-    Left err -> liftEff' $ ErrorBox.raise err
+    Left err -> fromEff $ ErrorBox.raise err
     Right x -> onSuccess x
 
-apiCallParent :: forall eff a s s' f f' g p. (MonadEff (dom :: DOM, console :: CONSOLE | eff) g, MonadAff (ajax :: AJAX | eff) g, Functor g)
-        => Api eff a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
+apiCallParent :: forall eff a s s' f f' g p. (Affable (dom :: DOM, console :: CONSOLE, ajax :: AJAX | eff) g, Monad g)
+        => Api _ a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
 apiCallParent call onSuccess = do
-  liftQuery $ liftEff' $ Spinner.dispatch true
-  result <- liftQuery $ liftAff' $ runExceptT call
-  liftQuery $ liftEff' $ Spinner.dispatch false
+  liftQuery $ fromEff $ Spinner.dispatch true
+  result <- liftQuery $ fromAff $ runExceptT call
+  liftQuery $ fromEff $ Spinner.dispatch false
   case result of
-    Left err -> liftQuery $ liftEff' $ ErrorBox.raise err
+    Left err -> liftQuery $ fromEff $ ErrorBox.raise err
     Right x -> onSuccess x
 
 --

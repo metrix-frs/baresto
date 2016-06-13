@@ -10,13 +10,13 @@ import Data.Maybe (Maybe(Just))
 import Data.Tuple (snd)
 import Data.Either (Either(Left, Right))
 import Data.Foreign.Class (class IsForeign, readJSON)
+import Data.MediaType.Common (applicationJSON)
+import Data.HTTP.Method (Method(POST))
 
 import Network.HTTP.Affjax (Affjax, URL, AJAX, defaultRequest, affjax)
 import Network.HTTP.Affjax.Request (toRequest)
 import Network.HTTP.Affjax.Response (class Respondable)
-import Network.HTTP.MimeType.Common (applicationJSON)
 import Network.HTTP.StatusCode (StatusCode(StatusCode))
-import Network.HTTP.Method (Method(POST))
 import Network.HTTP.RequestHeader (RequestHeader(ContentType))
 
 import DOM.File.Types (FileList())
@@ -34,7 +34,7 @@ type Api eff a = ExceptT ErrorDetail (Aff (ajax :: AJAX | eff)) a
 
 postJson :: forall eff a b. (EncodeJson a, Respondable b) => URL -> a -> Affjax eff b
 postJson u c = affjax $ defaultRequest
-  { method = POST
+  { method = Left POST
   , url = u
   , content = Just $ snd $ toRequest (printJson (encodeJson c) :: String)
   , headers = [ContentType applicationJSON]
@@ -42,7 +42,7 @@ postJson u c = affjax $ defaultRequest
 
 uploadFiles :: forall eff b. (Respondable b) => URL -> FileList -> Affjax eff b
 uploadFiles u f = affjax $ defaultRequest
-  { method = POST
+  { method = Left POST
   , url = u
   , content = Just $ snd $ toRequest $ filesToFormData f
   -- TODO: report purescript-affjax issue about `multipartFormData` and boundary

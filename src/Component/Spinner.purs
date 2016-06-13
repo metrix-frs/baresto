@@ -6,28 +6,25 @@ module Component.Spinner
   , spinner
   ) where
 
-import Prelude (Unit, pure, (-), bind, (+), ($), (>), unit, (<>), (<$>), (>>=))
+import Halogen.HTML.Indexed as H
+import Halogen.HTML.Properties.Indexed as P
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, print)
 import Control.Monad.Eff.Exception (catchException)
-
-import Data.Nullable (toMaybe)
-import Data.Foldable (for_)
-
 import DOM (DOM)
-import DOM.HTML.Types (HTMLElement())
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
 import DOM.Event.Types (EventType(..))
 import DOM.HTML (window)
-import DOM.HTML.Types (htmlElementToEventTarget, htmlDocumentToParentNode)
+import DOM.HTML.Types (HTMLElement, htmlElementToEventTarget, htmlDocumentToParentNode)
 import DOM.HTML.Window (document)
-import DOM.Node.Types (elementToEventTarget)
 import DOM.Node.ParentNode (querySelector)
-
-import Halogen (Eval, Render, Component, component, modify, action, eventSource_, subscribe)
-import Halogen.HTML.Indexed as H
-import Halogen.HTML.Properties.Indexed as P
-
+import DOM.Node.Types (elementToEventTarget)
+import Data.Foldable (for_)
+import Data.Maybe (Maybe(..))
+import Data.NaturalTransformation (Natural)
+import Data.Nullable (toMaybe)
+import Halogen (ComponentDSL, ComponentHTML, Component, modify, action, eventSource_, subscribe, gets, lifecycleComponent)
+import Prelude (Unit, pure, (-), bind, (+), ($), (>), unit, (<>), (<$>), (>>=))
 import Types (Metrix)
 import Utils (cls, createEvent)
 
@@ -50,41 +47,59 @@ dispatch on = do
 
 --
 
-data State = State Int
+type State =
+  { calls :: Int
+  , element :: Maybe HTMLElement
+  }
 
 initialState :: State
-initialState = State 0
+initialState =
+  { calls: 0
+  , element: Nothing
+  }
 
 data Query a
-  = Init HTMLElement a
+  = Initialize a
+  | SetElement (Maybe HTMLElement) a
   | Inc a
   | Dec a
 
 spinner :: Component State Query Metrix
-spinner = component render eval
-  where
+spinner = lifecycleComponent
+    { render
+    , eval
+    , initializer: Just (action Initialize)
+    , finalizer: Nothing
+    }
 
-    render :: Render State Query
-    render (State count) = H.div
-      [ P.initializer \el -> action (Init el)
-      , P.id_ spinnerName
-      , cls "spinnerContainer"
-      ] $ if count > 0
-            then [ H.span [ cls "spinner-on" ] [] ]
-            else [ H.div [ cls "spinner-off" ] [] ]
+render :: State -> ComponentHTML Query
+render st = H.div
+  [ P.ref \el -> action (SetElement el)
+  , P.id_ spinnerName
+  , cls "spinnerContainer"
+  ] $ if st.calls > 0
+        then [ H.span [ cls "spinner-on" ] [] ]
+        else [ H.div [ cls "spinner-off" ] [] ]
 
-    eval :: Eval Query State Query Metrix
-    eval (Init el next) = do
+eval :: Natural Query (ComponentDSL State Query Metrix)
+eval (Initialize next) = do
+  el <- gets _.element
+  case el of
+    Nothing -> pure unit
+    Just el' -> do
       let attach typ callback = addEventListener typ
-            (eventListener \_ -> callback) true (htmlElementToEventTarget el)
+            (eventListener \_ -> callback) true (htmlElementToEventTarget el')
       subscribe $ eventSource_ (attach spinnerOn) do
         pure $ action Inc
       subscribe $ eventSource_ (attach spinnerOff) do
         pure $ action Dec
-      pure next
-    eval (Inc next) = do
-      modify (\(State count) -> State (count + 1))
-      pure next
-    eval (Dec next) = do
-      modify (\(State count) -> State (count - 1))
-      pure next
+  pure next
+eval (SetElement el next) = do
+  modify $ _{ element = el }
+  pure next
+eval (Inc next) = do
+  modify \st -> st { calls = st.calls + 1 }
+  pure next
+eval (Dec next) = do
+  modify \st -> st { calls = st.calls - 1 }
+  pure next
