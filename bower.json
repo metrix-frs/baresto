@@ -13,22 +13,22 @@
     "tests"
   ],
   "dependencies": {
-    "purescript-halogen": "0.5.18",
-    "purescript-affjax": "0.10.1",
-    "purescript-lens": "0.9.0",
+    "purescript-halogen": "0.8.0",
+    "purescript-affjax": "0.13.2",
+    "purescript-lens": "0.9.1",
+    "purescript-refractor": "themoritz/purescript-refractor#lens-dependency",
     "purescript-index": "0.4.0",
-    "purescript-refractor": "master",
     "purescript-optic": "0.9.1",
-    "purescript-argonaut-core": "0.2.0",
-    "purescript-argonaut-codecs": "0.5.1",
+    "purescript-argonaut-core": "0.2.3",
+    "purescript-argonaut-codecs": "0.6.1",
     "purescript-string-parsers": "rubenmoor/purescript-string-parsers#master",
-    "purescript-random": "0.2.2",
-    "purescript-globals": "0.2.0",
+    "purescript-random": "0.2.3",
+    "purescript-globals": "0.2.2",
     "purescript-datetime": "0.9.1",
     "purescript-handsontable": "master"
   },
   "resolutions": {
-    "purescript-lens": "0.9.0"
+    "purescript-lens": "0.9.1"
   },
   "devDependencies": {
     "closure-compiler": "http://dl.google.com/closure-compiler/compiler-latest.zip",
