@@ -69,10 +69,10 @@ a.tooltip {
   span {
     z-index: 10;
     display: none;
-    position: fixed;
-    margin-top: 1px;
-    margin-left: -10px;
-    width: 300px;
+    position: absolute;
+    bottom: 25px;
+    left: -10px;
+    width: 320px;
     padding: 3px 6px 3px 6px;
     box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
   }
@@ -80,7 +80,7 @@ a.tooltip {
     text-decoration: none;
     span {
       display: inline;
-      position: fixed;
+      position: absolute;
       color: white;
       border: none;
       border-radius: 5px;
@@ -91,8 +91,8 @@ a.tooltip {
         width: 10px;
         height: 10px;
         background-color: $metrix-darkgray;
-        top: 5px;
-        left: 305px;
+        bottom: -3px;
+        left: 10px;
         -webkit-transform: rotate(45deg);
       }
     }
