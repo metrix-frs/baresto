@@ -1,30 +1,30 @@
-"use strict";
+'use strict'
 
 // module Component.Handsontable.Options
 
-var Handsontable = require('handsontable');
+var Handsontable = require('handsontable')
 
-exports.renderSetClass = function(cls) {
-  return function(instance, td, row, col, prop, value, cellProperties) {
-    Handsontable.renderers.TextRenderer.apply(this, arguments);
-    td.className = cls;
-  };
-};
+exports.renderSetClass = function (cls) {
+  return function (instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments)
+    td.className = cls
+  }
+}
 
-exports.renderer = function(name) {
-  return name;
-};
+exports.renderer = function (name) {
+  return name
+}
 
-exports.renderHtml = function(cls) {
-  return function(instance, td, row, col, prop, value, cellProperties) {
-    var html = Handsontable.helper.stringify(value);
-    td.innerHTML = html;
-    td.className = cls;
-    return td;
-  };
-};
+exports.renderHtml = function (cls) {
+  return function (instance, td, row, col, prop, value, cellProperties) {
+    var html = Handsontable.helper.stringify(value)
+    td.innerHTML = html
+    td.className = cls
+    return td
+  }
+}
 
-exports.borderImpl = function(r1, c1, r2, c2, top, right, bot, left) {
+exports.borderImpl = function (r1, c1, r2, c2, top, right, bot, left) {
   var obj = {
     range: {
       from: {
@@ -36,26 +36,26 @@ exports.borderImpl = function(r1, c1, r2, c2, top, right, bot, left) {
         col: c2
       }
     }
-  };
+  }
   if (top != null) {
-    obj.top = top;
+    obj.top = top
   }
   if (right != null) {
-    obj.right = right;
+    obj.right = right
   }
   if (bot != null) {
-    obj.bottom = bot;
+    obj.bottom = bot
   }
   if (left != null) {
-    obj.left = left;
+    obj.left = left
   }
-  return obj;
-};
+  return obj
+}
 
-exports.colPropEmpty = {};
+exports.colPropEmpty = {}
 
-exports.colPropWidth = function(w) {
+exports.colPropWidth = function (w) {
   return {
     width: w
-  };
-};
+  }
+}

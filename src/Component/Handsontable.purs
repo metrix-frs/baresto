@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(Nothing, Just))
 import Data.NaturalTransformation (Natural)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentDSL, ComponentHTML, Component, action, eventSource_, subscribe, eventSource, modify, get, lifecycleComponent)
-import Handsontable (populateFromArray, handsontableNode, destroy) as Hot
+import Handsontable (populateFromArray, handsontableNode, destroy, render) as Hot
 import Handsontable.Hooks (onAfterRender, onAfterChange) as Hot
 import Handsontable.Types (Handsontable, ChangeSource(ChangeSpliceRow, ChangeSpliceCol, ChangePaste, ChangeAutofill, ChangeLoadData, ChangePopulateFromArray, ChangeEdit, ChangeEmpty, ChangeAlter), Direction(DirectionDown), PopulateMethod(Overwrite)) as Hot
 import Lib.BusinessData (BusinessData, getCustomYMembersBySheet, getFactTable)
@@ -93,12 +93,6 @@ build s table@(Table tbl) bd = do
       hot <- fromEff $ Hot.handsontableNode el (tableOptions s table bd)
       modify _{ hotInstance = Just hot }
 
-      case getFactTable s table bd of
-        Just vals | length vals > 0 -> do
-          fromEff $ Hot.populateFromArray (toHotCoords table 0 0) vals Nothing Nothing Hot.Overwrite Hot.DirectionDown [] hot
-          pure unit
-        _ -> pure unit
-
       subscribe $ eventSource (\cb -> Hot.onAfterChange hot (\c s -> cb (Tuple c s))) \(Tuple changes source) -> do
         let procChange change = let coord = fromHotCoords table change.col change.row
                                 in  Tuple (Coord (C coord.col) (R coord.row) s) (forceString change.new)
@@ -124,6 +118,12 @@ build s table@(Table tbl) bd = do
           for_ (getIndices $ getCustomYMembersBySheet axId s table bd) \i ->
             subscribe $ eventSource_ (attachClickHandler hot ("#delCustomY" <> show i)) do
               pure $ action $ DeleteRow i
+
+      case getFactTable s table bd of
+        Just vals | length vals > 0 -> do
+          fromEff $ Hot.populateFromArray (toHotCoords table 0 0) vals Nothing Nothing Hot.Overwrite Hot.DirectionDown [] hot
+          pure unit
+        _ -> fromEff $ Hot.render hot
 
   -- TODO: adjust resize
 
