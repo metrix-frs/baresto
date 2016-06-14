@@ -11,7 +11,11 @@
     "url": "ssh://git@gitlab.mdrexl.net:10022/holger/lobster.git"
   },
   "dependencies": {
-    "virtual-dom": "2.0.1"
+    "virtual-dom": "2.0.1",
+    "handsontable": "^0.25.1",
+    "moment": "^2.13.0",
+    "pikaday": "^1.4.0",
+    "zeroclipboard": "^2.2.0"
   },
   "devDependencies": {
     "browser-sync": "^2.11.2",

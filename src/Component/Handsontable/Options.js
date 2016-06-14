@@ -2,6 +2,8 @@
 
 // module Component.Handsontable.Options
 
+var Handsontable = require('handsontable');
+
 exports.renderSetClass = function(cls) {
   return function(instance, td, row, col, prop, value, cellProperties) {
     Handsontable.renderers.TextRenderer.apply(this, arguments);

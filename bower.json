@@ -29,9 +29,5 @@
   },
   "resolutions": {
     "purescript-lens": "0.9.1"
-  },
-  "devDependencies": {
-    "closure-compiler": "http://dl.google.com/closure-compiler/compiler-latest.zip",
-    "handsontable": "0.18.0"
   }
 }
