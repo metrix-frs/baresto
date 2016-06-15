@@ -1,54 +1,39 @@
 module Api.Schema.BusinessData where
 
-import Prelude (pure, ($), (<*>), (<$>), bind, (<<<), show)
-
-import Control.Monad.Error.Class (throwError)
-
 import Data.Map as M
 import Data.StrMap as SM
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.Tuple (Tuple(Tuple))
+import Api.Schema.BusinessData.Key (Key, parseKeyF)
+import Api.Schema.BusinessData.Value (Value, UpdateValue)
+import Api.Schema.Validation (HoleCoords, ValidationResult)
+import Control.Monad.Error.Class (throwError)
+import Data.Argonaut.Combinators ((:=), (~>))
+import Data.Argonaut.Core (jsonEmptyObject, fromString)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Foreign (ForeignError(JSONError))
 import Data.Foreign.Class (class IsForeign, readProp)
 import Data.Foreign.Keys (keys)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
-import Data.Traversable (traverse)
 import Data.List (toList)
-import Data.Argonaut.Core (jsonEmptyObject, fromString)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
-import Data.Argonaut.Combinators ((:=), (~>))
-
+import Data.Maybe (Maybe)
+import Data.Traversable (traverse)
+import Data.Tuple (Tuple(Tuple))
+import Prelude (pure, ($), (<*>), (<$>), bind, show)
 import Types (UTCTime, UpdateId, TagId)
-import Api.Schema.Validation (HoleCoords, ValidationResult)
-import Api.Schema.BusinessData.Key (Key, parseKeyF)
 
-newtype Update = Update (M.Map Key (Tuple (Maybe String) (Maybe String)))
+newtype Update = Update (M.Map Key UpdateValue)
 
-instance isForeignUpdate :: IsForeign Update where
+instance encodeJsonUpdate :: EncodeJson Update where
+  encodeJson (Update m) = encodeJson $ SM.fromList (showKeys <$> M.toList m)
+    where showKeys (Tuple k v) = Tuple (show k) v
+
+newtype Snapshot = Snapshot (M.Map Key Value)
+
+instance isForeignUpdate :: IsForeign Snapshot where
   read json = do
     ks <- keys json
     let mkPair k = Tuple <$> parseKeyF k <*> readProp k json
     kvs <- traverse mkPair ks
-    pure $ Update $ M.fromList $ (\(Tuple k (Change t)) -> Tuple k t) <$> toList kvs
-
-instance encodeJsonUpdate :: EncodeJson Update where
-  encodeJson (Update m) = encodeJson $ SM.fromList (showKeys <$> M.toList m)
-    where showKeys (Tuple k v) = Tuple (show k) (Change v)
-
-newtype Change = Change (Tuple (Maybe String) (Maybe String))
-
-instance isForeignChange :: IsForeign Change where
-  read json = do
-    old <- runNullOrUndefined <$> readProp "old" json
-    new <- runNullOrUndefined <$> readProp "new" json
-    pure $ Change $ Tuple old new
-
-instance encodeJsonChange :: EncodeJson Change where
-  encodeJson (Change (Tuple mOld mNew)) =
-      mAdd "old" mOld <<< mAdd "new" mNew $ jsonEmptyObject
-    where mAdd k mVal obj = case mVal of
-            Just val -> k := val ~> obj
-            Nothing -> obj
+    pure $ Snapshot $ M.fromList $ toList kvs
 
 --
 
@@ -88,32 +73,32 @@ instance isForeignUpdatePostResult :: IsForeign UpdatePostResult where
       <*> readProp "validationResult" json
     pure $ UpdatePostResult upr
 
-newtype UpdateGet = UpdateGet
-  { updateGetId       :: UpdateId
-  , updateGetCreated  :: UTCTime
-  , updateGetParentId :: Maybe UpdateId
-  , updateGetUpdate   :: Update
+newtype SnapshotDesc = SnapshotDesc
+  { snapshotDescId       :: UpdateId
+  , snapshotDescCreated  :: UTCTime
+  , snapshotDescParentId :: Maybe UpdateId
+  , snapshotDescSnapshot :: Snapshot
   }
 
-instance isForeignUpdateGet :: IsForeign UpdateGet where
+instance isForeignUpdateGet :: IsForeign SnapshotDesc where
   read json = do
-    upd <- { updateGetId: _
-           , updateGetCreated: _
-           , updateGetParentId: _
-           , updateGetUpdate: _
+    upd <- { snapshotDescId: _
+           , snapshotDescCreated: _
+           , snapshotDescParentId: _
+           , snapshotDescSnapshot: _
            }
       <$> readProp "updateId" json
       <*> readProp "created" json
       <*> (runNullOrUndefined <$> readProp "parentId" json)
       <*> readProp "update" json
-    pure $ UpdateGet upd
+    pure $ SnapshotDesc upd
 
 newtype UpdateDesc = UpdateDesc
   { updateDescUpdateId :: UpdateId
   , updateDescCreated  :: UTCTime
   , updateDescAuthor   :: String
   , updateDescTags     :: Array TagDesc
-  , updateDescEntries  :: Array UpdateEntry
+  , updateDescChanges  :: Array UpdateChange
   }
 
 instance isForeignUpdateDesc :: IsForeign UpdateDesc where
@@ -122,40 +107,40 @@ instance isForeignUpdateDesc :: IsForeign UpdateDesc where
             , updateDescCreated: _
             , updateDescAuthor: _
             , updateDescTags: _
-            , updateDescEntries: _
+            , updateDescChanges: _
             }
       <$> readProp "updateId" json
       <*> readProp "created" json
       <*> readProp "author" json
       <*> readProp "tags" json
-      <*> readProp "entries" json
+      <*> readProp "changes" json
     pure $ UpdateDesc desc
 
-newtype UpdateEntry = UpdateEntry
-  { updateEntryLoc :: UpdateEntryHuman
-  , updateEntryOld :: Maybe String
-  , updateEntryNew :: Maybe String
+newtype UpdateChange = UpdateChange
+  { updateEntryLoc :: ChangeLocationHuman
+  , updateEntryOld :: Value
+  , updateEntryNew :: Value
   }
 
-instance isForeignUpdateEntry :: IsForeign UpdateEntry where
+instance isForeignUpdateEntry :: IsForeign UpdateChange where
   read json = do
     entry <- { updateEntryLoc: _
              , updateEntryOld: _
              , updateEntryNew: _
              }
       <$> readProp "location" json
-      <*> (runNullOrUndefined <$> readProp "old" json)
-      <*> (runNullOrUndefined <$> readProp "new" json)
-    pure $ UpdateEntry entry
+      <*> readProp "old" json
+      <*> readProp "new" json
+    pure $ UpdateChange entry
 
-data UpdateEntryHuman
+data ChangeLocationHuman
   = HumanHeaderFact String               -- label
   | HumanFact       String HoleCoords    -- table coords
   | HumanSubsetZ    String String        -- table member
   | HumanCustomZ    String               -- table
   | HumanCustomRow  String String String -- table member sheet
 
-instance isForeignUpdateEntryHuman :: IsForeign UpdateEntryHuman where
+instance isForeignUpdateEntryHuman :: IsForeign ChangeLocationHuman where
   read json = do
     typ <- readProp "type" json
     case typ of
