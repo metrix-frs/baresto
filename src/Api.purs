@@ -6,7 +6,7 @@ import Component.Spinner as Spinner
 import Api.Common (Api, getJsonResponse, getUnitResponse, uploadFiles, postJson)
 import Api.Schema (JsonEither, Name(Name))
 import Api.Schema.Auth (AuthInfo)
-import Api.Schema.BusinessData (UpdateDesc, UpdatePostResult, UpdatePost, UpdateGet, TagDesc)
+import Api.Schema.BusinessData (SnapshotDesc, UpdateDesc, UpdatePostResult, UpdatePost, UpdateGet, TagDesc)
 import Api.Schema.File (File, FileDesc)
 import Api.Schema.Import (CsvImportConf, XbrlImportConf)
 import Api.Schema.Module (Module)
@@ -110,7 +110,7 @@ renameTag tagId newName = getJsonResponse "Could not rename tag." $
 
 --
 
-getUpdateSnapshot :: forall eff. UpdateId -> Api eff UpdateGet
+getUpdateSnapshot :: forall eff. UpdateId -> Api eff SnapshotDesc
 getUpdateSnapshot updateId = getJsonResponse "Could not load file." $
   get $ prefix <> "businessdata/update/snapshot/" <> show updateId
 

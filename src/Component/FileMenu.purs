@@ -4,7 +4,8 @@ import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Api (apiUrl, newTag, apiCall, uploadCsv, getUpdatePast)
-import Api.Schema.BusinessData (UpdateGet, TagDesc(TagDesc), UpdateDesc(UpdateDesc), UpdateEntry(UpdateEntry), UpdateEntryHuman(HumanCustomRow, HumanCustomZ, HumanSubsetZ, HumanFact, HumanHeaderFact))
+import Api.Schema.BusinessData (UpdateChange(UpdateChange), UpdateGet, TagDesc(TagDesc), UpdateDesc(UpdateDesc), ChangeLocationHuman(..))
+import Api.Schema.BusinessData.Value (Value(Value))
 import Api.Schema.Import (CsvImportConf(CsvImportConf), Warning(Warning))
 import Component.Common (modal, toolButton)
 import Component.Validation.Finding (renderHoleCoords)
@@ -12,7 +13,7 @@ import Control.Monad.Aff.Free (fromEff)
 import Data.Array (snoc)
 import Data.Maybe (Maybe(Nothing, Just))
 import Data.NaturalTransformation (Natural)
-import Data.String (take)
+import Data.String (null, take)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentDSL, ComponentHTML, Component, component, modify, get, gets)
 import Optic.Core (LensP, (%~), lens)
@@ -324,7 +325,7 @@ renderUpdate (UpdateDesc upd) = H.li
     , H.div
       [ cls "tags"
       ] (renderTag <$> upd.updateDescTags)
-    , H.ul [ cls "entries" ] $ renderUpdateEntry <$> upd.updateDescEntries
+    , H.ul [ cls "entries" ] $ renderUpdateEntry <$> upd.updateDescChanges
     ]
   where
     renderTag (TagDesc tag) =
@@ -332,8 +333,8 @@ renderUpdate (UpdateDesc upd) = H.li
       [ H.span [ cls "octicon octicon-tag" ] []
       , H.text tag.tagDescTagName
       ]
-    renderUpdateEntry e@(UpdateEntry entry) =
-      case entry.updateEntryLoc of
+    renderUpdateEntry e@(UpdateChange entry) =
+      case entry.updateChangeLoc of
         HumanHeaderFact label -> entryLayout
           [ H.text $ "Header, " <> label ]
           [ renderChange e ]
@@ -356,14 +357,22 @@ renderUpdate (UpdateDesc upd) = H.li
         [ H.div [ cls "action" ] action
         ] <> location
       ]
-    renderChange (UpdateEntry entry) = H.text $
-      case Tuple entry.updateEntryOld entry.updateEntryNew of
-        Tuple Nothing (Just n)  -> "added '" <> n <> "'"
-        Tuple (Just o) Nothing  -> "deleted '" <> o <> "'"
-        Tuple (Just o) (Just n) -> "'" <> o <> "' > '" <> n <> "'"
-        _                       -> ""
-    renderAddDelete (UpdateEntry entry) add del = H.text $
-      case Tuple entry.updateEntryOld entry.updateEntryNew of
-        Tuple Nothing (Just _)  -> add
-        Tuple (Just _) Nothing  -> del
-        _                       -> ""
+    renderChange (UpdateChange entry) = H.text $
+      let old = case entry.updateChangeOld of
+            Value v -> v.valueData
+          new = case entry.updateChangeNew of
+            Value v -> v.valueData
+      in case Tuple (null old) (null new) of
+        Tuple true  false -> "added '" <> new <> "'"
+        Tuple false true  -> "deleted '" <> old <> "'"
+        Tuple false false -> "'" <> old <> "' > '" <> new <> "'"
+        _                 -> ""
+    renderAddDelete (UpdateChange entry) add del = H.text $
+      let old = case entry.updateChangeOld of
+            Value v -> v.valueData
+          new = case entry.updateChangeNew of
+            Value v -> v.valueData
+      in case Tuple (null old) (null new) of
+        Tuple true false -> add
+        Tuple false true -> del
+        _                -> ""

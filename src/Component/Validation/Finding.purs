@@ -3,18 +3,16 @@ module Component.Validation.Finding
   , renderHoleCoords
   ) where
 
-import Prelude ((<>), show, ($), (<$>), pure, (<<<))
-
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.Tuple (Tuple(Tuple))
-import Data.String (take)
-import Data.Foldable (intercalate)
-
-import Halogen (ComponentHTML)
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
-
+import Api.Schema.BusinessData.Value (Value(Value))
 import Api.Schema.Validation (Finding(Finding), Formula(FBinary, FUnary, FSet, FModuleParam, FString, FNumber, FBoolean, FIfThenElse, FMember, FSum, FHole), Hole(Hole), HoleCoordX(HCX), HoleCoordY(HCYCustom, HCYClosed), HoleCoordZ(HCZSubset, HCZCustom, HCZClosed, HCZSingleton), HoleCoords(HoleCoords))
+import Data.Foldable (intercalate)
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.String (null, take)
+import Data.Tuple (Tuple(Tuple))
+import Halogen (ComponentHTML)
+import Prelude ((<>), show, ($), (<$>), pure, (<<<))
 import Utils (cls, tryFormatNumber)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
@@ -150,8 +148,9 @@ renderHole (Hole h) = H.div [ cls "hole" ]
   , H.br_
   , H.div [ cls "data" ]
     [ case h.holeData of
-        Just d -> H.text $ tryFormatNumber 2 d
-        Nothing -> H.span [ cls "missing", P.title "Not filled in, treated as zero." ] [ H.text "0.00" ]
+        Value v -> if null v.valueData
+          then H.span [ cls "missing", P.title "Not filled in, treated as zero." ] [ H.text "0.00" ]
+          else H.text $ tryFormatNumber 2 v.valueData
     ]
   , H.br_
   , H.span [ cls "holecoords" ]

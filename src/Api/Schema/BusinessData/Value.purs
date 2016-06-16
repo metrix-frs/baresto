@@ -1,8 +1,10 @@
 module Api.Schema.BusinessData.Value where
 
+import Control.Monad.Error.Class (throwError)
+import Data.Argonaut.Combinators ((:=), (~>))
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (class EncodeJson)
-import Data.Argonaut.Combinators ((:=), (~>))
+import Data.Foreign (ForeignError(JSONError))
 import Data.Foreign.Class (class IsForeign, readProp)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.Maybe (Maybe)
@@ -32,7 +34,14 @@ instance encodeJsonValue :: EncodeJson Value where
 data UpdateValue
   = UpdateValueData String
   | UpdateValuePrecision Precision
-  | UpdateValueValue Value
+
+instance isForeignUpdateValue :: IsForeign UpdateValue where
+  read json = do
+    tag <- readProp "tag" json
+    case tag of
+      "data"      -> UpdateValueData <$> readProp "data" json
+      "precision" -> UpdateValuePrecision <$> (runNullOrUndefined <$> readProp "precision" json)
+      _ -> throwError $ JSONError "`tag` should be `data`, `precision` or `value`"
 
 instance encodeJsonUpdateValue :: EncodeJson UpdateValue where
   encodeJson (UpdateValueData str) = "tag" := "data"
@@ -41,6 +50,8 @@ instance encodeJsonUpdateValue :: EncodeJson UpdateValue where
   encodeJson (UpdateValuePrecision p) = "tag" := "precision"
                                      ~> "precision" := p
                                      ~> jsonEmptyObject
-  encodeJson (UpdateValueValue v) = "tag" := "value"
-                                 ~> "value" := v
-                                 ~> jsonEmptyObject
+
+updateValue :: UpdateValue -> Value -> Value
+updateValue upd (Value old) = case upd of
+  UpdateValueData d -> Value $ old { valueData = d }
+  UpdateValuePrecision p -> Value $ old { valuePrecision = p }

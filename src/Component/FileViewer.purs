@@ -9,10 +9,11 @@ import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Api (getUpdateSnapshot, apiCallParent, getHeader, getTable, postUpdate, getModule, getFileDetails)
-import Api.Schema.BusinessData (Update, UpdateDesc(UpdateDesc), UpdateGet(UpdateGet), UpdatePost(UpdatePost), UpdatePostResult(UpdatePostResult), ValidationType(VTUpdate))
+import Api.Schema.BusinessData (snapshotToUpdate, SnapshotDesc(SnapshotDesc), Update, UpdateDesc(UpdateDesc), UpdateGet(UpdateGet), UpdatePost(UpdatePost), UpdatePostResult(UpdatePostResult))
 import Api.Schema.File (FileDesc(FileDesc))
 import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templateTables, _templates, _templateGroups)
 import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
+import Api.Schema.Validation (ValidationType(VTUpdate))
 import Component.Common (toolButton)
 import Control.Monad (unless)
 import Control.Monad.Aff.Free (fromAff, fromEff)
@@ -244,12 +245,12 @@ eval propUpdateId (Init next) = do
   queue <- fromEff newQueue
 
   apiCallParent (getFileDetails propUpdateId) \(fileDesc@(FileDesc fd)) -> do
-    apiCallParent (getUpdateSnapshot propUpdateId) \(UpdateGet upd) ->
+    apiCallParent (getUpdateSnapshot propUpdateId) \(SnapshotDesc snap) ->
       modify $ _{ fileData = Just
-                  { businessData: applyUpdate upd.updateGetUpdate emptyBusinessData
+                  { businessData: applyUpdate (snapshotToUpdate snap.snapshotDescSnapshot) emptyBusinessData
                   , fileDesc: fileDesc
                   , moduleId: fd.fileDescModId
-                  , lastUpdateId: upd.updateGetId
+                  , lastUpdateId: snap.snapshotDescUpdateId
                   , saveState: Saved
                   , queue: queue
                   }
@@ -443,12 +444,12 @@ peek child = do
       rebuildHot
 
     Menu.OpenUpdate updateId _ ->
-      apiCallParent (getUpdateSnapshot updateId) \(UpdateGet upd) -> do
+      apiCallParent (getUpdateSnapshot updateId) \(SnapshotDesc snap) -> do
         modify $ _fileData .. _Just %~
-           _{ businessData = applyUpdate upd.updateGetUpdate emptyBusinessData
-            , lastUpdateId = upd.updateGetId
+           _{ businessData = applyUpdate (snapshotToUpdate snap.snapshotDescSnapshot) emptyBusinessData
+            , lastUpdateId = snap.snapshotDescUpdateId
             }
-        query' cpValidation ValidationSlot $ action $ V.ValidateAll upd.updateGetId
+        query' cpValidation ValidationSlot $ action $ V.ValidateAll snap.snapshotDescUpdateId
         rebuildHot
 
     _ -> pure unit

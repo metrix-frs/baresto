@@ -1,18 +1,28 @@
 module Api.Schema.Validation where
 
-import Prelude ((<$>), (<*>), bind, pure, ($), id, const, (<#>))
-
-import Control.Monad.Error.Class (throwError)
-
-import Data.Either (either)
 import Data.StrMap as SM
-import Data.Maybe (Maybe(Nothing))
-import Data.Tuple (Tuple)
+import Api.Schema.BusinessData.Value (Value)
+import Control.Monad.Error.Class (throwError)
+import Data.Argonaut.Core (fromString)
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Either (either)
 import Data.Foreign (Foreign, ForeignError(JSONError), unsafeReadTagged)
 import Data.Foreign.Class (class IsForeign, readProp, read)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
-
+import Data.Maybe (Maybe(Nothing))
+import Data.Tuple (Tuple)
+import Prelude ((<$>), (<*>), bind, pure, ($), id, const, (<#>))
 import Types (SubsetMemberId, CustomMemberId, RowKey)
+
+data ValidationType
+  = VTNone
+  | VTWhole
+  | VTUpdate
+
+instance encodeJsonValidationType :: EncodeJson ValidationType where
+  encodeJson VTNone   = fromString "none"
+  encodeJson VTWhole  = fromString "whole"
+  encodeJson VTUpdate = fromString "update"
 
 newtype ValidationResult = ValidationResult
   { vrDpmFindings    :: SM.StrMap (Array Finding)
@@ -63,7 +73,7 @@ instance isForeignFinding :: IsForeign Finding where
     pure $ Finding fin
 
 newtype Hole = Hole
-  { holeData :: Maybe String
+  { holeData :: Value
   , holeCoords :: HoleCoords
   , holeTemplate :: String
   }
@@ -74,7 +84,7 @@ instance isForeignHole :: IsForeign Hole where
          , holeCoords: _
          , holeTemplate: _
          }
-      <$> (runNullOrUndefined <$> readProp "data" json)
+      <$> readProp "data" json
       <*> readProp "coords" json
       <*> readProp "template" json
     pure $ Hole h
