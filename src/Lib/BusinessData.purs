@@ -129,9 +129,10 @@ editToUpdate bde bd = case bde of
     go table (Tuple coord new) = case getKey coord table bd of
         Just key ->
           let old = getBDValue key bd
-          in  if  old == new
+              convNew = conv new
+          in  if  old == convNew
                 then []
-                else [Tuple key (UpdateValueData new)]
+                else [Tuple key (UpdateValueData convNew)]
         Nothing -> []
       where
         conv v = case cellLookup coord table of

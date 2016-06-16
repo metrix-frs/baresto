@@ -5,7 +5,7 @@ import Component.FileSelector as FS
 import Component.FileViewer as FV
 import Halogen.HTML.Indexed as H
 import Api (newFile, apiCallParent)
-import Api.Schema.BusinessData (UpdateGet(UpdateGet))
+import Api.Schema.BusinessData (SnapshotDesc(SnapshotDesc))
 import Data.Either (Either)
 import Data.Functor.Coproduct (Coproduct, coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
@@ -91,8 +91,8 @@ peek child = do
   where
     peekSelector q = case q of
       FS.CreateFile modId name _ ->
-        apiCallParent (newFile modId name) \(UpdateGet u) ->
-          modify _{ currentView = FileViewer u.updateGetId }
+        apiCallParent (newFile modId name) \(SnapshotDesc snap) ->
+          modify _{ currentView = FileViewer snap.snapshotDescUpdateId }
       FS.UploadXbrlOpenFile updateId _ ->
         modify _{ currentView = FileViewer updateId }
       _ -> pure unit

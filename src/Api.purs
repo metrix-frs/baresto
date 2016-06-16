@@ -6,7 +6,7 @@ import Component.Spinner as Spinner
 import Api.Common (Api, getJsonResponse, getUnitResponse, uploadFiles, postJson)
 import Api.Schema (JsonEither, Name(Name))
 import Api.Schema.Auth (AuthInfo)
-import Api.Schema.BusinessData (SnapshotDesc, UpdateDesc, UpdatePostResult, UpdatePost, UpdateGet, TagDesc)
+import Api.Schema.BusinessData (SnapshotDesc, UpdateDesc, UpdatePostResult, UpdatePost, TagDesc)
 import Api.Schema.File (File, FileDesc)
 import Api.Schema.Import (CsvImportConf, XbrlImportConf)
 import Api.Schema.Module (Module)
@@ -70,7 +70,7 @@ getModule modId = getJsonResponse "Could not load templates of module." $
 
 -- Api.BusinessData
 
-newFile :: forall eff. ModuleId -> String -> Api eff UpdateGet
+newFile :: forall eff. ModuleId -> String -> Api eff SnapshotDesc
 newFile modId name = getJsonResponse "Could not create file." $
   postJson (prefix <> "businessdata/file/new/" <> show modId) (Name name)
 
