@@ -164,23 +164,25 @@ applyUpdate (Update list) bd' = foldl go bd' list
       _snapshot .. at key .= new
       case key of
         KeyCustomRow axId zLoc cm ->
-          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case new of
-            Just new' -> flip snoc (Tuple cm new')
-            Nothing   -> filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
+          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case upd of
+            UpdateValueData (Just new') -> flip snoc (Tuple cm new')
+            UpdateValueData Nothing     -> filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
+            _                           -> id
         KeyCustomZMember axId cm ->
-          _customZMembers .. at axId .. non [] %= case Tuple old new of
-            Tuple (Just _) (Just new') ->
+          _customZMembers .. at axId .. non [] %= case Tuple old upd of
+            Tuple (Just _) (UpdateValueData (Just new')) ->
               map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' new') else (Tuple cm' val))
-            Tuple Nothing (Just new') ->
+            Tuple Nothing (UpdateValueData (Just new')) ->
               flip snoc (Tuple cm new')
-            Tuple (Just _) Nothing ->
+            Tuple (Just _) (UpdateValueData Nothing) ->
               filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
-            Tuple Nothing Nothing  ->
+            _ ->
               id
         KeySubsetZSelected axId sm ->
-          _subsetZMembers .. at axId .. non [] %= case new of
-            Just new' -> flip snoc (Tuple sm new')
-            Nothing   -> filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
+          _subsetZMembers .. at axId .. non [] %= case upd of
+            UpdateValueData (Just new') -> flip snoc (Tuple sm new')
+            UpdateValueData Nothing     -> filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
+            _                           -> id
         _ -> pure unit
 
 -- Interface
