@@ -81,13 +81,14 @@ renderTerm f = case f of
       ]
   where
     opv v = case v of
-      "("  -> H.div [ cls "lop lop-lparen" ] []
-      ")"  -> H.div [ cls "lop lop-rparen" ] []
-      ">=" -> H.div [ cls "lop lop-ge" ] []
-      "<=" -> H.div [ cls "lop lop-le" ] []
-      "="  -> H.div [ cls "lop lop-eq" ] []
-      "+"  -> H.div [ cls "lop lop-plus" ] []
-      "-"  -> H.div [ cls "lop lop-minus" ] []
+      "("    -> H.div [ cls "lop lop-lparen" ] []
+      ")"    -> H.div [ cls "lop lop-rparen" ] []
+      ">="   -> H.div [ cls "lop lop-ge" ] []
+      "<="   -> H.div [ cls "lop lop-le" ] []
+      "="    -> H.div [ cls "lop lop-eq" ] []
+      "+"    -> H.div [ cls "lop lop-plus" ] []
+      "-"    -> H.div [ cls "lop lop-minus" ] []
+      "elem" -> H.div [ cls "lop lop-elem" ] []
       _ -> H.span [ cls "op" ] [ H.text v ]
     paren term = if needParen term
       then
@@ -167,7 +168,7 @@ renderHole (Hole h) = H.div [ cls "hole" ]
             IntegerData -> tryFormatNumber 0 d
             MonetaryData -> tryFormatNumber 2 d
             PercentageData -> tryFormatNumber 2 d
-            CodeData cd -> fromMaybe "" $ lookupByFst d cd
+            CodeData cd -> fromMaybe d $ lookupByFst d cd
             StringData -> d
             NumberData -> tryFormatNumber 0 d
     ]

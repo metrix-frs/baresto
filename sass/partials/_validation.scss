@@ -104,31 +104,35 @@
   }
   .lop-lparen {
     width: 15px;
-    background-position: 2px 0px;
+    background-position: -2px 0px;
   }
   .lop-rparen {
     width: 15px;
-    background-position: -146px 0px;
+    background-position: -150px 0px;
   }
   .lop-ge {
     width: 17px;
-    background-position: -47px 0px;
+    background-position: -51px 0px;
   }
   .lop-le {
     width: 17px;
-    background-position: -66px 0px;
+    background-position: -70px 0px;
   }
   .lop-eq {
     width: 18px;
-    background-position: -82px 0px;
+    background-position: -86px -2px;
   }
   .lop-plus {
     width: 18px;
-    background-position: -104px 0px;
+    background-position: -108px 0px;
   }
   .lop-minus {
     width: 18px;
-    background-position: -122px 0px;
+    background-position: -126px 0px;
+  }
+  .lop-elem {
+    width: 18px;
+    background-position: -171px -2px;
   }
   div {
     display: inline-block;

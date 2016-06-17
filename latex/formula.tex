@@ -4,14 +4,16 @@
 \usetikzlibrary{arrows,snakes,backgrounds,patterns,matrix,shapes,fit,calc,shadows,plotmarks}
 
 \usepackage[graphics,tightpage,active]{preview}
-\PreviewEnvironment{equation*}
+\PreviewEnvironment{tikzpicture}
 \newlength{\imagewidth}
 \newlength{\imagescale}
 
 \begin{document}
 
-\begin{equation*}
-  \left(\ \int \ge \le = + - \ \right)
-\end{equation*}
+\begin{tikzpicture}
+  \node[inner sep=0] {
+  $\displaystyle\left(\ \int \ge \le = + - \ \right) \in$
+  };
+\end{tikzpicture}
 
 \end{document}
