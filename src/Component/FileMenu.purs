@@ -13,7 +13,7 @@ import Control.Monad.Aff.Free (fromEff)
 import Data.Array (snoc)
 import Data.Maybe (Maybe(Nothing, Just))
 import Data.NaturalTransformation (Natural)
-import Data.String (null, take)
+import Data.String (take)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentDSL, ComponentHTML, Component, component, modify, get, gets)
 import Optic.Core (LensP, (%~), lens)
@@ -362,17 +362,17 @@ renderUpdate (UpdateDesc upd) = H.li
             Value v -> v.valueData
           new = case entry.updateChangeNew of
             Value v -> v.valueData
-      in case Tuple (null old) (null new) of
-        Tuple true  false -> "added '" <> new <> "'"
-        Tuple false true  -> "deleted '" <> old <> "'"
-        Tuple false false -> "'" <> old <> "' > '" <> new <> "'"
-        _                 -> ""
+      in case Tuple old new of
+        Tuple Nothing     (Just new') -> "added '" <> new' <> "'"
+        Tuple (Just old') Nothing     -> "deleted '" <> old' <> "'"
+        Tuple (Just old') (Just new') -> "'" <> old' <> "' > '" <> new' <> "'"
+        _                             -> ""
     renderAddDelete (UpdateChange entry) add del = H.text $
       let old = case entry.updateChangeOld of
             Value v -> v.valueData
           new = case entry.updateChangeNew of
             Value v -> v.valueData
-      in case Tuple (null old) (null new) of
-        Tuple true false -> add
-        Tuple false true -> del
-        _                -> ""
+      in case Tuple old new of
+        Tuple Nothing (Just _) -> add
+        Tuple (Just _) Nothing -> del
+        _                      -> ""

@@ -142,7 +142,7 @@ data Query a
   | CloseFile a
   | SelectSheet S a
   | ToggleSheetConfiguratorOpen a
-  | AddSheet String a
+  | AddSheet a
   | RenameSheet Int String a
   | DeleteSheet Int a
   | ChooseMember Int a
@@ -316,11 +316,11 @@ eval _ (ToggleSheetConfiguratorOpen next) = do
   modify $ _tableData .. _Just .. _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
   pure next
 
-eval _ (AddSheet name next) = do
+eval _ (AddSheet next) = do
   withTable \(Table tbl) -> case tbl.tableZAxis of
     ZAxisCustom axId _ -> do
       cm <- fromEff $ getEntropy 32
-      processEdit (NewCustomZMember axId cm name)
+      processEdit (NewCustomZMember axId cm)
       rebuildHot
     _ -> pure unit
   pure next
@@ -572,7 +572,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
                     [ H.tr_
                       [ H.td [ cls "small" ]
                         [ H.button
-                          [ E.onClick $ E.input_ $ AddSheet "" ]
+                          [ E.onClick $ E.input_ AddSheet ]
                           [ H.span [ cls "octicon octicon-plus" ] []
                           ]
                         ]

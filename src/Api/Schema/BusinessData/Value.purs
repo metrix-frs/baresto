@@ -13,7 +13,7 @@ import Prelude (bind, (<$>), (<*>), pure, ($))
 type Precision = Maybe Int
 
 newtype Value = Value
-  { valueData :: String
+  { valueData :: Maybe String
   , valuePrecision :: Precision
   }
 
@@ -22,7 +22,7 @@ instance isForeignValue :: IsForeign Value where
     v <- { valueData: _
          , valuePrecision: _
          }
-      <$> readProp "data" json
+      <$> (runNullOrUndefined <$> readProp "data" json)
       <*> (runNullOrUndefined <$> readProp "precision" json)
     pure $ Value v
 
@@ -32,14 +32,14 @@ instance encodeJsonValue :: EncodeJson Value where
                       ~> jsonEmptyObject
 
 data UpdateValue
-  = UpdateValueData String
+  = UpdateValueData (Maybe String)
   | UpdateValuePrecision Precision
 
 instance isForeignUpdateValue :: IsForeign UpdateValue where
   read json = do
     tag <- readProp "tag" json
     case tag of
-      "data"      -> UpdateValueData <$> readProp "data" json
+      "data"      -> UpdateValueData <$> (runNullOrUndefined <$> readProp "data" json)
       "precision" -> UpdateValuePrecision <$> (runNullOrUndefined <$> readProp "precision" json)
       _ -> throwError $ JSONError "`tag` should be `data`, `precision` or `value`"
 

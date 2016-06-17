@@ -2,6 +2,7 @@ module Api.Schema.Validation where
 
 import Data.StrMap as SM
 import Api.Schema.BusinessData.Value (Value)
+import Api.Schema.Table (DataType)
 import Control.Monad.Error.Class (throwError)
 import Data.Argonaut.Core (fromString)
 import Data.Argonaut.Encode (class EncodeJson)
@@ -74,6 +75,7 @@ instance isForeignFinding :: IsForeign Finding where
 
 newtype Hole = Hole
   { holeData :: Value
+  , holeDataType :: DataType
   , holeCoords :: HoleCoords
   , holeTemplate :: String
   }
@@ -81,10 +83,12 @@ newtype Hole = Hole
 instance isForeignHole :: IsForeign Hole where
   read json = do
     h <- { holeData: _
+         , holeDataType: _
          , holeCoords: _
          , holeTemplate: _
          }
       <$> readProp "data" json
+      <*> readProp "dataType" json
       <*> readProp "coords" json
       <*> readProp "template" json
     pure $ Hole h
@@ -146,7 +150,7 @@ type ModuleParamValue = String
 data Formula
   = FHole Hole
   | FSum (Array Hole)
-  | FMember String
+  | FMember String String -- code label
   | FUnary String Formula
   | FBinary String Formula Formula
   | FIfThenElse Formula Formula Formula
@@ -162,7 +166,7 @@ instance isForeignFormula :: IsForeign Formula where
     case typ of
       "hole"        -> FHole        <$> readProp "hole" json
       "sum"         -> FSum         <$> readProp "holes" json
-      "member"      -> FMember      <$> readProp "name" json
+      "member"      -> FMember      <$> readProp "code" json <*> readProp "label" json
       "unary"       -> FUnary       <$> readProp "op" json    <*> readProp "f" json
       "binary"      -> FBinary      <$> readProp "op" json    <*> readProp "lhs" json  <*> readProp "rhs" json
       "ifThenElse"  -> FIfThenElse  <$> readProp "cond" json  <*> readProp "then" json <*> readProp "else" json

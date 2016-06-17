@@ -151,6 +151,13 @@
       color: gray;
       font-size: 12px;
     }
+    .decimals {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      font-size: 10px;
+      color: $metrix-darkblue;
+    }
   }
   .data {
     font-weight: bold;

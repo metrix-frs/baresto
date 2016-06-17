@@ -27,6 +27,7 @@ module Lib.BusinessData
 , isSubsetZMemberSelected
 ) where
 
+import Data.Array as Array
 import Data.Map as M
 import Api.Schema.BusinessData (Update(Update))
 import Api.Schema.BusinessData.Key (IsRowKey(RowKey, NoRowKey), Key(KeySubsetZSelected, KeyHeaderFact, KeyFact, KeyCustomZMember, KeyCustomRow), YLocation(YLocCustom, YLocClosed), ZLocation(ZLocSubset, ZLocCustom, ZLocClosed, ZLocSingle))
@@ -34,19 +35,17 @@ import Api.Schema.BusinessData.Value (Value(Value), updateValue, UpdateValue(Upd
 import Api.Schema.Table (Cell(YMemberCell, FactCell, NoCell), DataType(BooleanData, CodeData, PercentageData, MonetaryData), Ordinate(Ordinate), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
 import Control.Bind (join)
 import Control.Monad.State (execState)
-import Data.Array as Array
 import Data.Array ((!!), length, filter, snoc)
-import Data.Foldable (foldl, find)
+import Data.Foldable (foldl)
 import Data.Maybe (fromMaybe, Maybe(Just, Nothing), isJust)
-import Data.String (null)
-import Data.Tuple (Tuple(Tuple), lookup, fst)
-import Lib.Table (C(C), Coord(Coord), R(R), S(S), cellLookup, boolValueMap)
+import Data.Tuple (Tuple(Tuple), lookup)
+import Lib.Table (lookupBySnd, C(C), Coord(Coord), R(R), S(S), cellLookup, boolValueMap)
 import Optic.At (at)
 import Optic.Core (LensP, (.~), (..), (^.), lens)
 import Optic.Iso (non)
 import Optic.Monad.Getter (use)
 import Optic.Monad.Setter ((%=), (.=))
-import Prelude (not, (#), ($), pure, bind, (<$>), (-), (==), unit, (/=), flip, id, map)
+import Prelude ((#), ($), pure, bind, (<$>), (-), (==), unit, (/=), flip, id, map)
 import Types (SubsetMemberId, AxisId, CellId, CustomMemberId)
 import Utils (maxInt, getIndices)
 
@@ -92,7 +91,7 @@ emptyBusinessData = BusinessData
 data Edit
   = SetFacts              Table (Array (Tuple Coord String))
   | NewCustomRow          AxisId ZLocation CustomMemberId
-  | NewCustomZMember      AxisId           CustomMemberId String
+  | NewCustomZMember      AxisId           CustomMemberId
   | RenameCustomZMember   AxisId           Int            String
   | DeleteCustomRow       AxisId ZLocation Int
   | DeleteCustomZMember   AxisId           Int
@@ -109,27 +108,28 @@ editToUpdate bde bd = case bde of
           then Nothing
           else Just $ Update list
   NewCustomRow axId zLoc cm ->
-    single (KeyCustomRow axId zLoc cm) "customY"
-  NewCustomZMember axId cm name ->
-    single (KeyCustomZMember axId cm) name
+    single (KeyCustomRow axId zLoc cm) $ Just "customY"
+  NewCustomZMember axId cm ->
+    single (KeyCustomZMember axId cm) $ Just ""
   RenameCustomZMember axId index name -> do
     (Tuple cm _) <- getCustomZMembers axId bd !! index
-    single (KeyCustomZMember axId cm) name
+    single (KeyCustomZMember axId cm) $ Just name
   DeleteCustomRow axId zLoc index -> do
     (Tuple cm _) <- getCustomYMembers axId zLoc bd !! index
-    single (KeyCustomRow axId zLoc cm) ""
+    single (KeyCustomRow axId zLoc cm) Nothing
   DeleteCustomZMember axId index -> do
     (Tuple cm _) <- getCustomZMembers axId bd !! index
-    single (KeyCustomZMember axId cm) ""
+    single (KeyCustomZMember axId cm) Nothing
   SelectSubsetZMember axId sm ->
-    single (KeySubsetZSelected axId sm) "selected"
+    single (KeySubsetZSelected axId sm) $ Just "selected"
   DeselectSubsetZMember axId sm ->
-    single (KeySubsetZSelected axId sm) ""
+    single (KeySubsetZSelected axId sm) Nothing
   where
+    go :: Table -> Tuple Coord String -> Array (Tuple Key UpdateValue)
     go table (Tuple coord new) = case getKey coord table bd of
         Just key ->
           let old = getBDValue key bd
-              convNew = conv new
+              convNew = Just $ conv new
           in  if  old == convNew
                 then []
                 else [Tuple key (UpdateValueData convNew)]
@@ -146,9 +146,8 @@ editToUpdate bde bd = case bde of
             _ -> v
           Just _ -> v
           Nothing -> v
-        lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
 
-    single :: Key -> String -> Maybe Update
+    single :: Key -> Maybe String -> Maybe Update
     single key new =
       let old = getBDValue key bd in
       if  old == new
@@ -159,29 +158,29 @@ applyUpdate :: Update -> BusinessData -> BusinessData
 applyUpdate (Update list) bd' = foldl go bd' list
   where
     go bd (Tuple key upd) = bd # execState do
-      old <- fromMaybe "" <$> (use $ _snapshot .. at key)
+      old <- use $ _snapshot .. at key
       let new = case updateValue upd (Value { valueData: old, valuePrecision: Nothing }) of
                   Value v -> v.valueData
-      _snapshot .. at key .= Just new
+      _snapshot .. at key .= new
       case key of
         KeyCustomRow axId zLoc cm ->
-          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case null new of
-            false -> flip snoc (Tuple cm new)
-            true  -> filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
+          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case new of
+            Just new' -> flip snoc (Tuple cm new')
+            Nothing   -> filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
         KeyCustomZMember axId cm ->
-          _customZMembers .. at axId .. non [] %= case Tuple (null old) (null new) of
-            Tuple false false ->
-              map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' new) else (Tuple cm' val))
-            Tuple true  false ->
-              flip snoc (Tuple cm new)
-            Tuple false true  ->
+          _customZMembers .. at axId .. non [] %= case Tuple old new of
+            Tuple (Just _) (Just new') ->
+              map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' new') else (Tuple cm' val))
+            Tuple Nothing (Just new') ->
+              flip snoc (Tuple cm new')
+            Tuple (Just _) Nothing ->
               filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
-            Tuple true  true  ->
+            Tuple Nothing Nothing  ->
               id
         KeySubsetZSelected axId sm ->
-          _subsetZMembers .. at axId .. non [] %= case null new of
-            false -> flip snoc (Tuple sm new)
-            true  -> filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
+          _subsetZMembers .. at axId .. non [] %= case new of
+            Just new' -> flip snoc (Tuple sm new')
+            Nothing   -> filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
         _ -> pure unit
 
 -- Interface
@@ -245,7 +244,7 @@ getFactTable s table@(Table tbl) bd = do
 getFact :: Coord -> Table -> BusinessData -> String
 getFact coord table@(Table tbl) bd = case getKey coord table bd of
     Nothing -> ""
-    Just key -> conv $ getBDValue key bd
+    Just key -> conv $ fromMaybe "" $ getBDValue key bd
   where
     conv k = case cellLookup coord table of
       Just (FactCell _ (CodeData pairs)) ->
@@ -293,12 +292,12 @@ getSubsetZMembers axId bd =
 
 isSubsetZMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
 isSubsetZMemberSelected axId memId bd =
-  not $ null $ getBDValue (KeySubsetZSelected axId memId) bd
+  isJust $ getBDValue (KeySubsetZSelected axId memId) bd
 
 -- Internal helper
 
-getBDValue :: Key -> BusinessData -> String
-getBDValue key bd = fromMaybe "" $ bd ^. _snapshot .. at key
+getBDValue :: Key -> BusinessData -> Maybe String
+getBDValue key bd = bd ^. _snapshot .. at key
 
 setBDValue :: Key -> String -> BusinessData -> BusinessData
 setBDValue key value bd = bd # _snapshot .. at key .~ Just value

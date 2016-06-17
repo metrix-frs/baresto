@@ -1,14 +1,13 @@
 module Lib.Table where
 
-import Prelude (class Show, class Ord, class Eq, bind, pure, show, compare, (==), (<$>))
-
-import Data.Maybe (Maybe)
-import Data.Tuple (Tuple(Tuple))
-import Data.Array ((!!))
-
-import Optic.Core (LensP, lens)
-import Utils (makeIndexed)
 import Api.Schema.Table (Cell, Grid(Grid), Row(Row), Sheet(Sheet), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
+import Data.Array ((!!))
+import Data.Foldable (class Foldable, find)
+import Data.Maybe (Maybe)
+import Data.Tuple (snd, fst, Tuple(Tuple))
+import Optic.Core (LensP, lens)
+import Prelude (class Show, class Ord, class Eq, bind, pure, show, compare, (==), (<$>))
+import Utils (makeIndexed)
 
 mapGrid :: forall a. (Int -> Int -> Int -> Cell -> a) -> Grid -> Array (Array (Array a))
 mapGrid f (Grid sheets) = (\(Tuple s sheet) -> mapSheet (f s) sheet) <$> makeIndexed sheets
@@ -24,6 +23,12 @@ boolValueMap =
   [ Tuple "true" "True"
   , Tuple "false" "False"
   ]
+
+lookupBySnd :: forall f a b. (Foldable f, Eq b) => b -> f (Tuple a b) -> Maybe a
+lookupBySnd v pairs = fst <$> find (\(Tuple a b) -> b == v) pairs
+
+lookupByFst :: forall f a b. (Foldable f, Eq a) => a -> f (Tuple a b) -> Maybe b
+lookupByFst v pairs = snd <$> find (\(Tuple a b) -> a == v) pairs
 
 data Coord = Coord C R S
 

@@ -6,12 +6,14 @@ module Component.Validation.Finding
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Api.Schema.BusinessData.Value (Value(Value))
+import Api.Schema.Table (DataType(..))
 import Api.Schema.Validation (Finding(Finding), Formula(FBinary, FUnary, FSet, FModuleParam, FString, FNumber, FBoolean, FIfThenElse, FMember, FSum, FHole), Hole(Hole), HoleCoordX(HCX), HoleCoordY(HCYCustom, HCYClosed), HoleCoordZ(HCZSubset, HCZCustom, HCZClosed, HCZSingleton), HoleCoords(HoleCoords))
 import Data.Foldable (intercalate)
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.String (null, take)
+import Data.Maybe (fromMaybe, Maybe(Nothing, Just))
+import Data.String (take)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentHTML)
+import Lib.Table (boolValueMap, lookupByFst)
 import Prelude ((<>), show, ($), (<$>), pure, (<<<))
 import Utils (cls, tryFormatNumber)
 
@@ -36,8 +38,8 @@ renderTerm f = case f of
       ]
     FSum hs ->
       intercalate [opv ", "] (pure <<< renderHole <$> hs)
-    FMember s ->
-      [ renderValue s
+    FMember _ label ->
+      [ renderValue label
       ]
     FUnary op f ->
       [ opv op
@@ -108,17 +110,17 @@ binaryNeedParen op f = case Tuple op $ getTermOp f of
 
 needParen :: Formula -> Boolean
 needParen f = case f of
-  FHole h -> false
-  FSum hs -> true
-  FMember s -> false
-  FUnary op f -> false
-  FBinary op lhs rhs -> true
-  FIfThenElse cond t e -> false
-  FBoolean v -> false
-  FNumber  v -> false
-  FString  v -> false
-  FModuleParam p v -> false
-  FSet fs -> false
+  FHole _ -> false
+  FSum _ -> true
+  FMember _ _ -> false
+  FUnary _ _ -> false
+  FBinary _ _ _ -> true
+  FIfThenElse _ _ _ -> false
+  FBoolean _ -> false
+  FNumber  _ -> false
+  FString  _ -> false
+  FModuleParam _ _ -> false
+  FSet _ -> false
 
 
 getTermOp :: Formula -> Maybe String
@@ -147,10 +149,34 @@ renderHole (Hole h) = H.div [ cls "hole" ]
     [ H.text h.holeTemplate ]
   , H.br_
   , H.div [ cls "data" ]
-    [ case h.holeData of
-        Value v -> if null v.valueData
-          then H.span [ cls "missing", P.title "Not filled in, treated as zero." ] [ H.text "0.00" ]
-          else H.text $ tryFormatNumber 2 v.valueData
+    [ let default = case h.holeDataType of
+            BooleanData -> "false"
+            DateData -> ""
+            IntegerData -> "0"
+            MonetaryData -> "0.00"
+            PercentageData -> "0.00"
+            CodeData _ -> ""
+            StringData -> ""
+            NumberData -> "0"
+      in case h.holeData of
+        Value v -> case v.valueData of
+          Nothing -> H.span [ cls "missing", P.title "Not filled in, using default." ] [ H.text default ]
+          Just d  -> H.text $ case h.holeDataType of
+            BooleanData -> fromMaybe "" $ lookupByFst d boolValueMap
+            DateData -> d
+            IntegerData -> tryFormatNumber 0 d
+            MonetaryData -> tryFormatNumber 2 d
+            PercentageData -> tryFormatNumber 2 d
+            CodeData cd -> fromMaybe "" $ lookupByFst d cd
+            StringData -> d
+            NumberData -> tryFormatNumber 0 d
+    ]
+  , H.div [ cls "decimals", P.title "Precision (decimal places of absolute error)" ]
+    [ H.text $ case h.holeData of
+        Value v -> case h.holeDataType of
+          MonetaryData -> show $ fromMaybe 2 $ v.valuePrecision
+          PercentageData -> show $ fromMaybe 4 $ v.valuePrecision
+          _ -> ""
     ]
   , H.br_
   , H.span [ cls "holecoords" ]

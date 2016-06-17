@@ -1,17 +1,12 @@
 module Api.Schema.Table where
 
-import Prelude (pure, ($), (<*>), (<$>), bind, map, (<<<))
-
+import Api.Schema.Common (getPair)
 import Control.Monad.Error.Class (throwError)
-
-import Data.Array ((!!))
-import Data.Either (Either(Left))
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.Tuple (Tuple(Tuple))
 import Data.Foreign (ForeignError(JSONError))
 import Data.Foreign.Class (class IsForeign, readProp, read)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
-
+import Data.Maybe (Maybe)
+import Prelude (pure, ($), (<*>), (<$>), bind, map, (<<<))
 import Types (OrdinateId, MemberId, XBRLCodeSet, AxisId, CellId, TableId)
 
 type XHeader = Array (Array XHeaderCell)
@@ -145,26 +140,10 @@ instance isForeignDataType :: IsForeign DataType where
       "integer"    -> pure IntegerData
       "monetary"   -> pure MonetaryData
       "percentage" -> pure PercentageData
-      "code"       -> CodeData <<< map getTuple <$> readProp "xbrlCodeSet" json
+      "code"       -> CodeData <<< map getPair <$> readProp "xbrlCodeSet" json
       "string"     -> pure StringData
       "number"     -> pure NumberData
       _            -> throwError $ JSONError "unexpected data type"
-
-newtype FTuple a = FTuple (Tuple a a)
-
-getTuple :: forall a. FTuple a -> Tuple a a
-getTuple (FTuple t) = t
-
-instance isForeignFTuple :: (IsForeign a) => IsForeign (FTuple a) where
-  read json = do
-    array <- read json
-    t1 <- case array !! 0 of
-      Just v -> pure v
-      Nothing -> Left $ JSONError "Cannot read tuple from empty list"
-    t2 <- case array !! 1 of
-      Just v -> pure v
-      Nothing -> Left $ JSONError "Cannot read tuple from singleton list"
-    pure $ FTuple $ Tuple t1 t2
 
 newtype SubsetMemberOption = SubsetMemberOption
   { memberId    :: MemberId

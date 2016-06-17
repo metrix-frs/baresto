@@ -1,6 +1,7 @@
 module Api.Schema.BusinessData where
 
 import Data.Map as M
+import Api.Schema.Common (Pair(Pair))
 import Api.Schema.BusinessData.Key (Key, parseKeyF)
 import Api.Schema.BusinessData.Value (Value(Value), UpdateValue(UpdateValuePrecision, UpdateValueData))
 import Api.Schema.Validation (ValidationType, HoleCoords, ValidationResult)
@@ -14,8 +15,7 @@ import Data.Foreign.Class (class IsForeign, readProp, read)
 import Data.Foreign.Keys (keys)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.List (fromList, toList)
-import Data.Maybe (Maybe(Just, Nothing))
-import Data.String (null)
+import Data.Maybe (Maybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(Tuple))
 import Prelude (pure, ($), (<>), (<*>), (<$>), bind, show)
@@ -33,21 +33,6 @@ instance encodeJsonUpdate :: EncodeJson Update where
   encodeJson (Update m) = encodeJson (showKeys <$> m)
     where showKeys (Tuple k v) = Pair $ Tuple (show k) v
 
-newtype Pair a b = Pair (Tuple a b)
-
-instance isForeignPair :: (IsForeign a, IsForeign b) => IsForeign (Pair a b) where
-  read json = do
-    list <- read json
-    case list of
-      [a, b] -> Pair <$> (Tuple <$> read a <*> read b)
-      _ -> throwError $ JSONError "expected list of two elements"
-
-instance encodeJsonPair :: (EncodeJson a, EncodeJson b) => EncodeJson (Pair a b) where
-  encodeJson (Pair (Tuple a b)) = encodeJson
-    [ encodeJson a
-    , encodeJson b
-    ]
-
 newtype Snapshot = Snapshot (M.Map Key Value)
 
 instance isForeignSnapshot :: IsForeign Snapshot where
@@ -59,13 +44,9 @@ instance isForeignSnapshot :: IsForeign Snapshot where
 
 snapshotToUpdate :: Snapshot -> Update
 snapshotToUpdate (Snapshot m) = Update $ join $ toUpdates <$> (fromList $ M.toList m)
-  where toUpdates (Tuple k (Value v)) = dec <> pre
-          where dec = case null v.valueData of
-                  true  -> []
-                  false -> [Tuple k (UpdateValueData v.valueData)]
-                pre = case v.valuePrecision of
-                  Nothing -> []
-                  Just p  -> [Tuple k (UpdateValuePrecision $ Just p)]
+  where toUpdates (Tuple k (Value v)) =
+             [Tuple k (UpdateValueData v.valueData)]
+          <> [Tuple k (UpdateValuePrecision v.valuePrecision)]
 
 --
 
