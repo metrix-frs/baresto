@@ -1,4 +1,4 @@
 module Version where
 
 versionStr :: String
-versionStr = "v1.0.3"
+versionStr = "v1.1.0"
