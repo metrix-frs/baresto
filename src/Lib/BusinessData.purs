@@ -38,6 +38,7 @@ import Control.Monad.State (execState)
 import Data.Array ((!!), length, filter, snoc)
 import Data.Foldable (foldl)
 import Data.Maybe (fromMaybe, Maybe(Just, Nothing), isJust)
+import Data.String (null)
 import Data.Tuple (Tuple(Tuple), lookup)
 import Lib.Table (lookupBySnd, C(C), Coord(Coord), R(R), S(S), cellLookup, boolValueMap)
 import Optic.At (at)
@@ -129,7 +130,7 @@ editToUpdate bde bd = case bde of
     go table (Tuple coord new) = case getKey coord table bd of
         Just key ->
           let old = getBDValue key bd
-              convNew = Just $ conv new
+              convNew = if null new then Nothing else Just $ conv new
           in  if  old == convNew
                 then []
                 else [Tuple key (UpdateValueData convNew)]
