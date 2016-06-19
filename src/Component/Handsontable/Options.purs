@@ -317,12 +317,12 @@ cellProps s table bd = join $ procRow <$> makeIndexed (fromMaybe [] $ getCellTab
           FactCell _ dType -> case dType of
             BooleanData    -> ""
             DateData       -> ""
-            IntegerData    -> "0[.][00000000]"
-            MonetaryData   -> "0,0.00[00000000]"
-            PercentageData -> "0.00[00000000]%"
+            IntegerData    -> "0[.][00]"
+            MonetaryData   -> "0,0.00"
+            PercentageData -> "0.00[00]%"
             CodeData _     -> ""
             StringData     -> ""
-            NumberData     -> "0[.][00000000]"
+            NumberData     -> "0,0[.][00]"
           YMemberCell _    -> ""
           NoCell           -> ""
       , dateFormat: case cell of
