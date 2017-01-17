@@ -1,5 +1,5 @@
 {
-  "name": "lobster",
+  "name": "baresto",
   "version": "1.1.5",
   "authors": [
     "Moritz Drexl <m.drexl@metrix-frs.de>",
@@ -12,6 +12,10 @@
     "test",
     "tests"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/metrix-frs/baresto.git"
+  },
   "dependencies": {
     "purescript-halogen": "^0.12.0",
     "purescript-affjax": "^3.0.2",
@@ -21,6 +25,6 @@
     "purescript-string-parsers": "^2.0.0",
     "purescript-random": "^2.0.0",
     "purescript-globals": "^2.0.0",
-    "purescript-handsontable": "master"
+    "purescript-handsontable": "^2.0.0"
   }
 }

@@ -191,7 +191,7 @@ render st = H.div
               , H.div [ cls "saved" ] $ case fd.saveState of
                   Saving ->
                     [ H.span [ cls "spinner" ] []
-                    , H.text "Saving and validating<<<." ]
+                    , H.text "Saving and validating..." ]
                   Saved ->
                     [ H.span [ cls "octicon octicon-check" ] []
                     , H.text "All changes saved" ]

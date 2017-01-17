@@ -1,5 +1,5 @@
 {
-  "name": "lobster",
+  "name": "baresto",
   "version": "1.1.5",
   "authors": [
     "Moritz Drexl <m.drexl@metrix-frs.de>",
@@ -8,14 +8,15 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "ssh://git@gitlab.mdrexl.net:10022/holger/lobster.git"
+    "url": "git://github.com/metrix-frs/baresto.git"
   },
   "dependencies": {
     "virtual-dom": "2.1.1",
-    "handsontable": "^0.25.1",
-    "moment": "^2.13.0",
-    "pikaday": "^1.4.0",
-    "zeroclipboard": "^2.2.0"
+    "handsontable": "^0.30.1",
+    "moment": "^2.17.1",
+    "pikaday": "^1.5.1",
+    "zeroclipboard": "^2.3.0",
+    "numbro": "^1.9.3"
   },
   "devDependencies": {
     "browser-sync": "^2.11.2",

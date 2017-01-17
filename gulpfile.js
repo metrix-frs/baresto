@@ -49,7 +49,7 @@ gulp.task('browserify', ['bundle'], function () {
   }
   return browserify('dist/main.js')
     .transform(envify)
-    .require(['moment', 'pikaday', 'zeroclipboard'])
+    .require(['moment', 'numbro', 'pikaday', 'zeroclipboard'])
     .bundle()
     .pipe(vinyl('main.js'))
     .pipe(gulp.dest('public/js'))
