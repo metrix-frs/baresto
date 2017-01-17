@@ -1,27 +1,21 @@
 module Types where
 
-import Prelude (class Show, ($), pure, (<$>), bind)
-
-import Control.Monad.Eff.Console (CONSOLE())
-import Control.Monad.Eff.Exception (EXCEPTION())
-import Control.Monad.Eff.Random (RANDOM())
-import Control.Monad.Eff.Ref (REF())
-
-import Control.Monad.Aff (Aff())
-import Control.Monad.Aff.AVar (AVAR())
-
-import Data.Date (Date, fromString)
-import Data.Maybe (Maybe(Nothing, Just))
-import Data.Either (Either(Left))
-import Data.Foreign (ForeignError(JSONError))
-import Data.Foreign.Class (class IsForeign, read)
-
-import Network.HTTP.Affjax (AJAX())
-
-import Handsontable.Types (HOT())
-
-import Data.Tuple (Tuple)
+import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.AVar (AVAR)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Exception (EXCEPTION)
+import Control.Monad.Eff.Random (RANDOM)
+import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
+import Data.Date (Date)
+import Data.Foreign (ForeignError(JSONError), fail)
+import Data.Foreign.Class (class IsForeign, read)
+import Data.JSDate (toDate)
+import Data.Maybe (Maybe(Nothing, Just))
+import Data.Tuple (Tuple)
+import Handsontable.Types (HOT)
+import Network.HTTP.Affjax (AJAX)
+import Prelude
 
 type Effects =
   ( dom :: DOM
@@ -67,10 +61,10 @@ newtype UTCTime = UTCTime Date
 
 instance isForeignUTCTime :: IsForeign UTCTime where
   read json = do
-    mDate <- fromString <$> read json
+    mDate <- toDate <$> read json
     case mDate of
       Just date -> pure $ UTCTime date
-      Nothing -> Left $ JSONError "Could not read date."
+      Nothing -> fail $ JSONError "Could not read date."
 
 -- TODO: think about way of running this effectful function in eff monad
 foreign import showDate :: Date -> String

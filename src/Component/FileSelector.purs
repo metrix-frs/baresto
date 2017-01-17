@@ -1,5 +1,6 @@
 module Component.FileSelector where
 
+import Prelude
 import Component.File as F
 import Data.Map as M
 import Halogen.HTML.Events.Indexed as E
@@ -10,25 +11,19 @@ import Api.Schema.File (File(File))
 import Api.Schema.Import (Warning(Warning), XbrlImportConf(XbrlImportConf))
 import Api.Schema.Selector (ConceptualModule(ConceptualModule), Framework(Framework), ModuleEntry(ModuleEntry), Taxonomy(Taxonomy), _taxonomyId)
 import Component.Common (modal, toolButton)
-import Control.Monad (when)
 import Control.Monad.Aff.Free (fromEff)
 import Control.Monad.Writer (tell, execWriter)
-import Data.Array (length, filter, snoc, concat, cons, last)
+import Data.Array (concat, cons, filter, fromFoldable, last, length, snoc)
 import Data.Foldable (foldl, foldr, for_, find)
 import Data.Functor.Coproduct (Coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
-import Data.List (toList, fromList)
+import Data.Lens (Lens', _Just, lens, view, (%~), (.~))
+import Data.Lens.At (at)
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe, maybe)
-import Data.NaturalTransformation (Natural)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ParentDSL, ParentHTML, Component, ParentState, ChildF(ChildF), modify, action, lifecycleParentComponent)
-import Optic.At (at)
-import Optic.Core (LensP, (%~), (..), lens, (.~), view)
-import Optic.Iso (non)
-import Optic.Refractor.Prism (_Just)
-import Prelude (Unit, class Ord, class Eq, ($), (<<<), (/=), flip, (#), (==), (&&), (<$>), (<>), show, unit, pure, bind, not, const, (<#>))
 import Types (TaxonomyId, Metrix, ConceptualModuleId, FrameworkId, ModuleId, UpdateId, FileId)
-import Utils (cls, readId, getInputFileList)
+import Utils (cls, getInputFileList, non, readId)
 
 data FileSlot = FileSlot FileId
 
@@ -56,22 +51,22 @@ type StateInfo =
 
 type State = Maybe StateInfo
 
-_files :: LensP StateInfo (Array File)
+_files :: Lens' StateInfo (Array File)
 _files = lens _.files _{ files = _ }
 
-_openFramework :: LensP StateInfo (M.Map FrameworkId Boolean)
+_openFramework :: Lens' StateInfo (M.Map FrameworkId Boolean)
 _openFramework = lens _.openFramework _{ openFramework = _ }
 
-_selectedTaxonomy :: LensP StateInfo (M.Map FrameworkId TaxonomyId)
+_selectedTaxonomy :: Lens' StateInfo (M.Map FrameworkId TaxonomyId)
 _selectedTaxonomy = lens _.selectedTaxonomy _{ selectedTaxonomy = _ }
 
-_openConceptualModule :: LensP StateInfo (M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
+_openConceptualModule :: Lens' StateInfo (M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
 _openConceptualModule = lens _.openConceptualModule _{ openConceptualModule = _ }
 
-_selectedNode :: LensP StateInfo SelectedNode
+_selectedNode :: Lens' StateInfo SelectedNode
 _selectedNode = lens _.selectedNode _{ selectedNode = _ }
 
-_newFileName :: LensP StateInfo String
+_newFileName :: Lens' StateInfo String
 _newFileName = lens _.newFileName _{ newFileName = _ }
 
 initialState :: State
@@ -160,7 +155,7 @@ render st = H.div [ cls "container" ] $
         ]
   ]
 
-eval :: Natural Query (ParentDSL State F.State Query F.Query Metrix FileSlot)
+eval :: Query ~> ParentDSL State F.State Query F.Query Metrix FileSlot
 eval (Init next) = do
   apiCallParent listFiles \files -> do
     apiCallParent listFrameworks \frameworks -> do
@@ -170,7 +165,7 @@ eval (Init next) = do
         { files: files
         , frameworks: frameworks
         , openFramework: (M.empty :: M.Map FrameworkId Boolean)
-        , selectedTaxonomy: M.fromList $ toList taxMap
+        , selectedTaxonomy: M.fromFoldable taxMap
         , openConceptualModule: (M.empty :: M.Map (Tuple TaxonomyId ConceptualModuleId) Boolean)
         , selectedNode: SelectedNone
         , newFileName: ""
@@ -192,7 +187,7 @@ eval (UploadBaresto next) = do
   case mFiles of
     Nothing -> pure unit
     Just files -> apiCallParent (uploadBaresto files) \file ->
-      modify $ _Just .. _files %~ cons file
+      modify $ _Just <<< _files %~ cons file
   pure next
 
 eval (UploadXbrlOpenFile _ next) =
@@ -201,54 +196,54 @@ eval (UploadXbrlOpenFile _ next) =
 eval (UploadXbrlCloseModal next) = do
   modify $ _Just %~ _{ xbrlImportResponse = Nothing }
   apiCallParent listFiles \files ->
-    modify $ _Just .. _files .~ files
+    modify $ _Just <<< _files .~ files
   pure next
 
 eval (SetNewFileName name next) = do
-  modify $ _Just .. _newFileName .~ name
+  modify $ _Just <<< _newFileName .~ name
   pure next
 
 eval (CreateFile _ _ next) =
   pure next
 
 eval (ClickAll next) = do
-  modify $ _Just .. _selectedNode .~ SelectedNone
+  modify $ _Just <<< _selectedNode .~ SelectedNone
   pure next
 
 eval (ClickFramework f next) = do
-  modify $ _Just .. _selectedNode .~ SelectedFramework f
+  modify $ _Just <<< _selectedNode .~ SelectedFramework f
   pure next
 
 eval (ClickTaxonomy f t next) = do
-  modify $ _Just .. _selectedNode .~ SelectedTaxonomy f t
+  modify $ _Just <<< _selectedNode .~ SelectedTaxonomy f t
   pure next
 
 eval (ClickConceptualModule t c next) = do
-  modify $ _Just .. _selectedNode .~ SelectedConceptualModule t c
+  modify $ _Just <<< _selectedNode .~ SelectedConceptualModule t c
   pure next
 
 eval (ClickModule m next) = do
-  modify $ _Just .. _selectedNode .~ SelectedModule m
+  modify $ _Just <<< _selectedNode .~ SelectedModule m
   pure next
 
 eval (ToggleFrameworkOpen f next) = do
-  modify $ _Just .. _openFramework .. at f .. non true %~ (not :: Boolean -> Boolean)
+  modify $ _Just <<< _openFramework <<< at f <<< non true %~ (not :: Boolean -> Boolean)
   pure next
 
 eval (SelectTaxonomy f t next) = do
-  modify $ _Just .. _selectedTaxonomy .. at f .~ Just t
-  modify $ _Just .. _selectedNode .~ SelectedTaxonomy f t
+  modify $ _Just <<< _selectedTaxonomy <<< at f .~ Just t
+  modify $ _Just <<< _selectedNode .~ SelectedTaxonomy f t
   pure next
 
 eval (ToggleConceptualModuleOpen t c next) = do
-  modify $ _Just .. _openConceptualModule .. at (Tuple t c) .. non true %~ (not :: Boolean -> Boolean)
+  modify $ _Just <<< _openConceptualModule <<< at (Tuple t c) <<< non true %~ (not :: Boolean -> Boolean)
   pure next
 
 peek :: forall a. ChildF FileSlot F.Query a -> ParentDSL State F.State Query F.Query Metrix FileSlot Unit
 peek (ChildF (FileSlot fileId) q) = case q of
   F.DeleteFileYes _ ->
     apiCallParent (deleteFile fileId) \_ -> do
-      modify $ _Just .. _files %~ filter (\(File f) -> f.fileId /= fileId)
+      modify $ _Just <<< _files %~ filter (\(File f) -> f.fileId /= fileId)
       pure unit
   _ -> pure unit
 
@@ -457,18 +452,15 @@ getModules st = execWriter $
 
 data ModWithFiles = ModWithFiles String ModuleEntry (Array File)
 
-_modFiles :: LensP ModWithFiles (Array File)
+_modFiles :: Lens' ModWithFiles (Array File)
 _modFiles = lens (\(ModWithFiles _ _ fs) -> fs) (\(ModWithFiles t m _) fs -> ModWithFiles t m fs)
 
 arrangeFiles :: StateInfo -> Array ModWithFiles
-arrangeFiles st = pruneEmpty <<< fromList <<< M.values <<< sortFiles <<< makeMap <<< getModules $ st
+arrangeFiles st = pruneEmpty <<< fromFoldable <<< M.values <<< sortFiles <<< makeMap <<< getModules $ st
   where
     makeMap = foldr (\(Tuple tax (mod@(ModuleEntry m))) -> M.insert m.moduleEntryId (ModWithFiles tax mod [])) M.empty
 
     sortFiles modEntries = foldl go modEntries st.files
-    go m file@(File f) = m # at' f.fileModuleId .. _Just .. _modFiles %~ flip snoc file
+    go m file@(File f) = m # at f.fileModuleId <<< _Just <<< _modFiles %~ flip snoc file
 
     pruneEmpty = filter (\(ModWithFiles _ _ files) -> length files /= 0)
-
-    at' :: forall k v. (Ord k) => k -> LensP (M.Map k v) (Maybe v)
-    at' k = at k

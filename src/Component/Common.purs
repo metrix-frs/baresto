@@ -3,7 +3,7 @@ module Component.Common where
 import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen (HTML, Action)
-import Prelude ((<>), ($))
+import Prelude
 import Utils (cls)
 
 modal :: forall p f. String -> Array (HTML p f)

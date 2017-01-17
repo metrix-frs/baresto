@@ -5,7 +5,7 @@ module Lib.Queue
   , Queue()
   ) where
 
-import Prelude (($), flip)
+import Prelude
 
 import Data.Tuple (Tuple(Tuple))
 import Data.Array (snoc, uncons)
@@ -33,7 +33,7 @@ push :: forall a. a -> Queue a -> Queue a
 push x (Queue q) = runExists go q
   where
     go :: forall q. QueueF a q -> Queue a
-    go (QueueF q) = Queue $ mkExists $ QueueF $ q { state = q.push x q.state }
+    go (QueueF q') = Queue $ mkExists $ QueueF $ q' { state = q'.push x q'.state }
 
 pop :: forall a. Queue a -> { state :: Queue a, value :: Maybe a }
 pop queue@(Queue q') = runExists go q'

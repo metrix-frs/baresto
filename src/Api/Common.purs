@@ -1,31 +1,26 @@
 module Api.Common where
 
-import Prelude (Unit, show, unit, pure, ($), bind, (<), (&&), (<=))
-
+import Api.Schema (ServerResponse(ServerSuccess, ServerError))
 import Control.Monad.Aff (Aff, attempt)
-import Control.Monad.Trans (lift)
+import Control.Monad.Except (runExcept)
 import Control.Monad.Except.Trans (ExceptT, throwError)
-
-import Data.Maybe (Maybe(Just))
-import Data.Tuple (snd)
+import Control.Monad.Trans.Class (lift)
+import DOM.File.Types (FileList)
+import DOM.XHR.Types (FormData)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Printer (printJson)
 import Data.Either (Either(Left, Right))
 import Data.Foreign.Class (class IsForeign, readJSON)
-import Data.MediaType.Common (applicationJSON)
 import Data.HTTP.Method (Method(POST))
-
+import Data.Maybe (Maybe(Just))
+import Data.MediaType.Common (applicationJSON)
+import Data.Tuple (snd)
 import Network.HTTP.Affjax (Affjax, URL, AJAX, defaultRequest, affjax)
 import Network.HTTP.Affjax.Request (toRequest)
 import Network.HTTP.Affjax.Response (class Respondable)
-import Network.HTTP.StatusCode (StatusCode(StatusCode))
 import Network.HTTP.RequestHeader (RequestHeader(ContentType))
-
-import DOM.File.Types (FileList())
-import DOM.XHR.Types (FormData())
-
-import Data.Argonaut.Printer (printJson)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
-
-import Api.Schema (ServerResponse(ServerSuccess, ServerError))
+import Network.HTTP.StatusCode (StatusCode(StatusCode))
+import Prelude
 import Types (ErrorDetail)
 
 foreign import filesToFormData :: FileList -> FormData
@@ -58,7 +53,7 @@ getJsonResponse msg affjax = do
   result <- lift $ attempt affjax
   case result of
     Right res -> if succeeded res.status
-      then case readJSON res.response of
+      then case runExcept (readJSON res.response) of
              Left e -> throwError
                           { title: "JSON decode error"
                           , body: show e

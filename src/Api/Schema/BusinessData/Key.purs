@@ -6,23 +6,18 @@ module Api.Schema.BusinessData.Key
 , parseKeyF
 ) where
 
-import Prelude (class Ord, class Eq, class Show, (<$>), (+), (*), ($), (<<<), pure, (<*>), show, (<>), compare, eq)
-
 import Control.Alt ((<|>))
-import Control.Apply ((*>), (<*))
-
-import Data.Function (on)
 import Data.Either (Either(Right, Left))
-import Data.List (fromList)
-import Data.String (fromCharArray, toCharArray)
-import Data.Foreign (F, ForeignError(JSONError))
 import Data.Foldable (foldl)
-
+import Data.Foreign (F, ForeignError(JSONError), fail)
+import Data.Function (on)
+import Data.String (toCharArray)
+import Prelude
 import Text.Parsing.StringParser (Parser, runParser)
 import Text.Parsing.StringParser.Combinators (many1, (<?>))
 import Text.Parsing.StringParser.String (oneOf, string)
-
 import Types (OrdinateId, SubsetMemberId, CustomMemberId, AxisId, CellId)
+import Utils (fromChars)
 
 data Key
   = KeyHeaderFact      CellId
@@ -101,8 +96,8 @@ instance ordZLocation :: Ord ZLocation where
 
 parseKeyF :: String -> F Key
 parseKeyF str = case runParser key str of
-  Left err -> Left $ JSONError $ "Failed parsing key: " <> show err
-  Right a -> Right a
+  Left err -> fail $ JSONError $ "Failed parsing key: " <> show err
+  Right a -> pure a
 
 key :: Parser Key
 key =
@@ -169,7 +164,7 @@ pDigit =
     <|> (string "9" *> pure 9)
 
 hex :: Parser String
-hex = fromCharArray <<< fromList <$> (many1 $ oneOf $ toCharArray "0123456789abcdef")
+hex = fromChars <$> (many1 $ oneOf $ toCharArray "0123456789abcdef")
 
 integer :: Parser Int
 integer = foldl addDigit 0 <$> many1 pDigit

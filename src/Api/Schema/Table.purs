@@ -1,12 +1,11 @@
 module Api.Schema.Table where
 
 import Api.Schema.Common (getPair)
-import Control.Monad.Error.Class (throwError)
-import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign (ForeignError(JSONError), fail)
 import Data.Foreign.Class (class IsForeign, readProp, read)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe)
-import Prelude (pure, ($), (<*>), (<$>), bind, map, (<<<))
+import Prelude
 import Types (OrdinateId, MemberId, XBRLCodeSet, AxisId, CellId, TableId)
 
 type XHeader = Array (Array XHeaderCell)
@@ -73,7 +72,7 @@ instance isForeignCell :: IsForeign Cell where
       "fact"    -> FactCell <$> readProp "id" json <*> readProp "dataType" json
       "yMember" -> YMemberCell <$> readProp "id" json
       "noCell"  -> pure NoCell
-      _         -> throwError $ JSONError "expected `shaded`, `fact`, `yMember` or `noCell`"
+      _         -> fail $ JSONError "expected `shaded`, `fact`, `yMember` or `noCell`"
 
 newtype XHeaderCell = XHeaderCell
   { colspan  :: Int
@@ -84,7 +83,7 @@ instance isForeignXHeaderCell :: IsForeign XHeaderCell where
   read json = do
     cell <- { colspan: _, ordinate: _ }
       <$> readProp "colspan" json
-      <*> (runNullOrUndefined <$> readProp "ordinate" json)
+      <*> (unNullOrUndefined <$> readProp "ordinate" json)
     pure $ XHeaderCell cell
 
 data ZAxis
@@ -105,7 +104,7 @@ instance isForeignZAxis :: IsForeign ZAxis where
       "subset"    -> ZAxisSubset <$> readProp "id" json
                                  <*> readProp "label" json
                                  <*> readProp "options" json
-      _           -> throwError $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
+      _           -> fail $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
 
 data YAxis
   = YAxisClosed AxisId Ordinates
@@ -119,7 +118,7 @@ instance isForeignYAxis :: IsForeign YAxis where
                               <*> readProp "ordinates" json
       "custom" -> YAxisCustom <$> readProp "id" json
                               <*> readProp "label" json
-      _        -> throwError $ JSONError "expected `closed` or `custom`"
+      _        -> fail $ JSONError "expected `closed` or `custom`"
 
 data DataType
   = BooleanData
@@ -143,7 +142,7 @@ instance isForeignDataType :: IsForeign DataType where
       "code"       -> CodeData <<< map getPair <$> readProp "xbrlCodeSet" json
       "string"     -> pure StringData
       "number"     -> pure NumberData
-      _            -> throwError $ JSONError "unexpected data type"
+      _            -> fail $ JSONError "unexpected data type"
 
 newtype SubsetMemberOption = SubsetMemberOption
   { memberId    :: MemberId

@@ -7,16 +7,14 @@ module Component.Handsontable.Options
   , CellRenderer()
   ) where
 
-import Prelude (($), (<$>), (<>), (+), show, (==), (-), const)
-
-import Control.Bind (join)
+import Prelude
 
 import Data.Array (length, filter, (:), replicate, range)
 import Data.Traversable (mapAccumL)
 import Data.Foldable (foldl)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
 import Data.Tuple (Tuple(Tuple), snd)
-import Data.Function (Fn8, runFn8)
+import Data.Function.Uncurried (Fn8, runFn8)
 import Data.Nullable (Nullable, toNullable)
 import Data.String (take)
 

@@ -1,14 +1,13 @@
 module Api.Schema.BusinessData.Value where
 
-import Control.Monad.Error.Class (throwError)
-import Data.Argonaut.Combinators ((:=), (~>))
+import Data.Argonaut.Encode.Combinators ((:=), (~>))
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (class EncodeJson)
-import Data.Foreign (ForeignError(JSONError))
+import Data.Foreign (fail, ForeignError(JSONError))
 import Data.Foreign.Class (class IsForeign, readProp)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe)
-import Prelude (bind, (<$>), (<*>), pure, ($))
+import Prelude
 
 type Precision = Maybe Int
 
@@ -22,8 +21,8 @@ instance isForeignValue :: IsForeign Value where
     v <- { valueData: _
          , valuePrecision: _
          }
-      <$> (runNullOrUndefined <$> readProp "data" json)
-      <*> (runNullOrUndefined <$> readProp "precision" json)
+      <$> (unNullOrUndefined <$> readProp "data" json)
+      <*> (unNullOrUndefined <$> readProp "precision" json)
     pure $ Value v
 
 instance encodeJsonValue :: EncodeJson Value where
@@ -39,9 +38,9 @@ instance isForeignUpdateValue :: IsForeign UpdateValue where
   read json = do
     tag <- readProp "tag" json
     case tag of
-      "data"      -> UpdateValueData <$> (runNullOrUndefined <$> readProp "data" json)
-      "precision" -> UpdateValuePrecision <$> (runNullOrUndefined <$> readProp "precision" json)
-      _ -> throwError $ JSONError "`tag` should be `data`, `precision` or `value`"
+      "data"      -> UpdateValueData <$> (unNullOrUndefined <$> readProp "data" json)
+      "precision" -> UpdateValuePrecision <$> (unNullOrUndefined <$> readProp "precision" json)
+      _ -> fail $ JSONError "`tag` should be `data`, `precision` or `value`"
 
 instance encodeJsonUpdateValue :: EncodeJson UpdateValue where
   encodeJson (UpdateValueData str) = "tag" := "data"

@@ -1,20 +1,17 @@
 module Component.ModuleBrowser where
 
+import Prelude
 import Data.Map as M
 import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Api.Schema.Module (Module, Template, TemplateGroup, _templateGroups, _tableEntryCode, _tableEntryId, _templateTables, _templateLabel, _templates, _templateGroupLabel, _templateGroupId)
 import Data.Array (length, index, findIndex, concat)
+import Data.Lens (Lens', _Just, lens, (%~), (^.))
+import Data.Lens.At (at)
 import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
-import Data.NaturalTransformation (Natural)
 import Halogen (ComponentHTML, ComponentDSL, Component, component, modify)
-import Optic.At (at)
-import Optic.Core (LensP, (^.), (%~), (..), lens)
-import Optic.Iso (non)
-import Optic.Refractor.Prism (_Just)
-import Prelude (($), (==), bind, (+), (<), mod, (<$>), (<>), (-), pure, not, map, const)
 import Types (TemplateGroupId, Metrix, TableId)
-import Utils (cls, shorten)
+import Utils (cls, non, shorten)
 
 type TableSelect =
   { id :: TableId
@@ -40,13 +37,13 @@ type ModuleBrowserInfo =
 
 type State = Maybe ModuleBrowserInfo
 
-_mod :: LensP ModuleBrowserInfo Module
+_mod :: Lens' ModuleBrowserInfo Module
 _mod = lens _.mod _{ mod = _ }
 
-_groupOpen :: LensP ModuleBrowserInfo (M.Map TemplateGroupId Boolean)
+_groupOpen :: Lens' ModuleBrowserInfo (M.Map TemplateGroupId Boolean)
 _groupOpen = lens _.groupOpen _{ groupOpen = _ }
 
-_selectedTable :: LensP ModuleBrowserInfo (Maybe TableSelect)
+_selectedTable :: Lens' ModuleBrowserInfo (Maybe TableSelect)
 _selectedTable = lens _.selectedTable _{ selectedTable = _ }
 
 initialState :: State
@@ -71,7 +68,7 @@ render st = H.div_
       Just mbInfo -> renderModuleBrowser mbInfo
   ]
 
-eval :: Natural Query (ComponentDSL State Query Metrix)
+eval :: Query ~> ComponentDSL State Query Metrix
 eval (Boot mod next) = do
   modify $ const $ Just
     { mod: mod
@@ -86,7 +83,7 @@ eval (SelectTable tSelect next) = do
   pure next
 
 eval (ToggleGroupOpen gId next) = do
-  modify $ _Just .. _groupOpen .. at gId .. non true %~ (not :: Boolean -> Boolean)
+  modify $ _Just <<< _groupOpen <<< at gId <<< non true %~ (not :: Boolean -> Boolean)
   pure next
 
 eval (ToggleOpen next) = do

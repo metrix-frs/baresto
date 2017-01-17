@@ -1,10 +1,10 @@
 module Api.Schema.Auth where
 
-import Prelude (pure, ($), (<$>), (<*>), bind)
+import Prelude
 
 import Data.Maybe (Maybe)
 import Data.Foreign.Class (class IsForeign, readProp)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 
 import Types (UTCTime)
 
@@ -28,5 +28,5 @@ instance isForeignAuthInfo :: IsForeign AuthInfo where
       <*> readProp "contractBegin" json
       <*> readProp "contractEnd"   json
       <*> readProp "isTrial"       json
-      <*> (runNullOrUndefined <$> readProp "invalidMsg" json)
+      <*> (unNullOrUndefined <$> readProp "invalidMsg" json)
     pure $ AuthInfo status

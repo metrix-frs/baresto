@@ -1,5 +1,6 @@
 module Component.FileViewer where
 
+import Prelude
 import Component.FileMenu as Menu
 import Component.Handsontable as Hot
 import Component.ModuleBrowser as MB
@@ -15,29 +16,24 @@ import Api.Schema.Module (_templateLabel, _tableEntryCode, _tableEntryId, _templ
 import Api.Schema.Table (Ordinate(Ordinate), SubsetMemberOption(SubsetMemberOption), Table(Table), YAxis(YAxisCustom), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
 import Api.Schema.Validation (ValidationType(VTUpdate))
 import Component.Common (toolButton)
-import Control.Monad (unless)
 import Control.Monad.Aff.Free (fromAff, fromEff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Except.Trans (runExceptT)
-import Control.Monad.Rec.Class (tailRecM)
+import Control.Monad.Rec.Class (Step(..), tailRecM)
 import Data.Array (head, replicate)
 import Data.Either (Either(Right, Left))
 import Data.Foldable (find, foldl)
 import Data.Functor.Coproduct (Coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
-import Data.List (fromList)
+import Data.Lens (Lens', _Just, lens, (%~), (.~), (^.))
 import Data.Maybe (Maybe(Nothing, Just), maybe)
-import Data.NaturalTransformation (Natural)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ParentHTML, ParentDSL, ChildF, Component, ParentState, gets, action, query', modify, eventSource, subscribe', lifecycleParentComponent)
 import Halogen.Component.ChildPath (ChildPath, cpL, cpR, (:>))
 import Lib.BusinessData (BusinessData, Edit(DeleteCustomRow, NewCustomRow, SetFacts, DeselectSubsetZMember, SelectSubsetZMember, DeleteCustomZMember, RenameCustomZMember, NewCustomZMember), _snapshot, getSubsetZMembers, getCustomZMembers, isSubsetZMemberSelected, doesSheetExist, emptyBusinessData, applyUpdate, sheetToZLocation, editToUpdate, getMaxSheet)
 import Lib.Table (S(S))
-import Optic.Core (LensP, (^.), (%~), (..), (.~), lens)
-import Optic.Refractor.Prism (_Just)
-import Prelude (class Ord, class Eq, Unit, ($), (<$>), show, (<>), (==), (<<<), unit, pure, bind, void, not, flip)
 import Types (Metrix, TableId, UpdateId, ModuleId)
 import Utils (cls, makeIndexed, readId, peek', getEntropy, minOrd)
 
@@ -107,7 +103,7 @@ type FileData =
   , queue         :: Queue Update
   }
 
-_fdBusinessData :: LensP FileData BusinessData
+_fdBusinessData :: Lens' FileData BusinessData
 _fdBusinessData = lens _.businessData _{ businessData = _ }
 
 type TableData =
@@ -116,7 +112,7 @@ type TableData =
   , sheetConfiguratorOpen :: Boolean
   }
 
-_sheetConfiguratorOpen :: LensP TableData Boolean
+_sheetConfiguratorOpen :: Lens' TableData Boolean
 _sheetConfiguratorOpen = lens _.sheetConfiguratorOpen _{ sheetConfiguratorOpen = _ }
 
 type State =
@@ -124,10 +120,10 @@ type State =
   , tableData :: Maybe TableData
   }
 
-_fileData :: LensP State (Maybe FileData)
+_fileData :: Lens' State (Maybe FileData)
 _fileData = lens _.fileData _{ fileData = _ }
 
-_tableData :: LensP State (Maybe TableData)
+_tableData :: Lens' State (Maybe TableData)
 _tableData = lens _.tableData _{ tableData = _ }
 
 initialState :: State
@@ -195,7 +191,7 @@ render st = H.div
               , H.div [ cls "saved" ] $ case fd.saveState of
                   Saving ->
                     [ H.span [ cls "spinner" ] []
-                    , H.text "Saving and validating..." ]
+                    , H.text "Saving and validating<<<." ]
                   Saved ->
                     [ H.span [ cls "octicon octicon-check" ] []
                     , H.text "All changes saved" ]
@@ -240,7 +236,7 @@ render st = H.div
   where
     hasSheets table bd = doesSheetExist (S 0) table bd
 
-eval :: UpdateId -> Natural Query (ParentDSL State ChildState Query ChildQuery Metrix ChildSlot)
+eval :: UpdateId -> Query ~> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot
 eval propUpdateId (Init next) = do
   queue <- fromEff newQueue
 
@@ -287,20 +283,20 @@ eval _ (ProcessUpdate update next) = do
       result <- fromAff $ runExceptT $ postUpdate payload
       case result of
         Left err -> do
-          modify $ _fileData .. _Just %~ _{ saveState = SaveError err.title }
+          modify $ _fileData <<< _Just %~ _{ saveState = SaveError err.title }
           fromEff do
             log $ "Error: " <> err.title
             log $ "Details: " <> err.body
-          pure $ Left unit
+          pure $ Loop unit
         Right (UpdatePostResult res) -> case res.uprUpdateDesc of
           UpdateDesc desc -> do
-            modify $ _fileData .. _Just %~ _{ lastUpdateId = desc.updateDescUpdateId }
+            modify $ _fileData <<< _Just %~ _{ lastUpdateId = desc.updateDescUpdateId }
             query' cpValidation ValidationSlot $ action $ V.SetUpdateId desc.updateDescUpdateId
             query' cpValidation ValidationSlot $ action $ V.Patch res.uprValidationResult
             query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId desc.updateDescUpdateId
-            pure $ Right unit
+            pure $ Done unit
     running <- fromEff $ nextElemQueue fd.queue
-    unless (running) $ modify $ _fileData .. _Just %~ _{ saveState = Saved }
+    unless (running) $ modify $ _fileData <<< _Just %~ _{ saveState = Saved }
   pure next
 
 eval _ (CloseFile next) = do
@@ -308,12 +304,12 @@ eval _ (CloseFile next) = do
   pure next
 
 eval _ (SelectSheet s next) = do
-  modify $ _tableData .. _Just %~ _{ selectedSheet = s }
+  modify $ _tableData <<< _Just %~ _{ selectedSheet = s }
   rebuildHot
   pure next
 
 eval _ (ToggleSheetConfiguratorOpen next) = do
-  modify $ _tableData .. _Just .. _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
+  modify $ _tableData <<< _Just <<< _sheetConfiguratorOpen %~ (not :: Boolean -> Boolean)
   pure next
 
 eval _ (AddSheet next) = do
@@ -366,15 +362,15 @@ setSelectedSheetMaxNumberSheets = withFileData $ \fd -> do
     Just td -> do
       let minS (S a) (S b) = S $ minOrd a b
           newS = minS (getMaxSheet td.table fd.businessData) (td.selectedSheet)
-      modify $ _tableData .. _Just %~ _{ selectedSheet = newS }
+      modify $ _tableData <<< _Just %~ _{ selectedSheet = newS }
 
 processEdit :: Edit -> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
 processEdit edit = withFileData \fd ->
   case editToUpdate edit fd.businessData of
     Nothing -> pure unit
     Just update -> do
-      modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate update
-      modify $ _fileData .. _Just %~ _{ saveState = Saving }
+      modify $ _fileData <<< _Just <<< _fdBusinessData %~ applyUpdate update
+      modify $ _fileData <<< _Just %~ _{ saveState = Saving }
       fromEff $ pushQueue fd.queue update
 
 rebuildHot :: ParentDSL State ChildState Query ChildQuery Metrix ChildSlot Unit
@@ -437,15 +433,15 @@ peek child = do
 
   peek' cpMenu child \s q -> case q of
     Menu.UploadCsvConfirm (UpdateGet u) _ -> do
-      modify $ _fileData .. _Just .. _fdBusinessData %~ applyUpdate u.updateGetUpdate
-      modify $ _fileData .. _Just %~ _{ lastUpdateId = u.updateGetId }
+      modify $ _fileData <<< _Just <<< _fdBusinessData %~ applyUpdate u.updateGetUpdate
+      modify $ _fileData <<< _Just %~ _{ lastUpdateId = u.updateGetId }
       query' cpValidation ValidationSlot $ action $ V.ValidateAll u.updateGetId
       query' cpMenu MenuSlot $ action $ Menu.SetLastUpdateId u.updateGetId
       rebuildHot
 
     Menu.OpenUpdate updateId _ ->
       apiCallParent (getUpdateSnapshot updateId) \(SnapshotDesc snap) -> do
-        modify $ _fileData .. _Just %~
+        modify $ _fileData <<< _Just %~
            _{ businessData = applyUpdate (snapshotToUpdate snap.snapshotDescSnapshot) emptyBusinessData
             , lastUpdateId = snap.snapshotDescUpdateId
             }
@@ -600,7 +596,7 @@ viewSheetSelector st = case Tuple st.fileData st.tableData of
 
 debugBusinessData :: BusinessData -> ParentHTML ChildState Query ChildQuery Metrix ChildSlot
 debugBusinessData bd = H.div_
-    [ H.table_ $ bdEntry <$> (fromList $ M.toList (bd ^. _snapshot))
+    [ H.table_ $ bdEntry <$> (M.toUnfoldable (bd ^. _snapshot))
     ]
   where
     bdEntry (Tuple key val) = H.tr_

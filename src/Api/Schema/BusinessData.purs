@@ -1,24 +1,23 @@
 module Api.Schema.BusinessData where
 
+import Prelude
 import Data.Map as M
-import Api.Schema.Common (Pair(Pair))
 import Api.Schema.BusinessData.Key (Key, parseKeyF)
 import Api.Schema.BusinessData.Value (Value(Value), UpdateValue(UpdateValuePrecision, UpdateValueData))
+import Api.Schema.Common (Pair(Pair))
 import Api.Schema.Validation (ValidationType, HoleCoords, ValidationResult)
-import Control.Bind (join)
-import Control.Monad.Error.Class (throwError)
-import Data.Argonaut.Combinators ((:=), (~>))
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
-import Data.Foreign (ForeignError(JSONError))
+import Data.Argonaut.Encode.Combinators ((:=), (~>))
+import Data.Foreign (ForeignError(JSONError), fail)
 import Data.Foreign.Class (class IsForeign, readProp, read)
 import Data.Foreign.Keys (keys)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
-import Data.List (fromList, toList)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
+import Data.List (toUnfoldable)
+import Data.Map (fromFoldable)
 import Data.Maybe (Maybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(Tuple))
-import Prelude (pure, ($), (<>), (<*>), (<$>), bind, show)
 import Types (UTCTime, UpdateId, TagId)
 
 newtype Update = Update (Array (Tuple Key UpdateValue))
@@ -40,10 +39,10 @@ instance isForeignSnapshot :: IsForeign Snapshot where
     ks <- keys json
     let mkPair k = Tuple <$> parseKeyF k <*> readProp k json
     kvs <- traverse mkPair ks
-    pure $ Snapshot $ M.fromList $ toList kvs
+    pure $ Snapshot $ fromFoldable kvs
 
 snapshotToUpdate :: Snapshot -> Update
-snapshotToUpdate (Snapshot m) = Update $ join $ toUpdates <$> (fromList $ M.toList m)
+snapshotToUpdate (Snapshot m) = Update $ join $ toUpdates <$> (toUnfoldable $ M.toList m)
   where toUpdates (Tuple k (Value v)) =
              [Tuple k (UpdateValueData v.valueData)]
           <> [Tuple k (UpdateValuePrecision v.valuePrecision)]
@@ -92,7 +91,7 @@ instance isForeignUpdateGet :: IsForeign UpdateGet where
            }
       <$> readProp "updateId" json
       <*> readProp "created" json
-      <*> (runNullOrUndefined <$> readProp "parentId" json)
+      <*> (unNullOrUndefined <$> readProp "parentId" json)
       <*> readProp "update" json
     pure $ UpdateGet upd
 
@@ -112,7 +111,7 @@ instance isForeignSnapshotDesc :: IsForeign SnapshotDesc where
            }
       <$> readProp "updateId" json
       <*> readProp "created" json
-      <*> (runNullOrUndefined <$> readProp "parentId" json)
+      <*> (unNullOrUndefined <$> readProp "parentId" json)
       <*> readProp "snapshot" json
     pure $ SnapshotDesc upd
 
@@ -176,7 +175,7 @@ instance isForeignUpdateEntryHuman :: IsForeign ChangeLocationHuman where
       "customRow" -> HumanCustomRow <$> readProp "table" json
                                     <*> readProp "member" json
                                     <*> readProp "sheet" json
-      _           -> throwError $ JSONError "expected `header`, `fact`, `subsetZ`, `customZ` or `customRow`"
+      _           -> fail $ JSONError "expected `header`, `fact`, `subsetZ`, `customZ` or `customRow`"
 
 newtype TagDesc = TagDesc
   { tagDescTagId    :: TagId

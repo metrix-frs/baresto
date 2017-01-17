@@ -1,8 +1,8 @@
 module Api.Schema.Selector where
 
-import Prelude (pure, ($), (<*>), (<$>), bind)
 import Data.Foreign.Class (class IsForeign, readProp)
-import Optic.Core (LensP, lens, (..))
+import Data.Lens (Lens', lens)
+import Prelude
 import Types (ModuleId, ConceptualModuleId, TaxonomyId, FrameworkId)
 
 newtype Framework = Framework
@@ -11,17 +11,17 @@ newtype Framework = Framework
   , taxonomies :: Array Taxonomy
   }
 
-_Framework :: LensP Framework _
+_Framework :: Lens' Framework _
 _Framework = lens (\(Framework r) -> r) (\_ r -> Framework r)
 
-_frameworkId :: LensP Framework FrameworkId
-_frameworkId = _Framework .. lens _.frameworkId _{ frameworkId = _ }
+_frameworkId :: Lens' Framework FrameworkId
+_frameworkId = _Framework <<< lens _.frameworkId _{ frameworkId = _ }
 
-_frameworkLabel :: LensP Framework String
-_frameworkLabel = _Framework .. lens _.frameworkLabel _{ frameworkLabel = _ }
+_frameworkLabel :: Lens' Framework String
+_frameworkLabel = _Framework <<< lens _.frameworkLabel _{ frameworkLabel = _ }
 
-_taxonomies :: LensP Framework (Array Taxonomy)
-_taxonomies = _Framework .. lens _.taxonomies _{ taxonomies = _ }
+_taxonomies :: Lens' Framework (Array Taxonomy)
+_taxonomies = _Framework <<< lens _.taxonomies _{ taxonomies = _ }
 
 instance isForeignFramework :: IsForeign Framework where
   read json = do
@@ -37,17 +37,17 @@ newtype Taxonomy = Taxonomy
   , conceptualModules :: Array ConceptualModule
   }
 
-_Taxonomy :: LensP Taxonomy _
+_Taxonomy :: Lens' Taxonomy _
 _Taxonomy = lens (\(Taxonomy r) -> r) (\_ r -> Taxonomy r)
 
-_taxonomyId :: LensP Taxonomy TaxonomyId
-_taxonomyId = _Taxonomy .. lens _.taxonomyId _{taxonomyId = _ }
+_taxonomyId :: Lens' Taxonomy TaxonomyId
+_taxonomyId = _Taxonomy <<< lens _.taxonomyId _{taxonomyId = _ }
 
-_taxonomyLabel :: LensP Taxonomy String
-_taxonomyLabel = _Taxonomy .. lens _.taxonomyLabel _{ taxonomyLabel = _ }
+_taxonomyLabel :: Lens' Taxonomy String
+_taxonomyLabel = _Taxonomy <<< lens _.taxonomyLabel _{ taxonomyLabel = _ }
 
-_conceptualModules :: LensP Taxonomy (Array ConceptualModule)
-_conceptualModules = _Taxonomy .. lens _.conceptualModules _{ conceptualModules = _ }
+_conceptualModules :: Lens' Taxonomy (Array ConceptualModule)
+_conceptualModules = _Taxonomy <<< lens _.conceptualModules _{ conceptualModules = _ }
 
 instance isForeignTaxonomy :: IsForeign Taxonomy where
   read json = do
@@ -64,20 +64,20 @@ newtype ConceptualModule = ConceptualModule
   , moduleEntries  :: Array ModuleEntry
   }
 
-_ConceptualModule :: LensP ConceptualModule _
+_ConceptualModule :: Lens' ConceptualModule _
 _ConceptualModule = lens (\(ConceptualModule r) -> r) (\_ r -> ConceptualModule r)
 
-_conceptId :: LensP ConceptualModule ConceptualModuleId
-_conceptId = _ConceptualModule .. lens _.conceptId _{conceptId = _ }
+_conceptId :: Lens' ConceptualModule ConceptualModuleId
+_conceptId = _ConceptualModule <<< lens _.conceptId _{conceptId = _ }
 
-_conceptLabel :: LensP ConceptualModule String
-_conceptLabel = _ConceptualModule .. lens _.conceptLabel _{ conceptLabel = _ }
+_conceptLabel :: Lens' ConceptualModule String
+_conceptLabel = _ConceptualModule <<< lens _.conceptLabel _{ conceptLabel = _ }
 
-_conceptAllowed :: LensP ConceptualModule Boolean
-_conceptAllowed = _ConceptualModule .. lens _.conceptAllowed _{ conceptAllowed = _ }
+_conceptAllowed :: Lens' ConceptualModule Boolean
+_conceptAllowed = _ConceptualModule <<< lens _.conceptAllowed _{ conceptAllowed = _ }
 
-_moduleEntries :: LensP ConceptualModule (Array ModuleEntry)
-_moduleEntries = _ConceptualModule .. lens _.moduleEntries _{ moduleEntries = _ }
+_moduleEntries :: Lens' ConceptualModule (Array ModuleEntry)
+_moduleEntries = _ConceptualModule <<< lens _.moduleEntries _{ moduleEntries = _ }
 
 instance isForeignConceptualModule :: IsForeign ConceptualModule where
   read json = do

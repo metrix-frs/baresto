@@ -9,7 +9,7 @@ module Component.Spinner
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, print)
+import Control.Monad.Eff.Console (CONSOLE, logShow)
 import Control.Monad.Eff.Exception (catchException)
 import DOM (DOM)
 import DOM.Event.EventTarget (eventListener, addEventListener, dispatchEvent)
@@ -21,10 +21,9 @@ import DOM.Node.ParentNode (querySelector)
 import DOM.Node.Types (elementToEventTarget)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
-import Data.NaturalTransformation (Natural)
 import Data.Nullable (toMaybe)
 import Halogen (ComponentDSL, ComponentHTML, Component, modify, action, eventSource_, subscribe, gets, lifecycleComponent)
-import Prelude (Unit, pure, (-), bind, (+), ($), (>), unit, (<>), (<$>), (>>=))
+import Prelude
 import Types (Metrix)
 import Utils (cls, createEvent)
 
@@ -41,7 +40,7 @@ dispatch :: forall eff. Boolean -> Eff (dom :: DOM, console :: CONSOLE | eff) Un
 dispatch on = do
   doc <- window >>= document
   maybeElem <- toMaybe <$> querySelector ("#" <> spinnerName) (htmlDocumentToParentNode doc)
-  for_ maybeElem \el -> catchException print do
+  for_ maybeElem \el -> catchException logShow do
     dispatchEvent (createEvent $ if on then spinnerOn else spinnerOff) (elementToEventTarget el)
     pure unit
 
@@ -66,11 +65,11 @@ data Query a
 
 spinner :: Component State Query Metrix
 spinner = lifecycleComponent
-    { render
-    , eval
-    , initializer: Just (action Initialize)
-    , finalizer: Nothing
-    }
+  { render
+  , eval
+  , initializer: Just (action Initialize)
+  , finalizer: Nothing
+  }
 
 render :: State -> ComponentHTML Query
 render st = H.div
@@ -81,7 +80,7 @@ render st = H.div
         then [ H.span [ cls "spinner-on" ] [] ]
         else [ H.div [ cls "spinner-off" ] [] ]
 
-eval :: Natural Query (ComponentDSL State Query Metrix)
+eval :: Query ~> ComponentDSL State Query Metrix
 eval (Initialize next) = do
   el <- gets _.element
   case el of

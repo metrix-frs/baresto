@@ -1,12 +1,12 @@
 module Lib.Table where
 
+import Prelude
 import Api.Schema.Table (Cell, Grid(Grid), Row(Row), Sheet(Sheet), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
 import Data.Array ((!!))
 import Data.Foldable (class Foldable, find)
+import Data.Lens (Lens', lens)
 import Data.Maybe (Maybe)
 import Data.Tuple (snd, fst, Tuple(Tuple))
-import Optic.Core (LensP, lens)
-import Prelude (class Show, class Ord, class Eq, bind, pure, show, compare, (==), (<$>))
 import Utils (makeIndexed)
 
 mapGrid :: forall a. (Int -> Int -> Int -> Cell -> a) -> Grid -> Array (Array (Array a))
@@ -36,10 +36,10 @@ newtype R = R Int
 newtype C = C Int
 newtype S = S Int
 
-_col :: LensP C Int
+_col :: Lens' C Int
 _col = lens (\(C c) -> c) (\_ c -> C c)
 
-_row :: LensP R Int
+_row :: Lens' R Int
 _row = lens (\(R r) -> r) (\_ r -> R r)
 
 instance eqS :: Eq S where

@@ -27,28 +27,24 @@ module Lib.BusinessData
 , isSubsetZMemberSelected
 ) where
 
+import Prelude
 import Data.Array as Array
 import Data.Map as M
 import Api.Schema.BusinessData (Update(Update))
 import Api.Schema.BusinessData.Key (IsRowKey(RowKey, NoRowKey), Key(KeySubsetZSelected, KeyHeaderFact, KeyFact, KeyCustomZMember, KeyCustomRow), YLocation(YLocCustom, YLocClosed), ZLocation(ZLocSubset, ZLocCustom, ZLocClosed, ZLocSingle))
 import Api.Schema.BusinessData.Value (Value(Value), updateValue, UpdateValue(UpdateValueData))
 import Api.Schema.Table (Cell(YMemberCell, FactCell, NoCell), DataType(BooleanData, CodeData, PercentageData, MonetaryData), Ordinate(Ordinate), Table(Table), YAxis(YAxisCustom, YAxisClosed), ZAxis(ZAxisSubset, ZAxisCustom, ZAxisClosed, ZAxisSingleton))
-import Control.Bind (join)
 import Control.Monad.State (execState)
 import Data.Array ((!!), length, filter, snoc)
 import Data.Foldable (foldl)
+import Data.Lens (Lens', lens, use, (%=), (.=), (.~), (^.))
+import Data.Lens.At (at)
 import Data.Maybe (fromMaybe, Maybe(Just, Nothing), isJust)
 import Data.String (null)
 import Data.Tuple (Tuple(Tuple), lookup)
 import Lib.Table (lookupBySnd, C(C), Coord(Coord), R(R), S(S), cellLookup, boolValueMap)
-import Optic.At (at)
-import Optic.Core (LensP, (.~), (..), (^.), lens)
-import Optic.Iso (non)
-import Optic.Monad.Getter (use)
-import Optic.Monad.Setter ((%=), (.=))
-import Prelude ((#), ($), pure, bind, (<$>), (-), (==), unit, (/=), flip, id, map)
 import Types (SubsetMemberId, AxisId, CellId, CustomMemberId)
-import Utils (maxInt, getIndices)
+import Utils (getIndices, maxInt, non)
 
 type CustomMember = Tuple CustomMemberId String
 type SubsetMember = Tuple SubsetMemberId String
@@ -64,20 +60,20 @@ newtype BusinessData = BusinessData
   , subsetZMembers :: SubsetZMemberStore
   }
 
-_BusinessData :: LensP BusinessData _
+_BusinessData :: Lens' BusinessData _
 _BusinessData = lens (\(BusinessData r) -> r) (\_ r -> BusinessData r)
 
-_snapshot :: LensP BusinessData (M.Map Key String)
-_snapshot = _BusinessData .. lens _.snapshot _{ snapshot = _ }
+_snapshot :: Lens' BusinessData (M.Map Key String)
+_snapshot = _BusinessData <<< lens _.snapshot _{ snapshot = _ }
 
-_customYMembers :: LensP BusinessData CustomYMemberStore
-_customYMembers = _BusinessData .. lens _.customYMembers _{ customYMembers = _ }
+_customYMembers :: Lens' BusinessData CustomYMemberStore
+_customYMembers = _BusinessData <<< lens _.customYMembers _{ customYMembers = _ }
 
-_customZMembers :: LensP BusinessData CustomZMemberStore
-_customZMembers = _BusinessData .. lens _.customZMembers _{ customZMembers = _ }
+_customZMembers :: Lens' BusinessData CustomZMemberStore
+_customZMembers = _BusinessData <<< lens _.customZMembers _{ customZMembers = _ }
 
-_subsetZMembers :: LensP BusinessData SubsetZMemberStore
-_subsetZMembers = _BusinessData .. lens _.subsetZMembers _{ subsetZMembers = _ }
+_subsetZMembers :: Lens' BusinessData SubsetZMemberStore
+_subsetZMembers = _BusinessData <<< lens _.subsetZMembers _{ subsetZMembers = _ }
 
 emptyBusinessData :: BusinessData
 emptyBusinessData = BusinessData
@@ -159,18 +155,18 @@ applyUpdate :: Update -> BusinessData -> BusinessData
 applyUpdate (Update list) bd' = foldl go bd' list
   where
     go bd (Tuple key upd) = bd # execState do
-      old <- use $ _snapshot .. at key
+      old <- use $ _snapshot <<< at key
       let new = case updateValue upd (Value { valueData: old, valuePrecision: Nothing }) of
                   Value v -> v.valueData
-      _snapshot .. at key .= new
+      _snapshot <<< at key .= new
       case key of
         KeyCustomRow axId zLoc cm ->
-          _customYMembers .. at (Tuple axId zLoc) .. non [] %= case upd of
+          _customYMembers <<< at (Tuple axId zLoc) <<< non [] %= case upd of
             UpdateValueData (Just new') -> flip snoc (Tuple cm new')
             UpdateValueData Nothing     -> filter (\(Tuple cm' (_ :: String)) -> cm /= cm')
             _                           -> id
         KeyCustomZMember axId cm ->
-          _customZMembers .. at axId .. non [] %= case Tuple old upd of
+          _customZMembers <<< at axId <<< non [] %= case Tuple old upd of
             Tuple (Just _) (UpdateValueData (Just new')) ->
               map (\(Tuple cm' val) -> if cm == cm' then (Tuple cm' new') else (Tuple cm' val))
             Tuple Nothing (UpdateValueData (Just new')) ->
@@ -180,7 +176,7 @@ applyUpdate (Update list) bd' = foldl go bd' list
             _ ->
               id
         KeySubsetZSelected axId sm ->
-          _subsetZMembers .. at axId .. non [] %= case upd of
+          _subsetZMembers <<< at axId <<< non [] %= case upd of
             UpdateValueData (Just new') -> flip snoc (Tuple sm new')
             UpdateValueData Nothing     -> filter (\(Tuple sm' (_ :: String)) -> sm /= sm')
             _                           -> id
@@ -278,7 +274,7 @@ getKey coord@(Coord _ (R r) (S s)) table@(Table tbl) bd =
 
 getCustomYMembers :: AxisId -> ZLocation -> BusinessData -> Array CustomMember
 getCustomYMembers axId zLoc bd =
-  fromMaybe [] $ bd ^. _customYMembers .. at (Tuple axId zLoc)
+  fromMaybe [] $ bd ^. _customYMembers <<< at (Tuple axId zLoc)
 
 getCustomYMembersBySheet :: AxisId -> S -> Table -> BusinessData -> Array CustomMember
 getCustomYMembersBySheet axId s table bd = case sheetToZLocation s table bd of
@@ -287,11 +283,11 @@ getCustomYMembersBySheet axId s table bd = case sheetToZLocation s table bd of
 
 getCustomZMembers :: AxisId -> BusinessData -> Array CustomMember
 getCustomZMembers axId bd =
-  fromMaybe [] $ bd ^. _customZMembers .. at axId
+  fromMaybe [] $ bd ^. _customZMembers <<< at axId
 
 getSubsetZMembers :: AxisId -> BusinessData -> Array SubsetMember
 getSubsetZMembers axId bd =
-  fromMaybe [] $ bd ^. _subsetZMembers .. at axId
+  fromMaybe [] $ bd ^. _subsetZMembers <<< at axId
 
 isSubsetZMemberSelected :: AxisId -> SubsetMemberId -> BusinessData -> Boolean
 isSubsetZMemberSelected axId memId bd =
@@ -300,7 +296,7 @@ isSubsetZMemberSelected axId memId bd =
 -- Internal helper
 
 getBDValue :: Key -> BusinessData -> Maybe String
-getBDValue key bd = bd ^. _snapshot .. at key
+getBDValue key bd = bd ^. _snapshot <<< at key
 
 setBDValue :: Key -> String -> BusinessData -> BusinessData
-setBDValue key value bd = bd # _snapshot .. at key .~ Just value
+setBDValue key value bd = bd # _snapshot <<< at key .~ Just value

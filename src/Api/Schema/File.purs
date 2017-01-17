@@ -1,9 +1,8 @@
 module Api.Schema.File where
 
-import Prelude (pure, ($), (<*>), (<$>), bind)
-
 import Data.Foreign.Class (class IsForeign, readProp)
-import Optic.Core (LensP, lens, (..))
+import Data.Lens (Lens', lens)
+import Prelude
 import Types (UpdateId, UTCTime, ModuleId, FileId, Label)
 
 newtype File = File
@@ -15,26 +14,26 @@ newtype File = File
   , fileLastUpdateId :: UpdateId
   }
 
-_File :: LensP File _
+_File :: Lens' File _
 _File = lens (\(File r) -> r) (\_ r -> File r)
 
-_fileId :: LensP File FileId
-_fileId = _File .. lens _.fileId _{ fileId = _ }
+_fileId :: Lens' File FileId
+_fileId = _File <<< lens _.fileId _{ fileId = _ }
 
-_fileModuleId :: LensP File ModuleId
-_fileModuleId = _File .. lens _.fileModuleId _{ fileModuleId = _ }
+_fileModuleId :: Lens' File ModuleId
+_fileModuleId = _File <<< lens _.fileModuleId _{ fileModuleId = _ }
 
-_fileLabel :: LensP File Label
-_fileLabel = _File .. lens _.fileLabel _{ fileLabel = _ }
+_fileLabel :: Lens' File Label
+_fileLabel = _File <<< lens _.fileLabel _{ fileLabel = _ }
 
-_fileCreated :: LensP File UTCTime
-_fileCreated = _File .. lens _.fileCreated _{ fileCreated = _ }
+_fileCreated :: Lens' File UTCTime
+_fileCreated = _File <<< lens _.fileCreated _{ fileCreated = _ }
 
-_fileChanged :: LensP File UTCTime
-_fileChanged = _File .. lens _.fileChanged _{ fileChanged = _ }
+_fileChanged :: Lens' File UTCTime
+_fileChanged = _File <<< lens _.fileChanged _{ fileChanged = _ }
 
-_fileLastUpdateId :: LensP File UpdateId
-_fileLastUpdateId = _File .. lens _.fileLastUpdateId _{ fileLastUpdateId = _ }
+_fileLastUpdateId :: Lens' File UpdateId
+_fileLastUpdateId = _File <<< lens _.fileLastUpdateId _{ fileLastUpdateId = _ }
 
 instance isForeignFile :: IsForeign File where
   read json = do

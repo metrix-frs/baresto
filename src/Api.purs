@@ -1,6 +1,6 @@
 module Api where
 
-import Control.Apply
+import Prelude
 import Component.ErrorBox as ErrorBox
 import Component.Spinner as Spinner
 import Api.Common (Api, getJsonResponse, getUnitResponse, uploadFiles, postJson)
@@ -14,19 +14,21 @@ import Api.Schema.Selector (Framework)
 import Api.Schema.Table (Table)
 import Api.Schema.Validation (ValidationResult)
 import Control.Monad.Aff.Free (class Affable, fromAff, fromEff)
-import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Except.Trans (runExceptT)
-import DOM (DOM)
 import DOM.File.Types (FileList)
 import Data.Either (Either(Right, Left))
 import Data.Foreign.Null (Null)
 import Halogen.Component (ParentDSL, ComponentDSL, liftQuery)
-import Network.HTTP.Affjax (AJAX, get)
-import Prelude (class Monad, Unit, (<>), ($), show, bind)
-import Types (UpdateId, TagId, FileId, ModuleId, TableId)
+import Network.HTTP.Affjax (get)
+import Types (FileId, ModuleId, TableId, TagId, UpdateId, Effects)
 
-apiCall :: forall eff a s f g. (Affable (dom :: DOM, console :: CONSOLE, ajax :: AJAX | eff) g, Monad g)
-        => Api _ a -> (a -> ComponentDSL s f g Unit) -> ComponentDSL s f g Unit
+apiCall
+  :: forall a s f g
+   . ( Affable Effects g
+     , Monad g )
+  => Api _ a
+  -> (a -> ComponentDSL s f g Unit)
+  -> ComponentDSL s f g Unit
 apiCall call onSuccess = do
   fromEff $ Spinner.dispatch true
   result <- fromAff $ runExceptT call
@@ -35,8 +37,13 @@ apiCall call onSuccess = do
     Left err -> fromEff $ ErrorBox.raise err
     Right x -> onSuccess x
 
-apiCallParent :: forall eff a s s' f f' g p. (Affable (dom :: DOM, console :: CONSOLE, ajax :: AJAX | eff) g, Monad g)
-        => Api _ a -> (a -> ParentDSL s s' f f' g p Unit) -> ParentDSL s s' f f' g p Unit
+apiCallParent
+  :: forall a s s' f f' g p
+   . ( Affable Effects g
+     , Monad g )
+  => Api _ a
+  -> (a -> ParentDSL s s' f f' g p Unit)
+  -> ParentDSL s s' f f' g p Unit
 apiCallParent call onSuccess = do
   liftQuery $ fromEff $ Spinner.dispatch true
   result <- liftQuery $ fromAff $ runExceptT call

@@ -1,19 +1,15 @@
 module Api.Schema where
 
-import Prelude (($), pure, bind, (<$>))
-
-import Control.Monad.Error.Class (throwError)
-
-import Data.Tuple (Tuple(Tuple))
-import Data.Maybe (Maybe(Just, Nothing))
-import Data.Either (Either(Right, Left))
-import Data.Foreign (ForeignError(JSONError))
-import Data.Foreign.Class (class IsForeign, readProp)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (class EncodeJson)
-import Data.Argonaut.Combinators ((:=), (~>))
-
+import Data.Argonaut.Encode.Combinators ((:=), (~>))
+import Data.Either (Either(Right, Left))
+import Data.Foreign (ForeignError(JSONError), fail)
+import Data.Foreign.Class (class IsForeign, readProp)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
+import Data.Maybe (Maybe(Just, Nothing))
+import Data.Tuple (Tuple(Tuple))
+import Prelude
 import Types (ErrorDetail)
 
 data ServerResponse a
@@ -38,10 +34,10 @@ instance isForeignJsonEither :: (IsForeign a, IsForeign b) => IsForeign (JsonEit
   read json = do
     l <- readProp "Left" json
     r <- readProp "Right" json
-    case Tuple (runNullOrUndefined l) (runNullOrUndefined r) of
+    case Tuple (unNullOrUndefined l) (unNullOrUndefined r) of
       Tuple (Just l') Nothing -> pure $ JsonEither $ Left l'
       Tuple Nothing (Just r') -> pure $ JsonEither $ Right r'
-      _ -> throwError $ JSONError "expected `Left` or `Right` property"
+      _ -> fail $ JSONError "expected `Left` or `Right` property"
 
 newtype Name = Name String
 

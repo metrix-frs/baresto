@@ -3,16 +3,16 @@ module Api.Schema.Validation where
 import Data.StrMap as SM
 import Api.Schema.BusinessData.Value (Value)
 import Api.Schema.Table (DataType)
-import Control.Monad.Error.Class (throwError)
+import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (fromString)
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (either)
-import Data.Foreign (Foreign, ForeignError(JSONError), unsafeReadTagged)
+import Data.Foreign (Foreign, ForeignError(JSONError), fail, unsafeReadTagged)
 import Data.Foreign.Class (class IsForeign, readProp, read)
-import Data.Foreign.NullOrUndefined (runNullOrUndefined)
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(Nothing))
 import Data.Tuple (Tuple)
-import Prelude ((<$>), (<*>), bind, pure, ($), id, const, (<#>))
+import Prelude
 import Types (SubsetMemberId, CustomMemberId, RowKey)
 
 data ValidationType
@@ -42,12 +42,12 @@ instance isForeignRuleMap :: IsForeign RuleMap where
   read json = do
     (obj :: SM.StrMap Foreign) <- unsafeReadTagged "Object" json
     -- TODO: report purescript-maps StrMap functions traverse, union, foldM not stack-safe
-    pure $ RuleMap $ obj <#> \val -> either (const []) id (read val)
+    pure $ RuleMap $ obj <#> \val -> either (const []) id (runExcept $ read val)
 
 instance isForeignValidationResult :: IsForeign ValidationResult where
   read json = do
     (RuleMap dpm) <- readProp "dpm" json
-    header <- runNullOrUndefined <$> readProp "header" json
+    header <- unNullOrUndefined <$> readProp "header" json
     pure $ ValidationResult
       { vrDpmFindings: dpm
       , vrHeaderFindings: header
@@ -69,8 +69,8 @@ instance isForeignFinding :: IsForeign Finding where
            }
       <$> readProp "code" json
       <*> readProp "message" json
-      <*> (runNullOrUndefined <$> readProp "tableBasedFormula" json)
-      <*> (runNullOrUndefined <$> readProp "formula" json)
+      <*> (unNullOrUndefined <$> readProp "tableBasedFormula" json)
+      <*> (unNullOrUndefined <$> readProp "formula" json)
     pure $ Finding fin
 
 newtype Hole = Hole
@@ -124,7 +124,7 @@ instance isForeignHoleCoordY :: IsForeign HoleCoordY where
                             <*> readProp "ord" json
       "custom" -> HCYCustom <$> readProp "customMemberId" json
                             <*> readProp "rowKeys" json
-      _        -> throwError $ JSONError "expected `closed` or `custom`"
+      _        -> fail $ JSONError "expected `closed` or `custom`"
 
 data HoleCoordZ
   = HCZSingleton
@@ -143,7 +143,7 @@ instance isForeignHoleCoordZ :: IsForeign HoleCoordZ where
                                <*> readProp "customMember" json
       "subset"    -> HCZSubset <$> readProp "subsetMemberId" json
                                <*> readProp "subsetMember" json
-      _           -> throwError $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
+      _           -> fail $ JSONError "expected `singleton`, `closed`, `custom` or `subset`"
 
 type ModuleParamValue = String
 
@@ -175,4 +175,4 @@ instance isForeignFormula :: IsForeign Formula where
       "string"      -> FString      <$> readProp "val" json
       "moduleParam" -> FModuleParam <$> readProp "name" json  <*> readProp "val" json
       "set"         -> FSet         <$> readProp "fs" json
-      _             -> throwError $ JSONError "invalid formula type"
+      _             -> fail $ JSONError "invalid formula type"

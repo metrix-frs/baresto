@@ -10,10 +10,9 @@ import Data.Either (Either)
 import Data.Functor.Coproduct (Coproduct, coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
 import Data.Maybe (Maybe(Just))
-import Data.NaturalTransformation (Natural)
 import Halogen (ParentDSL, parentState, ParentHTML, ParentState, Component, ChildF(ChildF), modify, parentComponent)
 import Halogen.Component.ChildPath (ChildPath, cpR, cpL)
-import Prelude (Unit, class Ord, class Eq, unit, pure, const, ($), bind)
+import Prelude
 import Types (Metrix, UpdateId, FileId)
 import Utils (cls, peek')
 
@@ -80,7 +79,7 @@ render st = H.div [ cls "body" ] $ case st.currentView of
       { component: FV.viewer updateId, initialState: parentState FV.initialState }
     ]
 
-eval :: Natural Query (ParentDSL State ChildState Query ChildQuery Metrix ChildSlot)
+eval :: Query ~> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot
 eval (Foo next) = do
   pure next
 

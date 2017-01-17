@@ -14,7 +14,7 @@ import Data.String (take)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentHTML)
 import Lib.Table (boolValueMap, lookupByFst)
-import Prelude ((<>), show, ($), (<$>), pure, (<<<))
+import Prelude
 import Utils (cls, tryFormatNumber)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
@@ -32,7 +32,7 @@ renderFormula :: forall f. Formula -> ComponentHTML f
 renderFormula f = H.div [ cls "formula" ] $ renderTerm f
 
 renderTerm :: forall f. Formula -> Array (ComponentHTML f)
-renderTerm f = case f of
+renderTerm f' = case f' of
     FHole h ->
       [ renderHole h
       ]
@@ -204,10 +204,10 @@ renderHoleCoords (HoleCoords x y z) = H.span_
       , H.text xStr
       ] <> (
         case zStr of
-          Just z ->
+          Just z' ->
             [ H.text ", "
             , H.b_ [ H.text "s" ]
-            , H.text z
+            , H.text z'
             ]
           Nothing ->
             []

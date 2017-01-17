@@ -1,8 +1,8 @@
 module Api.Schema.Module where
 
-import Prelude (pure, ($), (<*>), (<$>), bind)
 import Data.Foreign.Class (class IsForeign, readProp)
-import Optic.Core (LensP, lens, (..))
+import Data.Lens (Lens', lens)
+import Prelude
 import Types (TableId, TemplateId, TemplateGroupId, ModuleId)
 
 newtype Module = Module
@@ -11,17 +11,17 @@ newtype Module = Module
   , templateGroups :: Array TemplateGroup
   }
 
-_Module :: LensP Module _
+_Module :: Lens' Module _
 _Module = lens (\(Module r) -> r) (\_ r -> Module r)
 
-_moduleId :: LensP Module ModuleId
-_moduleId = _Module .. lens _.moduleId _{moduleId = _ }
+_moduleId :: Lens' Module ModuleId
+_moduleId = _Module <<< lens _.moduleId _{moduleId = _ }
 
-_moduleLabel :: LensP Module String
-_moduleLabel = _Module .. lens _.moduleLabel _{ moduleLabel = _ }
+_moduleLabel :: Lens' Module String
+_moduleLabel = _Module <<< lens _.moduleLabel _{ moduleLabel = _ }
 
-_templateGroups :: LensP Module (Array TemplateGroup)
-_templateGroups = _Module .. lens _.templateGroups _{ templateGroups = _ }
+_templateGroups :: Lens' Module (Array TemplateGroup)
+_templateGroups = _Module <<< lens _.templateGroups _{ templateGroups = _ }
 
 instance isForeignModule :: IsForeign Module where
   read json = do
@@ -37,17 +37,17 @@ newtype TemplateGroup = TemplateGroup
   , templates :: Array Template
   }
 
-_TemplateGroup :: LensP TemplateGroup _
+_TemplateGroup :: Lens' TemplateGroup _
 _TemplateGroup = lens (\(TemplateGroup r) -> r) (\_ r -> TemplateGroup r)
 
-_templateGroupId :: LensP TemplateGroup TemplateGroupId
-_templateGroupId = _TemplateGroup .. lens _.templateGroupId _{templateGroupId = _ }
+_templateGroupId :: Lens' TemplateGroup TemplateGroupId
+_templateGroupId = _TemplateGroup <<< lens _.templateGroupId _{templateGroupId = _ }
 
-_templateGroupLabel :: LensP TemplateGroup String
-_templateGroupLabel = _TemplateGroup .. lens _.templateGroupLabel _{ templateGroupLabel = _ }
+_templateGroupLabel :: Lens' TemplateGroup String
+_templateGroupLabel = _TemplateGroup <<< lens _.templateGroupLabel _{ templateGroupLabel = _ }
 
-_templates :: LensP TemplateGroup (Array Template)
-_templates = _TemplateGroup .. lens _.templates _{ templates = _ }
+_templates :: Lens' TemplateGroup (Array Template)
+_templates = _TemplateGroup <<< lens _.templates _{ templates = _ }
 
 instance isForeignTemplateGroup :: IsForeign TemplateGroup where
   read json = do
@@ -64,20 +64,20 @@ newtype Template = Template
   , templateTables :: Array TableEntry
   }
 
-_Template :: LensP Template _
+_Template :: Lens' Template _
 _Template = lens (\(Template r) -> r) (\_ r -> Template r)
 
-_templateId :: LensP Template TemplateId
-_templateId = _Template .. lens _.templateId _{ templateId = _ }
+_templateId :: Lens' Template TemplateId
+_templateId = _Template <<< lens _.templateId _{ templateId = _ }
 
-_templateCode :: LensP Template String
-_templateCode = _Template .. lens _.templateCode _{ templateCode = _ }
+_templateCode :: Lens' Template String
+_templateCode = _Template <<< lens _.templateCode _{ templateCode = _ }
 
-_templateLabel :: LensP Template String
-_templateLabel = _Template .. lens _.templateLabel _{ templateLabel = _ }
+_templateLabel :: Lens' Template String
+_templateLabel = _Template <<< lens _.templateLabel _{ templateLabel = _ }
 
-_templateTables :: LensP Template (Array TableEntry)
-_templateTables = _Template .. lens _.templateTables _{ templateTables = _ }
+_templateTables :: Lens' Template (Array TableEntry)
+_templateTables = _Template <<< lens _.templateTables _{ templateTables = _ }
 
 instance isForeignTemplate :: IsForeign Template where
   read json = do
@@ -97,14 +97,14 @@ newtype TableEntry = TableEntry
   , tableEntryCode :: String
   }
 
-_TableEntry :: LensP TableEntry _
+_TableEntry :: Lens' TableEntry _
 _TableEntry = lens (\(TableEntry r) -> r) (\_ r -> TableEntry r)
 
-_tableEntryId :: LensP TableEntry TableId
-_tableEntryId = _TableEntry .. lens _.tableEntryId _{ tableEntryId = _ }
+_tableEntryId :: Lens' TableEntry TableId
+_tableEntryId = _TableEntry <<< lens _.tableEntryId _{ tableEntryId = _ }
 
-_tableEntryCode :: LensP TableEntry String
-_tableEntryCode = _TableEntry .. lens _.tableEntryCode _{ tableEntryCode = _ }
+_tableEntryCode :: Lens' TableEntry String
+_tableEntryCode = _TableEntry <<< lens _.tableEntryCode _{ tableEntryCode = _ }
 
 instance isForeignTableEntry :: IsForeign TableEntry where
   read json = do

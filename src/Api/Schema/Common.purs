@@ -1,11 +1,10 @@
 module Api.Schema.Common where
 
-import Control.Monad.Error.Class (throwError)
-import Data.Tuple (Tuple(Tuple))
-import Data.Foreign (ForeignError(JSONError))
-import Data.Foreign.Class (class IsForeign, read)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
-import Prelude (bind, (<$>), (<*>), ($))
+import Data.Foreign (ForeignError(JSONError), fail)
+import Data.Foreign.Class (class IsForeign, read)
+import Data.Tuple (Tuple(Tuple))
+import Prelude
 
 newtype Pair a b = Pair (Tuple a b)
 
@@ -17,7 +16,7 @@ instance isForeignPair :: (IsForeign a, IsForeign b) => IsForeign (Pair a b) whe
     list <- read json
     case list of
       [a, b] -> Pair <$> (Tuple <$> read a <*> read b)
-      _ -> throwError $ JSONError "expected list of two elements"
+      _ -> fail $ JSONError "expected list of two elements"
 
 instance encodeJsonPair :: (EncodeJson a, EncodeJson b) => EncodeJson (Pair a b) where
   encodeJson (Pair (Tuple a b)) = encodeJson

@@ -1,6 +1,6 @@
 module Component.Handsontable where
 
-import Lib.Table
+import Prelude
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
 import Api.Schema.Table (Table(Table), YAxis(YAxisCustom, YAxisClosed))
@@ -11,14 +11,13 @@ import DOM.HTML.Types (HTMLElement)
 import Data.Array (length)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(Nothing, Just))
-import Data.NaturalTransformation (Natural)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentDSL, ComponentHTML, Component, action, eventSource_, subscribe, eventSource, modify, get, lifecycleComponent)
 import Handsontable (populateFromArray, handsontableNode, destroy, render) as Hot
 import Handsontable.Hooks (onAfterRender, onAfterChange) as Hot
 import Handsontable.Types (Handsontable, ChangeSource(ChangeSpliceRow, ChangeSpliceCol, ChangePaste, ChangeAutofill, ChangeLoadData, ChangePopulateFromArray, ChangeEdit, ChangeEmpty, ChangeAlter), Direction(DirectionDown), PopulateMethod(Overwrite)) as Hot
 import Lib.BusinessData (BusinessData, getCustomYMembersBySheet, getFactTable)
-import Prelude (Unit, ($), pure, show, (<>), bind, unit, (<$>), (>), const)
+import Lib.Table (C(..), Coord(..), R(..), S)
 import Types (Metrix)
 import Utils (getIndices, initClipboard, cls)
 
@@ -58,7 +57,7 @@ handsontable propS propTable propBusinessData = lifecycleComponent
       , P.ref \el -> action (SetRoot el)
       ] []
 
-    eval :: Natural Query (ComponentDSL State Query Metrix)
+    eval :: Query ~> ComponentDSL State Query Metrix
     eval (Init next) = do
       build propS propTable propBusinessData
       pure next
@@ -93,7 +92,7 @@ build s table@(Table tbl) bd = do
       hot <- fromEff $ Hot.handsontableNode el (tableOptions s table bd)
       modify _{ hotInstance = Just hot }
 
-      subscribe $ eventSource (\cb -> Hot.onAfterChange hot (\c s -> cb (Tuple c s))) \(Tuple changes source) -> do
+      subscribe $ eventSource (\cb -> Hot.onAfterChange hot (\c s' -> cb (Tuple c s'))) \(Tuple changes source) -> do
         let procChange change = let coord = fromHotCoords table change.col change.row
                                 in  Tuple (Coord (C coord.col) (R coord.row) s) (forceString change.new)
             go = pure $ action $ Edit $ procChange <$> changes

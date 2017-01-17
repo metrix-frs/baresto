@@ -1,5 +1,6 @@
 module Component.FileMenu where
 
+import Prelude
 import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
@@ -11,13 +12,11 @@ import Component.Common (modal, toolButton)
 import Component.Validation.Finding (renderHoleCoords)
 import Control.Monad.Aff.Free (fromEff)
 import Data.Array (snoc)
+import Data.Lens (Lens', lens, (%~))
 import Data.Maybe (Maybe(Nothing, Just))
-import Data.NaturalTransformation (Natural)
 import Data.String (take)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentDSL, ComponentHTML, Component, component, modify, get, gets)
-import Optic.Core (LensP, (%~), lens)
-import Prelude ((<$>), ($), show, (<>), (/=), (<), (>), pure, bind, (+), (-), unit, (==))
 import Types (Metrix, UpdateId)
 import Utils (cls, paginate, maxOrd, getInputFileList)
 
@@ -34,7 +33,7 @@ type State =
   , lastUpdateId :: UpdateId
   }
 
-_location :: LensP State Location
+_location :: Lens' State Location
 _location = lens _.location _{ location = _ }
 
 initialState :: UpdateId -> State
@@ -75,7 +74,7 @@ render st = H.div_ $
          then [ renderMenu st ]
          else []
 
-eval :: Natural Query (ComponentDSL State Query Metrix)
+eval :: Query ~> ComponentDSL State Query Metrix
 eval (Open next) = do
   modify $ _{ open = true }
   pure next

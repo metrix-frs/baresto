@@ -6,7 +6,7 @@ import Control.Monad.Eff (Eff)
 import Data.Functor.Coproduct (left)
 import Halogen (action, parentState, runUI)
 import Halogen.Util (awaitBody, runHalogenAff)
-import Prelude (Unit, ($), bind)
+import Prelude
 import Types (Effects)
 
 main :: Eff Effects Unit

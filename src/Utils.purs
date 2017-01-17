@@ -17,32 +17,32 @@ module Utils
   , Pagination
   , paginate
   , tryFormatNumber
+  , fromChars
+  , non
   ) where
 
-import Prelude (class Ord, Unit, Ordering(GT, LT), ($), (+), (/), (-), (*), (<$>), unit, pure, (==), (<<<), return, bind, compare, map)
-import Global (readInt)
-import Math as Math
-
-import Data.Int (toNumber, ceil, fromNumber)
-import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
-import Data.Tuple (Tuple(Tuple), fst)
-import Data.Array (drop, take, length, (!!), replicateM, (..), zip)
+import Prelude
 import Data.String as Str
-import Data.Nullable (Nullable, toMaybe)
-import Data.String (toCharArray, fromCharArray)
-
-import DOM.Event.Types (Event(), EventType(..))
-import DOM (DOM())
-import DOM.File.Types (FileList())
-
-import Control.Monad.Eff.Random (RANDOM, randomInt)
-import Control.Monad.Eff (Eff)
-
-import Halogen (ParentDSL, ChildF(ChildF))
-import Halogen.Component.ChildPath (ChildPath(), prjSlot, prjQuery)
-import Halogen.HTML.Properties.Indexed as P
 import Halogen.HTML.Core as H
-
+import Halogen.HTML.Properties.Indexed as P
+import Math as Math
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Random (RANDOM, randomInt)
+import DOM (DOM)
+import DOM.Event.Types (Event, EventType(..))
+import DOM.File.Types (FileList)
+import Data.Array (drop, take, length, (!!), (..), zip)
+import Data.Foldable (class Foldable, foldMap)
+import Data.Int (toNumber, ceil, fromNumber)
+import Data.Lens (Iso', iso)
+import Data.Maybe (Maybe(Just, Nothing), fromMaybe)
+import Data.Nullable (Nullable, toMaybe)
+import Data.String (fromCharArray, singleton, toCharArray)
+import Data.Tuple (Tuple(Tuple), fst)
+import Data.Unfoldable (replicateA)
+import Global (readInt)
+import Halogen (ParentDSL, ChildF(ChildF))
+import Halogen.Component.ChildPath (ChildPath, prjSlot, prjQuery)
 import Types (ErrorDetail)
 
 maxInt :: Int -> Int -> Int
@@ -75,9 +75,9 @@ maxOrd x y = case compare x y of
 -- | Collect n/2 bytes of entropy using JS's `Math.random()`
 -- and return in hexadecimal form.
 getEntropy :: forall e. Int -> Eff (random :: RANDOM | e) String
-getEntropy n = fromCharArray <$> replicateM n do
+getEntropy n = fromCharArray <$> replicateA n do
     i <- randomInt 0 15
-    return $ fromMaybe '0' $ alphabet !! i
+    pure $ fromMaybe '0' $ alphabet !! i
   where
     alphabet = toCharArray "0123456789abcdef"
 
@@ -94,6 +94,7 @@ createErrorEvent :: EventType -> ErrorDetail -> Event
 createErrorEvent (EventType typ) detail = createErrorEventImpl typ detail
 
 foreign import errorEventDetailImpl :: Event -> Nullable ErrorDetail
+
 
 errorEventDetail :: Event -> Maybe ErrorDetail
 errorEventDetail = toMaybe <<< errorEventDetailImpl
@@ -149,3 +150,15 @@ paginate segmentLength xs currentPage =
 -- Number formatting
 
 foreign import tryFormatNumber :: Int -> String -> String
+
+-- Char <-> String
+
+fromChars :: forall f. Foldable f => f Char -> String
+fromChars = foldMap singleton
+
+-- non Iso
+
+non :: forall a. Eq a => a -> Iso' (Maybe a) a
+non def = iso (fromMaybe def) go
+  where go a | a == def = Nothing
+             | otherwise = Just a

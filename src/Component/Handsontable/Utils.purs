@@ -5,7 +5,7 @@ module Component.Handsontable.Utils
   , forceString
   ) where
 
-import Prelude ((+), (-))
+import Prelude
 import Handsontable.Types (Handsontable)
 import Control.Monad.Eff (Eff)
 import Data.Array (length)

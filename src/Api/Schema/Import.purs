@@ -1,6 +1,6 @@
 module Api.Schema.Import where
 
-import Prelude (pure, ($), (<*>), (<$>), bind)
+import Prelude
 import Data.Foreign.Class (class IsForeign, readProp)
 import Api.Schema.BusinessData (UpdateGet)
 import Types (ModuleId, UpdateId)

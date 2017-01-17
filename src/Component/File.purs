@@ -1,5 +1,6 @@
 module Component.File where
 
+import Prelude
 import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Halogen.HTML.Properties.Indexed as P
@@ -7,14 +8,11 @@ import Api (getFileOrphans, apiCall, getFileTags, renameTag, renameFile, pruneOr
 import Api.Schema.BusinessData (TagDesc(TagDesc), UpdateDesc(UpdateDesc))
 import Api.Schema.File (File(File), _fileLabel, _fileCreated, _fileChanged, _fileId, _fileLastUpdateId)
 import Component.Common (modal)
-import Control.Monad (when)
 import Data.Array (filter)
 import Data.Foldable (find)
+import Data.Lens (Lens', lens, (%~), (.~), (^.))
 import Data.Maybe (Maybe(Just, Nothing))
-import Data.NaturalTransformation (Natural)
 import Halogen (ComponentDSL, ComponentHTML, Component, modify, gets, action, lifecycleComponent)
-import Optic.Core (LensP, (%~), (.~), (..), (^.), lens)
-import Prelude (pure, ($), bind, not, unit, map, (==), (/=), show, (<>), (<$>))
 import Types (Metrix, TagId, UpdateId)
 import Utils (cls)
 
@@ -39,13 +37,13 @@ type State =
   , renaming      :: Renaming
   }
 
-_file :: LensP State File
+_file :: Lens' State File
 _file = lens _.file _{ file = _ }
 
-_tags :: LensP State (Array TagDesc)
+_tags :: Lens' State (Array TagDesc)
 _tags = lens _.tags _{ tags = _ }
 
-_orphans :: LensP State (Array UpdateDesc)
+_orphans :: Lens' State (Array UpdateDesc)
 _orphans = lens _.orphans _{ orphans = _ }
 
 initialState :: File -> State
@@ -267,7 +265,7 @@ renderOrphan st (UpdateDesc upd) =
     ]
   ]
 
-eval :: Natural Query (ComponentDSL State Query Metrix)
+eval :: Query ~> ComponentDSL State Query Metrix
 eval (Init next) = do
   pure next
 
@@ -329,7 +327,7 @@ eval (RenameFileDone next) = do
   (File f) <- gets _.file
   case renaming of
     RFile newName -> apiCall (renameFile f.fileId newName) \resultName ->
-      modify $ _file .. _fileLabel .~ resultName
+      modify $ _file <<< _fileLabel .~ resultName
     _ -> pure unit
   modify $ _{ renaming = RNone }
   pure next

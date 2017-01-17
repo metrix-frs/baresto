@@ -12,14 +12,13 @@ import Api.Schema.Auth (AuthInfo(AuthInfo))
 import Component.Common (modal)
 import Data.Either (Either(Left, Right))
 import Data.Foldable (intercalate)
-import Data.Foreign.Null (runNull)
+import Data.Foreign.Null (unNull)
 import Data.Functor.Coproduct (Coproduct)
 import Data.Generic (class Generic, gEq, gCompare)
 import Data.Maybe (Maybe(Nothing, Just))
-import Data.NaturalTransformation (Natural)
 import Halogen (ParentDSL, parentState, ParentHTML, ParentState, Component, ChildF, parentComponent, modify, get)
 import Halogen.Component.ChildPath (ChildPath, cpL, cpR, (:>))
-import Prelude (class Ord, class Eq, (<>), ($), pure, bind)
+import Prelude
 import Types (Metrix, showDay)
 import Utils (cls)
 import Version (versionStr)
@@ -174,9 +173,9 @@ render st = H.div [ cls "app" ] $
         []
   )
 
-eval :: Natural Query (ParentDSL State ChildState Query ChildQuery Metrix ChildSlot)
+eval :: Query ~> ParentDSL State ChildState Query ChildQuery Metrix ChildSlot
 eval (Boot next) = do
-  apiCallParent loginStatus \status -> case runNull status of
+  apiCallParent loginStatus \status -> case unNull status of
     Just authInfo ->
       modify _{ authStatus = Authenticated authInfo }
     Nothing ->

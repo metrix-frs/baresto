@@ -1,16 +1,15 @@
 module Component.Validation where
 
+import Prelude
 import Halogen.HTML.Events.Indexed as E
 import Halogen.HTML.Indexed as H
 import Api (validate, apiCall)
 import Api.Schema.Validation (ValidationResult, emptyValidationResult)
 import Component.Validation.Finding (renderFinding)
+import Data.Lens (Lens', lens, (%~))
 import Data.Maybe (Maybe(Nothing, Just))
-import Data.NaturalTransformation (Natural)
 import Halogen (ComponentDSL, ComponentHTML, Component, modify, gets, action, lifecycleComponent)
 import Lib.Validation (patchValidationResult, flattenValidationResult)
-import Optic.Core (LensP, (%~), lens)
-import Prelude (pure, bind, ($), (-), (+), (<>), (<$>), (<), show, (>))
 import Types (Metrix, UpdateId)
 import Utils (maxOrd, cls, paginate)
 
@@ -29,10 +28,10 @@ initialState updateId =
   , page: 1
   }
 
-_results :: LensP State ValidationResult
+_results :: Lens' State ValidationResult
 _results = lens _.results _{ results = _ }
 
-_page :: LensP State Int
+_page :: Lens' State Int
 _page = lens _.page _{ page = _ }
 
 data Query a
@@ -109,7 +108,7 @@ render st = H.div_
 htmlProblem :: forall f. Int -> ComponentHTML f
 htmlProblem x = H.li_ ([H.br_ :: ComponentHTML f, H.text "hl" ] <> [H.li_ [], H.br_])
 
-eval :: Natural Query (ComponentDSL State Query Metrix)
+eval :: Query ~> ComponentDSL State Query Metrix
 eval (Init next) = do
   updateId <- gets _.updateId
   apiCall (validate updateId) \results ->
