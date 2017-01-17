@@ -1,6 +1,6 @@
-# Lobster
+# Baresto
 
-Successor of hermit.
+Frontend of [Baresto](https://baresto.metrix-frs.de/).
 
 ## First Setup
 
@@ -24,8 +24,8 @@ Check version:
 
 ### Clone and Get Dependencies
 
-    $ git clone ssh://git@gitlab.mdrexl.net:10022/holger/lobster.git
-    $ cd lobster/
+    $ git clone git://github.com/metrix-frs/baresto.git
+    $ cd baresto/
     $ npm install
     $ bower update
 
@@ -35,16 +35,17 @@ Check version:
 
 ## Watch
 
-Starts browserSync, reloads when the compiled JS has changed and automatically compiles and injects CSS.
+Starts browserSync, reloads when the compiled JS has changed and automatically
+compiles and injects CSS.
 
     $ gulp watch
 
 ## Serve
 
-Install [core](http://gitlab.mdrexl.net/holger/core).
+Install [core](https://gitlab.mdrexl.net/holger/core).
 
 Assuming you have cloned core next to where you have cloned lobster:
 
     $ cd core/
     $ stack build
-    $ stack exec server -- -s ../lobster/public
+    $ stack exec server -- -s ../baresto/public
