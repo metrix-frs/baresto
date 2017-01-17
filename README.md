@@ -1,6 +1,11 @@
 # Baresto
 
-Frontend of [Baresto](https://baresto.metrix-frs.de/).
+PureScript UI of the regulatory reporting software
+[Baresto](https://baresto.metrix-frs.de/).
+
+![Module Browser](doc/modules.png)
+
+![File Viewer](doc/file.png)
 
 ## First Setup
 
