@@ -31,7 +31,23 @@
   background-color: white;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
 
-  .octicon {
+  .severity {
+    padding: 5px;
+  }
+  .blocking {
+    color: $severityBlocking;
+  }
+  .non-blocking {
+    color: $severityNonBlocking;
+  }
+  .warning {
+    color: $severityWarning;
+  }
+  .blocking-for-IFRS {
+    color: $severityBlockingIFRS;
+  }
+
+  .navigation {
     width: 16px;
     text-align: center;
     border-radius: 2px;

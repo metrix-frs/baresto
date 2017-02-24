@@ -59,19 +59,19 @@ render st = H.div_
         H.div
         [ cls "validation-open" ] $
         [ H.span
-          [ cls "octicon octicon-chevron-down"
+          [ cls "navigation octicon octicon-chevron-down"
           , E.onClick $ E.input_ Close
           ] []
         , H.span
           [ cls "pagination" ]
           [ if st.page > 1 then
               H.span
-              [ cls "octicon octicon-chevron-left"
+              [ cls "navigation octicon octicon-chevron-left"
               , E.onClick $ E.input_ PagePrev
               ] []
             else
               H.span
-              [ cls "octicon octicon-chevron-left disabled" ] []
+              [ cls "navigation octicon octicon-chevron-left disabled" ] []
           , H.span
             [ cls "fromto" ]
             [ H.b_ [ H.text $ show pagination.from ]
@@ -82,12 +82,12 @@ render st = H.div_
             ]
           , if st.page < pagination.pages then
               H.span
-              [ cls "octicon octicon-chevron-right"
+              [ cls "navigation octicon octicon-chevron-right"
               , E.onClick $ E.input_ PageNext
               ] []
             else
               H.span
-              [ cls "octicon octicon-chevron-right disabled" ] []
+              [ cls "navigation octicon octicon-chevron-right disabled" ] []
           ]
         , H.div [ cls "validation-content" ]
           [ H.ul_ $ renderFinding <$> pagination.items
@@ -98,7 +98,7 @@ render st = H.div_
           [ cls "validation-closed"
           , E.onClick $ E.input_ Open
           ]
-          [ H.span [ cls "octicon octicon-chevron-up" ] []
+          [ H.span [ cls "navigation octicon octicon-chevron-up" ] []
           , H.text "Validation"
           ]
         ]

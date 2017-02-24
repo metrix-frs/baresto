@@ -59,6 +59,7 @@ newtype Finding = Finding
   , finTableBasedFormula :: Maybe String
   , finFormula :: Maybe Formula
   , finSeverity :: Severity
+  , finNarrative :: String -- DPM 2.6 style narratives: verbose error messages
   }
 
 instance isForeignFinding :: IsForeign Finding where
@@ -68,12 +69,14 @@ instance isForeignFinding :: IsForeign Finding where
            , finTableBasedFormula: _
            , finFormula: _
            , finSeverity: _
+           , finNarrative: _
            }
       <$> readProp "code" json
       <*> readProp "message" json
       <*> (unNullOrUndefined <$> readProp "tableBasedFormula" json)
       <*> (unNullOrUndefined <$> readProp "formula" json)
       <*> readProp "severity" json
+      <*> readProp "narrative" json
     pure $ Finding fin
 
 newtype Hole = Hole
@@ -187,7 +190,7 @@ data Severity
 
 instance showSeverity :: Show Severity where
   show Blocking     = "blocking"
-  show BlockingIFRS = "blocking for IFRS"
+  show BlockingIFRS = "blocking-for-IFRS"
   show NonBlocking  = "non-blocking"
   show Warning      = "warning"
 

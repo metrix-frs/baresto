@@ -10,7 +10,7 @@ import Api.Schema.Table (DataType(..))
 import Api.Schema.Validation (Finding(Finding), Formula(FBinary, FUnary, FSet, FModuleParam, FString, FNumber, FBoolean, FIfThenElse, FMember, FSum, FHole), Hole(Hole), HoleCoordX(HCX), HoleCoordY(HCYCustom, HCYClosed), HoleCoordZ(HCZSubset, HCZCustom, HCZClosed, HCZSingleton), HoleCoords(HoleCoords))
 import Data.Foldable (intercalate)
 import Data.Maybe (fromMaybe, Maybe(Nothing, Just))
-import Data.String (take)
+import Data.String (take, null)
 import Data.Tuple (Tuple(Tuple))
 import Halogen (ComponentHTML)
 import Lib.Table (boolValueMap, lookupByFst)
@@ -19,8 +19,11 @@ import Utils (cls, tryFormatNumber)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
 renderFinding (Finding f) = H.li_ $
-  [ H.b_ [ H.text $ f.finCode <> " " ]
-  , H.i_ [ H.text $ show f.finSeverity <> ": "]
+  [ H.span
+    [ cls $ "severity octicon octicon-primitive-dot " <> show f.finSeverity
+    , P.title $ show f.finSeverity
+    ] []
+  , H.b_ [ H.text $ f.finCode <> ": " ]
   , H.text f.finMessage
   , H.br_ :: ComponentHTML f
   ] <> case f.finFormula of
@@ -28,6 +31,10 @@ renderFinding (Finding f) = H.li_ $
           [ renderFormula formula
           ]
          Nothing -> []
+  where
+    msg = if null f.finNarrative
+          then f.finMessage
+          else f.finMessage <> ": " <> f.finNarrative
 
 renderFormula :: forall f. Formula -> ComponentHTML f
 renderFormula f = H.div [ cls "formula" ] $ renderTerm f
