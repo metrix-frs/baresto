@@ -19,7 +19,8 @@ import Utils (cls, tryFormatNumber)
 
 renderFinding :: forall f. Finding -> ComponentHTML f
 renderFinding (Finding f) = H.li_ $
-  [ H.b_ [ H.text $ f.finCode <> ": " ]
+  [ H.b_ [ H.text $ f.finCode <> " " ]
+  , H.i_ [ H.text $ show f.finSeverity <> ": "]
   , H.text f.finMessage
   , H.br_ :: ComponentHTML f
   ] <> case f.finFormula of

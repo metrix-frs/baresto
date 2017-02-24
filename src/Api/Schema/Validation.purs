@@ -58,6 +58,7 @@ newtype Finding = Finding
   , finMessage :: String
   , finTableBasedFormula :: Maybe String
   , finFormula :: Maybe Formula
+  , finSeverity :: Severity
   }
 
 instance isForeignFinding :: IsForeign Finding where
@@ -66,11 +67,13 @@ instance isForeignFinding :: IsForeign Finding where
            , finMessage: _
            , finTableBasedFormula: _
            , finFormula: _
+           , finSeverity: _
            }
       <$> readProp "code" json
       <*> readProp "message" json
       <*> (unNullOrUndefined <$> readProp "tableBasedFormula" json)
       <*> (unNullOrUndefined <$> readProp "formula" json)
+      <*> readProp "severity" json
     pure $ Finding fin
 
 newtype Hole = Hole
@@ -97,7 +100,6 @@ type PlainOrd   = Tuple Int String
 type CustomYOrd = Tuple CustomMemberId (Array String)
 type CustomZOrd = Tuple CustomMemberId String
 type SubsetZOrd = SubsetMemberId
-
 
 data HoleCoords = HoleCoords HoleCoordX HoleCoordY HoleCoordZ
 
@@ -176,3 +178,25 @@ instance isForeignFormula :: IsForeign Formula where
       "moduleParam" -> FModuleParam <$> readProp "name" json  <*> readProp "val" json
       "set"         -> FSet         <$> readProp "fs" json
       _             -> fail $ JSONError "invalid formula type"
+
+data Severity
+  = Blocking
+  | BlockingIFRS
+  | NonBlocking
+  | Warning
+
+instance showSeverity :: Show Severity where
+  show Blocking     = "blocking"
+  show BlockingIFRS = "blocking for IFRS"
+  show NonBlocking  = "non-blocking"
+  show Warning      = "warning"
+
+instance isForeignSeverity :: IsForeign Severity where
+  read json = do
+    typ <- readProp "type" json
+    case typ of
+      "blocking"     -> pure Blocking
+      "blockingIFRS" -> pure BlockingIFRS
+      "nonblocking"  -> pure NonBlocking
+      "warning"      -> pure Warning
+      _              -> fail $ JSONError "invalid severity type"
