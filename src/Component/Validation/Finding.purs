@@ -24,7 +24,7 @@ renderFinding (Finding f) = H.li_ $
     , P.title $ show f.finSeverity
     ] []
   , H.b_ [ H.text $ f.finCode <> ": " ]
-  , H.text f.finMessage
+  , H.text msg
   , H.br_ :: ComponentHTML f
   ] <> case f.finFormula of
          Just formula ->
